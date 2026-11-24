@@ -25,6 +25,8 @@ import {
 } from "@floating-ui/react";
 import { Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { Button } from "@/components/ui/button";
 import { isPermissionError } from "@/lib/errors/permission";
 import { skeletonStyle } from "@/lib/theme/controls";
@@ -130,60 +132,8 @@ export function ThreadReferencePicker({
     [shown, selectedIndex, onSelect, onClose],
   );
 
-  if (!isMounted) return null;
-
-  return (
-    <div
-      ref={refs.setFloating}
-      data-testid="reference-picker"
-      role="dialog"
-      aria-label="Share a build"
-      style={{
-        ...floatingStyles,
-        ...transitionStyles,
-        zIndex: 60,
-        width: 340,
-        maxWidth: "calc(100vw - 16px)",
-        background: t.bg,
-        border: `1px solid ${t.line}`,
-        borderRadius: r.panel,
-        overflow: "hidden",
-        ...elevation.raised,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingLeft: SPACE.sm,
-          borderBottom: `1px solid ${t.line}`,
-        }}
-      >
-        {/* The one kind, named: there is nothing to switch between. */}
-        <span data-testid="reference-kind" style={{ ...eyebrow, color: t.text2 }}>
-          {REFERENCE_KINDS[0]}
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: ROW_HEIGHT,
-            height: ROW_HEIGHT,
-            border: "none",
-            background: "transparent",
-            color: t.text2,
-            cursor: "pointer",
-          }}
-        >
-          <X size={16} />
-        </button>
-      </div>
-
+  const phone = useIsPhone();
+  const searchField = (
       <label
         style={{
           display: "flex",
@@ -191,7 +141,7 @@ export function ThreadReferencePicker({
           gap: SPACE.xs,
           padding: `0 ${SPACE.sm}px`,
           minHeight: ROW_HEIGHT,
-          borderBottom: `1px solid ${t.line}`,
+          borderBottom: phone ? undefined : `1px solid ${t.line}`,
         }}
       >
         <Search size={16} color={t.text2} aria-hidden />
@@ -203,10 +153,11 @@ export function ThreadReferencePicker({
           onKeyDown={handleKeyDown}
           placeholder="Search your builds and saves"
           aria-label="Search your builds and saves"
-          style={{ ...body, flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", color: t.text }}
+          style={{ ...body, flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", color: t.text, ...(phone ? { fontSize: 16 } : null) }}
         />
       </label>
-
+  );
+  const resultsList = (
       <div data-testid="reference-results" style={{ maxHeight: ROW_HEIGHT * 6, overflowY: "auto" }}>
         {isLoading ? (
           <div
@@ -285,6 +236,75 @@ export function ThreadReferencePicker({
           ))
         )}
       </div>
+  );
+
+  /* Below 768 the picker is the phone's sheet: the same search and the same rows, in the bottom sheet. */
+  if (phone) {
+    return (
+      <PhoneBottomSheet open={isOpen} onOpenChange={(open) => !open && onClose()} title="Share a build" height="half" data-testid="reference-picker">
+        {searchField}
+        {resultsList}
+      </PhoneBottomSheet>
+    );
+  }
+
+  if (!isMounted) return null;
+
+  return (
+    <div
+      ref={refs.setFloating}
+      data-testid="reference-picker"
+      role="dialog"
+      aria-label="Share a build"
+      style={{
+        ...floatingStyles,
+        ...transitionStyles,
+        zIndex: 60,
+        width: 340,
+        maxWidth: "calc(100vw - 16px)",
+        background: t.bg,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
+        overflow: "hidden",
+        ...elevation.raised,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingLeft: SPACE.sm,
+          borderBottom: `1px solid ${t.line}`,
+        }}
+      >
+        {/* The one kind, named: there is nothing to switch between. */}
+        <span data-testid="reference-kind" style={{ ...eyebrow, color: t.text2 }}>
+          {REFERENCE_KINDS[0]}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: ROW_HEIGHT,
+            height: ROW_HEIGHT,
+            border: "none",
+            background: "transparent",
+            color: t.text2,
+            cursor: "pointer",
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {searchField}
+
+      {resultsList}
     </div>
   );
 }

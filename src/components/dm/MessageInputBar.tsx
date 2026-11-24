@@ -9,6 +9,8 @@ import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square
 import { ThreadReferencePicker, type ReferenceItem } from "@/components/messages/ThreadReferencePicker";
 import { isTopicShareState, listShareableBuilds, sendBuildMessage, sendTopicMessage } from "@/lib/messaging";
 import { useLocation, useNavigate } from "react-router-dom";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 // Aliased `tok`: this file already binds `t` twice in tight scopes (a
 // setTimeout handle and a MediaStreamTrack), and a token accessor that can
 // be shadowed is a trap for whoever edits those blocks next.
@@ -59,6 +61,7 @@ export function MessageInputBar({
   const recordingTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const chunksRef = useRef<Blob[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const phone = useIsPhone();
 
   // Reference picker state
   const atButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -464,6 +467,66 @@ export function MessageInputBar({
         </div>
       )}
 
+      {/* Mobile prompt 26 Part E: on a phone the bar is a 44 round plus ("Share a build", which opens the sheet of the reader's builds),
+          the field (40 tall, radius 20, Card, 16px text so the page does not zoom) and Send (the main button, small). With nothing to
+          send, Send gives way to the attach and voice buttons, so nothing the desktop's bar offers is lost. */}
+      {phone ? (
+        <div data-testid="message-input-phone" style={{ padding: "10px 16px", display: "flex", alignItems: "flex-end", gap: 8 }}>
+          <button
+            ref={atButtonRef}
+            type="button"
+            aria-label="Share a build"
+            aria-expanded={pickerOpen}
+            onClick={() => {
+              atTriggerActiveRef.current = false;
+              if (pickerOpen) closePicker();
+              else openPicker("");
+            }}
+            className="shrink-0 flex items-center justify-center"
+            style={{ width: 44, height: 44, borderRadius: "50%", background: tok.control, color: tok.text, transition: uiTransition() }}
+          >
+            <MobileIcon name="new" size={20} />
+          </button>
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+          <div className="flex-1 min-w-0" style={{ background: tok.module, borderRadius: 20, minHeight: 40, display: "flex", alignItems: "center" }}>
+            <Textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={pendingShare ? "Add a note (optional)…" : otherHandle ? `Message @${otherHandle}` : "Message…"}
+              aria-label={otherHandle ? `Message @${otherHandle}` : "Message"}
+              className="min-h-[40px] max-h-[120px] resize-none"
+              style={{ background: "transparent", border: 0, boxShadow: "none", fontSize: 16, lineHeight: "20px", padding: "10px 16px" }}
+              rows={1}
+            />
+          </div>
+          {text.trim() || imageFile || pendingShare ? (
+            <button
+              type="button"
+              onClick={imageFile ? sendImage : sendText}
+              disabled={sending}
+              aria-label="Send"
+              className="shrink-0 flex items-center justify-center gap-1.5"
+              style={{ height: 44, padding: "0 16px", borderRadius: 22, fontSize: 13, fontWeight: 600, background: tok.action, color: tok.onAction, opacity: sending ? 0.6 : 1, transition: uiTransition() }}
+            >
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Send
+            </button>
+          ) : (
+            <div className="flex items-center shrink-0">
+              <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach an image" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", color: tok.text2 }}>
+                <MobileIcon name="image" size={22} />
+              </button>
+              <button type="button" onClick={startRecording} aria-label="Record a voice note" className="flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", color: tok.text2 }}>
+                <Mic className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
       {/* Synth 12 Part D: the input bar is a Card pill (radius 22): attach (round icons), the text field, "Share a build"
           (ghost, small) and "Send" (the main button, small). */}
       <div className="px-3 py-3">
@@ -559,6 +622,8 @@ export function MessageInputBar({
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Reference picker (popover) */}
       <ThreadReferencePicker

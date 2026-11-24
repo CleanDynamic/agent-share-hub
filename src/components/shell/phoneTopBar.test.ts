@@ -20,10 +20,14 @@ describe("phoneBarFor (prompt 19's table)", () => {
     ["/drafts", "Drafts", "newBuild"],
     ["/settings", "Settings", "none"],
     ["/settings/privacy", "Settings", "none"],
-    ["/messages", "Messages", "settings"],
+    ["/messages", "Messages", "messageSettings"],
     ["/search", "Search", "none"],
   ])("%s: back, %s, %s", (path, name, right) => {
-    expect(phoneBarFor(path)).toEqual({ left: "back", centre: title(name), right });
+    expect(phoneBarFor(path)).toMatchObject({ left: "back", centre: title(name), right });
+  });
+
+  it("a conversation: back, Messages (the page replaces it with the person's name), More", () => {
+    expect(phoneBarFor("/messages/t1")).toMatchObject({ left: "back", centre: title("Messages"), right: "more" });
   });
 
   it.each([

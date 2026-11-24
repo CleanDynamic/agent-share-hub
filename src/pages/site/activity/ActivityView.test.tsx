@@ -174,16 +174,19 @@ describe("ActivityView on a desktop (Synth 12)", () => {
 });
 
 describe("ActivityView on a phone (Synth 12)", () => {
-  it("one panel: the head with Show me and Mark all read, then the days; Show me opens in a sheet", () => {
+  it("no panel: the live state, then pills that filter by kind; the switches stay on the desktop", () => {
     phone(true);
     mount();
     expect(screen.getByTestId("activity-view").getAttribute("data-viewport")).toBe("mobile");
     expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
-    expect(screen.queryByRole("group", { name: "Show me" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show me" }));
-    const group = screen.getByRole("group", { name: "Show me" });
-    fireEvent.click(within(group).getByRole("switch", { name: "Rebuilt" }));
-    expect(kinds()).not.toContain("rebuilt");
+    expect(screen.queryByRole("button", { name: "Show me" })).toBeNull();
+    expect(screen.queryByRole("switch")).toBeNull();
+    const group = screen.getByRole("group", { name: "Show" });
+    expect(within(group).getAllByRole("button").map((b) => b.textContent)).toEqual(["All", "Rebuilds", "Comments and replies", "Likes", "Follows"]);
+    fireEvent.click(within(group).getByRole("button", { name: "Rebuilds" }));
+    expect(kinds().every((kind) => kind === "rebuilt")).toBe(true);
+    fireEvent.click(within(group).getByRole("button", { name: "All" }));
+    expect(new Set(kinds()).size).toBeGreaterThan(1);
   });
 
   /* Prompt 19: on a phone "Mark all read" is the top bar's right slot (the page registers it with `useRegisterPageBar`), so the
