@@ -266,6 +266,7 @@ export function buildTabFixture(tab: BuildTabKey, viewport: "desktop" | "mobile"
       const gap = parts.find(([, , , open]) => open);
       return (
         <BreakageBody
+          phone={phone}
           breakage={{
             rows: breakage
               ? [
@@ -293,7 +294,7 @@ export function buildTabFixture(tab: BuildTabKey, viewport: "desktop" | "mobile"
         <RebuildsBody
           phone={phone}
           rebuilds={{
-            cards: fixtures.builds.slice(1, 4).map((b) => sampleCard(b, "rebuild")),
+            cards: fixtures.builds.slice(1, 4).map((b) => ({ ...sampleCard(b, "rebuild"), summary: { title: b.title, to: `/b2/${b.slug}`, meta: [b.maker ? `@${b.maker.replace(/^@/, "")}` : null, `${b.part_categories.length} steps`].filter(Boolean).join(" · ") } })),
             loading: false,
             lineageTo: `/b2/${fixtures.builds[page.build - 1].slug}/lineage`,
           }}

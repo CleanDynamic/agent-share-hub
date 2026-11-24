@@ -11,7 +11,8 @@
 
 import { useState, type ReactNode } from "react";
 
-import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -24,6 +25,9 @@ import type { WhereNextRowView } from "./buildModel";
 
 const panel = { background: t.surface, borderRadius: PANEL_RADIUS, minWidth: 0, boxSizing: "border-box", padding: PANEL_PAD } as const;
 
+/** Prompt 22: on a phone the panels are sections on the Page shade: no box, the side margin only. */
+const phoneSection = { minWidth: 0, boxSizing: "border-box", padding: `0 ${PHONE_MARGIN}px` } as const;
+
 /** The column under the panels: full width, 8 apart, 8 below them. */
 export function LowerSections({ children }: { children: ReactNode }) {
   return (
@@ -35,8 +39,9 @@ export function LowerSections({ children }: { children: ReactNode }) {
 
 /** The discussion, in a panel. */
 export function CommentsPanel({ children }: { children: ReactNode }) {
+  const phone = useIsPhone();
   return (
-    <section style={panel}>
+    <section style={phone ? { ...phoneSection, paddingTop: 20 } : panel}>
       <div data-testid="build-comments-panel">{children}</div>
     </section>
   );
@@ -71,16 +76,16 @@ export function WhereNextPanels({ rows, phone }: { rows: readonly WhereNextRowVi
   return (
     <>
       {shown.map((row) => (
-        <section key={row.key} aria-labelledby={`where-next-${row.key}-heading`} style={panel}>
+        <section key={row.key} aria-labelledby={`where-next-${row.key}-heading`} style={phone ? { ...phoneSection, paddingTop: 20 } : panel}>
           <div data-testid={`where-next-${row.key}`}>
-            <h2 id={`where-next-${row.key}-heading`} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text }}>
+            <h2 id={`where-next-${row.key}-heading`} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text, ...(phone ? { letterSpacing: "-0.01em" } : null) }}>
               {row.heading}
             </h2>
             <ul
               aria-label={row.heading}
               style={{
                 listStyle: "none",
-                margin: "12px 0 0",
+                margin: phone ? "8px 0 0" : "12px 0 0",
                 padding: 0,
                 display: "grid",
                 gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
