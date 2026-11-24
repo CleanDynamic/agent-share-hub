@@ -1291,7 +1291,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected || over), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected || over, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected || over), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1601,7 +1601,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1758,7 +1758,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1901,7 +1901,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1974,7 +1974,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}

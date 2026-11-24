@@ -386,7 +386,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           aria-controls={controls}
           onClick={onToggle}
         />
-        {session.tool === NO_APP ? (
+        {/* Prompt 23: no tool or harness mark beside a session on a phone; its harness stays as plain text. */}
+        {phone ? null : session.tool === NO_APP ? (
           <span aria-hidden="true" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", color: t.label, flexShrink: 0 }}>
             <Glyph name="layers" size={size.icon} />
           </span>

@@ -7,7 +7,7 @@
 // in DM Mono 10px at 70%. It is a toggle, so it is a button with `aria-pressed`; as a tab (`tab`) it is
 // `role="tab"` inside a `ScrollRow tablist`.
 
-import type { ButtonHTMLAttributes, CSSProperties } from "react";
+import type { ButtonHTMLAttributes, ReactNode, CSSProperties } from "react";
 
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
@@ -22,6 +22,8 @@ export interface FilterChipProps
   count?: number | string;
   /** The chip is a tab (UI-P38): `role="tab"` with `aria-selected` in place of `aria-pressed`, and only the chosen one in the tab order. */
   tab?: { id: string; controls: string };
+  /** Drawn before the label (a phone pill's icon). Absent: nothing. */
+  leading?: ReactNode;
 }
 
 export function FilterChip({
@@ -29,6 +31,7 @@ export function FilterChip({
   on = false,
   count,
   tab,
+  leading,
   type = "button",
   style,
   onFocus,
@@ -72,6 +75,7 @@ export function FilterChip({
         ...style,
       }}
     >
+      {leading ?? null}
       {label}
       {count !== undefined ? (
         <span

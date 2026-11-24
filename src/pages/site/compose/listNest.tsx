@@ -12,6 +12,7 @@
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useSensor, useSensors, type CollisionDetection, type KeyboardCoordinateGetter, type Modifier, type PointerSensorOptions, type PointerSensorProps, type TouchSensorOptions, type UniqueIdentifier } from "@dnd-kit/core";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { Glyph } from "@/components/brand/Glyph";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { SETTLE_MS } from "@/lib/build/buildMotion";
@@ -148,6 +149,15 @@ class MousePressSensor extends PointerSensor {
   ];
 }
 
+/**
+ * Prompt 23: in the phone editor's List (`[data-grip-drag]`) a tile moves by a long press on its grip only; a long press anywhere
+ * else on it starts choosing. Elsewhere (a computer with touch, a tablet) a press anywhere on a tile picks it up, as before.
+ */
+export function gripOnly(target: EventTarget | null, surface: Element | null): boolean {
+  if (!(surface instanceof Element) || !surface.matches("[data-node-id]") || !surface.closest("[data-grip-drag]")) return false;
+  return !(target instanceof Element && target.closest("[data-grip]"));
+}
+
 /** The touch sensor with the press filter. */
 class TouchPressSensor extends TouchSensor {
   static activators = [
@@ -156,6 +166,7 @@ class TouchPressSensor extends TouchSensor {
       handler: ({ nativeEvent: event, currentTarget }: Activator<TouchEvent>, { onActivation }: TouchSensorOptions) => {
         if (event.touches.length > 1) return false;
         if (!pressStartsDrag(event.target, currentTarget)) return false;
+        if (gripOnly(event.target, currentTarget)) return false;
         onActivation?.({ event });
         return true;
       },
@@ -341,6 +352,7 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
       ref={hold}
       data-testid={testId}
       data-hit=""
+      data-grip=""
       {...attributes}
       {...listeners}
       aria-label={label}
@@ -367,7 +379,7 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
         ...ring(interactive.focusVisible),
       }}
     >
-      <Glyph name="grip" size={size.icon} />
+      {state?.phone ? <MobileIcon name="grip" size={18} /> : <Glyph name="grip" size={size.icon} />}
     </button>
   );
 }

@@ -39,7 +39,7 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { evalChoicesOf } from "@/lib/build/comparison";
 import { afterForIndex, type FilePlace } from "@/lib/build/fileDrop";
-import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, isCountedPrompt, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
+import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, isCountedPrompt, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, stepTitle, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupPlugin, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -151,6 +151,9 @@ import { useBuildFind } from "./useBuildFind";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
+import type { PhoneEditorExtras } from "./phone/PhoneEditor";
+import { foldOnArrival } from "./phone/phoneEditorModel";
+import { normaliseHex } from "@/lib/theme/partColour";
 import { outlineOnce, useHeld } from "./buildMotion";
 import { scrollToShow } from "./pageScroll";
 import { MotionChannel, MotionChannelContext } from "./listMotion";
@@ -2754,7 +2757,8 @@ function SandboxPageBody() {
   /* CA-27 P1: Find in build: what it reads is what the List is drawn from. */
   const findTargets = useMemo(() => findTargetsOf({ steps, dividers: dividerRows, emptySessions, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, dividerRows, emptySessions, partsModel]);
   const isFolded = useCallback((key: string) => collapsedKeys.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsedKeys, partsModel]);
-  const find = useBuildFind({ targets: findTargets, isFolded, enabled: !phone && lens === "list" });
+  /* Prompt 23: a phone finds too, from More (its List is always the list). */
+  const find = useBuildFind({ targets: findTargets, isFolded, enabled: phone || lens === "list" });
 
   /* CA-20 P8: the build page's keys. */
   useBuildShortcuts({
@@ -2788,6 +2792,64 @@ function SandboxPageBody() {
         }
       : null;
   const heldBar = useHeld(barProps, BASE);
+
+  /* Prompt 23: what only the phone editor needs. Built on a phone and nowhere else. */
+  const [addRequest, setAddRequest] = useState(0);
+  const phoneExtras = useMemo<PhoneEditorExtras | undefined>(() => {
+    if (!phone) return undefined;
+    const all = flatten(steps);
+    const byId = new Map(all.map((step) => [step.id, step]));
+    const chosen = selectedId ? byId.get(selectedId) : undefined;
+    return {
+      onOpenStep: (id: string) => {
+        const group = groups.find((entry) => entry.stepNumbers.includes(byId.get(id)?.number ?? ""));
+        const key = group ? groupKey(group) : null;
+        if (key && collapsedKeys.has(key)) onToggleCollapsed(key, false);
+        select(id);
+      },
+      numberOf: (id: string) => byId.get(id)?.number ?? null,
+      stepOf: (id: string) => {
+        const step = byId.get(id);
+        return step ? { kind: step.kind, title: stepTitle(step) } : null;
+      },
+      map: {
+        sessions: drawn.sessions.flatMap((session, at) => {
+          const group = session.key ? groups.find((entry) => groupKey(entry) === session.key) : undefined;
+          const tiles = session.tiles.flatMap((id) => {
+            const step = byId.get(id);
+            return step ? [{ id, number: step.number, kind: step.kind, title: stepTitle(step) }] : [];
+          });
+          return tiles.length > 0 ? [{ key: session.key ?? `loose-${at}`, number: group?.number ?? 0, steps: tiles }] : [];
+        }),
+      },
+      sources: {
+        sessions: sourceSessionRows.map((row) => ({ key: row.key, number: row.number, line: [row.title, row.detail].filter(Boolean).join(" / "), colour: normaliseHex(groups.find((entry) => groupKey(entry) === row.key)?.colour) })),
+        files: sourceFileRows.map((file) => ({ id: file.id, name: file.name, note: file.note })),
+        onAddTo: (key: string) => {
+          aimAt(key);
+          setAddRequest((n) => n + 1);
+        },
+        onPick: pick,
+        importHref: "/import",
+      },
+      moveTo: addTargets.sessions,
+      onMoveTiles: (ids: readonly string[], key: string) => void edits.onMoveTiles([...ids], key),
+      canGroup: bridge.available(),
+      onColours: () => referenceActions.setColoursOpen(true),
+      stillOpen: chosen ? { title: stepTitle(chosen), current: chosen.stillOpen, onSubmit: (problem: string | null) => onStillOpen(chosen.id, problem) } : null,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers are the page's own, read as they stand
+  }, [phone, steps, groups, drawn, selectedId, collapsedKeys, sourceSessionRows, sourceFileRows, bridge]);
+
+  /* Prompt 23: a phone arrives with one session open, the one holding the chosen step (the first when none is), so a long build
+     starts as a short list of sessions. Only what is shown: nothing is written. */
+  const foldedOnArrival = useRef(false);
+  useEffect(() => {
+    if (!phone || foldedOnArrival.current || !build || drawn.sessions.length === 0) return;
+    foldedOnArrival.current = true;
+    const keys = foldOnArrival(drawn.sessions, selectedId);
+    if (keys.length > 0) setCollapseOverride((previous) => ({ ...Object.fromEntries(keys.map((key) => [key, true])), ...previous }));
+  }, [phone, drawn, selectedId, build]);
 
   /* The Add a session row's props, shared by the List's row and the empty build's "Import from connected chats". */
   const addSessionProps = {
@@ -2858,7 +2920,7 @@ function SandboxPageBody() {
       <ComposeDnd phone={phone}>
       <SandboxView
         {...viewProps}
-        addMenu={phone ? undefined : <AddMenu phone={false} variant="title" {...addHandlers} />}
+        addMenu={phone ? <AddMenu phone variant="round" openRequest={addRequest} {...addHandlers} /> : <AddMenu phone={false} variant="title" {...addHandlers} />}
         noticeRoom={buildHistory.notice ? NOTICE_ROOM : undefined}
         classification={classification}
         saveProblem={compose.saveFailure}
@@ -2895,10 +2957,11 @@ function SandboxPageBody() {
           />
         }
         threadNote={thread.hold}
-        find={phone ? undefined : find}
+        find={find}
         viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
-        selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
+        selectionBar={heldBar.value && !phone ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
+        phoneExtras={phoneExtras}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={architectureColumn ?? mapColumn}
         mapPanel={mapPanel}
