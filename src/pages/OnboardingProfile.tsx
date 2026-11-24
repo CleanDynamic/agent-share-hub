@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -132,6 +133,9 @@ export default function OnboardingProfile() {
     await refreshProfile();
     navigate("/onboarding", { replace: true });
   };
+
+  // Prompt 19: the phone's top bar offers Skip, which moves on to the next step as saving does, saving nothing.
+  useRegisterPageBar({ skip: () => navigate("/onboarding", { replace: true }) });
 
   if (loading) return null;
 

@@ -2,7 +2,7 @@
 // route (`phoneBarFor`) and by what the mounted page registered (`phoneBarRegistry`). This file owns the account drawer, the
 // search page and the sign-in step, and none of the bar's look.
 //
-// Signed out, the account slot is a "Sign in" ghost button. Back steps back through the history, or goes to the page's own
+// More opens the More sheet: what the mounted page registered, then Copy link and Share. Signed out, the account slot is a "Sign in" ghost button. Back steps back through the history, or goes to the page's own
 // fallback when the page was opened directly.
 
 import { lazy, memo, Suspense, useEffect, useState } from "react";
@@ -17,6 +17,7 @@ import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 
 import type { FrameViewer } from "./frameTypes";
+import { MoreSheet } from "./MoreSheet";
 import { usePageBar } from "./phoneBarRegistry";
 import { phoneBarFor } from "./phoneTopBar";
 import { SITE_NAV } from "./siteNav";
@@ -33,6 +34,7 @@ function rightAction(
   right: ReturnType<typeof phoneBarFor>["right"],
   page: ReturnType<typeof usePageBar>,
   openSearch: () => void,
+  openMore: () => void,
 ): PhoneTopBarAction | null {
   switch (right) {
     case "search":
@@ -40,11 +42,11 @@ function rightAction(
     case "markAll":
       return { text: "Mark all read", label: "Mark all read", disabled: !page.markAll || page.markAll.disabled, onClick: page.markAll?.run };
     case "more":
-      return page.more ? { icon: "more", label: "More", onClick: page.more } : null;
+      return { icon: "more", label: "More", onClick: openMore };
     case "newBuild":
       return { icon: "new", label: "New build", to: SITE_NAV.create };
     case "settings":
-      return { icon: "gear", label: "Settings", to: SITE_NAV.settings };
+      return page.settings ? { icon: "gear", label: "Conversation settings", onClick: page.settings } : null;
     case "skip":
       return page.skip ? { text: "Skip", label: "Skip", onClick: page.skip } : null;
     default:
@@ -62,6 +64,7 @@ function MobileHeaderContainer() {
   const page = usePageBar();
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   useLoadAtIdle(loadDrawer);
   useLoadAtIdle(loadSearch);
   const drawerEver = useEverOpened(drawerOpen);
@@ -71,6 +74,7 @@ function MobileHeaderContainer() {
   useEffect(() => {
     setSearchOpen(false);
     setDrawerOpen(false);
+    setMoreOpen(false);
   }, [pathname]);
 
   const viewer: FrameViewer | null =
@@ -83,7 +87,7 @@ function MobileHeaderContainer() {
   const back = () => {
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
     if (idx > 0) navigate(-1);
-    else navigate(page.backTo ?? "/");
+    else navigate(page.backTo ?? spec.backTo ?? "/");
   };
 
   const centre = spec.centre.kind === "logo" ? "logo" : spec.centre.kind === "title" ? (page.title ?? spec.centre.text) : (page.title ?? "");
@@ -98,11 +102,12 @@ function MobileHeaderContainer() {
         onLeft={spec.left === "account" ? () => setDrawerOpen(true) : back}
         centre={centre}
         titleAs="p"
-        right={rightAction(spec.right, page, () => setSearchOpen(true))}
+        right={rightAction(spec.right, page, () => setSearchOpen(true), () => setMoreOpen(true))}
         viewer={viewer}
         unread={unread > 0}
         theme={resolved}
       />
+      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} />
       {searchEver ? (
         <Suspense fallback={null}>
           <SearchPage open={searchOpen} onOpenChange={setSearchOpen} />

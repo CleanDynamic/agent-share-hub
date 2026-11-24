@@ -1,3 +1,4 @@
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
@@ -218,6 +219,8 @@ export default function MessagesPage() {
   // pinned content lookup. Powers ConversationHeader.
   const activeThreadId = routeThreadId ?? null;
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Prompt 19: in an open conversation the phone's top bar draws a gear that opens its settings.
+  useRegisterPageBar(activeThreadId ? { settings: () => setSettingsOpen(true) } : null);
   /* UX-15 P5: Block in a direct thread's menu. */
   const [blocking, setBlocking] = useState<BlockTarget | null>(null);
   const [searchInThreadOpen, setSearchInThreadOpen] = useState(false);

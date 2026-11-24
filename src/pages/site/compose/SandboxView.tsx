@@ -70,6 +70,7 @@ import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
+import { ComposerBarMore } from "./ComposerBarMore";
 import { PublishChecklist } from "./PublishChecklist";
 import { PublishConfirmWindow as PublishConfirm } from "./composerWindows";
 import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
@@ -1438,6 +1439,7 @@ function SandboxBody(props: SandboxViewProps) {
             {statusLine}
           </div>
           <BuildTitleActions phone />
+          <ComposerBarMore />
         </div>
         {banner}
         {props.strips}

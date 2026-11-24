@@ -36,4 +36,21 @@ describe("phoneBarRegistry", () => {
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps a page's More rows and calls the latest function of the row that was chosen", () => {
+    const bar = renderHook(() => usePageBar());
+    const first = vi.fn();
+    const second = vi.fn();
+    function More({ run }: { run: () => void }) {
+      useRegisterPageBar({ more: [{ label: "Rebuild", onSelect: run }, { label: "Lineage", to: "/x" }], settings: run });
+      return null;
+    }
+    const page = render(<More run={first} />);
+    expect(bar.result.current.more?.map((item) => item.label)).toEqual(["Rebuild", "Lineage"]);
+    page.rerender(<More run={second} />);
+    act(() => bar.result.current.more?.[0].onSelect?.());
+    act(() => bar.result.current.settings?.());
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(2);
+  });
 });

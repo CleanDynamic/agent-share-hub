@@ -28,6 +28,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -98,6 +99,12 @@ function RebuildPageBody() {
   });
   const source = sourceHeader.data ?? null;
   useCrumbTitle(source ? source.title : sourceHeader.isPending ? null : sourceHeader.isError ? "Build" : "Not found");
+  // Prompt 19: the phone's top bar says where Back goes, and its More sheet opens the source.
+  useRegisterPageBar({
+    backLabel: source ? `Back to ${source.title}` : undefined,
+    backTo: `/b2/${slug}`,
+    more: source ? [{ label: "Open the source build", to: `/b2/${source.slug}` }] : [],
+  });
 
   /* ── 2. the reader's draft of it, and 3. a new one when there is none ── */
 

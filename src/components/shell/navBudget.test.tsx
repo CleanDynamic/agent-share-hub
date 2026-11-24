@@ -112,7 +112,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expect(screen.getByRole("combobox", { name: "Search builds" })).toBeInTheDocument();
   });
 
-  it("the phone's account drawer lists the account's pages in the account menu's order, then the theme switch and Sign out", async () => {
+  it("the phone's account drawer lists the account's pages in the prompt's order, then the theme switch and Sign out", async () => {
     authState.isLoggedIn = true;
     authState.profile = { display_name: "Ada Lovelace", username: "ada", avatar_url: null };
     authState.user = { id: "u1", email: "ada@example.com" };
@@ -126,8 +126,8 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace, account menu" }));
     // The drawer is a dialog: focus is trapped in it, Escape closes it.
     const drawer = await screen.findByRole("dialog", { name: "Account" });
-    expect(within(drawer).getAllByRole("link").map((a) => a.textContent)).toEqual(["Your profile", "Your drafts", "Your library", "Messages", "Settings"]);
-    expect(within(drawer).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/profile/ada", "/drafts", "/library", "/messages", "/settings"]);
+    expect(within(drawer).getAllByRole("link").map((a) => a.textContent)).toEqual(["Your profile", "Your library", "Drafts", "Messages", "Settings", "API docs"]);
+    expect(within(drawer).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/profile/ada", "/library", "/drafts", "/messages", "/settings", "/api-docs"]);
     expect(within(drawer).getByRole("switch", { name: "Dark theme" })).toBeTruthy();
     expect(within(drawer).getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(within(drawer).getByText("@ada")).toBeTruthy();

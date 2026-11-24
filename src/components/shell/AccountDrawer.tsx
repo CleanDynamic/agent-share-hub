@@ -1,8 +1,8 @@
 // The account drawer (prompt 19), from the avatar on a phone: a 300 wide panel from the left on Panel (`--surface`), full height,
 // padded by the top inset plus 12 and the bottom inset. A dialog, so focus is trapped, Escape closes, and focus goes back to the
 // avatar that opened it. A tap on the scrim or a swipe left closes it. Inside, top to bottom: the 48 avatar, "Signed in as",
-// the handle, rows 52 tall at 17/500 (the `AccountMenu`'s items in its order, without API docs, which the footer keeps), space,
-// "Dark theme" with a 44 by 26 switch, and "Sign out" in Danger. No icons beside the rows.
+// the handle, rows 52 tall at 17/500 (Your profile, Your library, Drafts, Messages, Settings, then API docs, which the account
+// menu on a desktop also holds), space, "Dark theme" with a 44 by 26 switch, and "Sign out" in Danger. No icons beside the rows.
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
@@ -168,10 +168,11 @@ export function AccountDrawer({ open, onOpenChange, viewer, dark, onToggleDark, 
             <span style={{ fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>@{viewer.handle}</span>
           </div>
           <LinkRow to={profileHref} current={pathname === profileHref || pathname === SITE_NAV.profile} onGo={close}>Your profile</LinkRow>
-          <LinkRow to={SITE_NAV.drafts} current={pathname === SITE_NAV.drafts} onGo={close}>Your drafts</LinkRow>
           <LinkRow to={SITE_NAV.library} current={pathname === SITE_NAV.library} onGo={close}>Your library</LinkRow>
+          <LinkRow to={SITE_NAV.drafts} current={pathname === SITE_NAV.drafts} onGo={close}>Drafts</LinkRow>
           <LinkRow to="/messages" current={pathname === "/messages"} onGo={close}>Messages</LinkRow>
           <LinkRow to={SITE_NAV.settings} current={pathname.startsWith(SITE_NAV.settings)} onGo={close}>Settings</LinkRow>
+          <LinkRow to="/api-docs" current={pathname === "/api-docs"} onGo={close}>API docs</LinkRow>
           <div style={{ flex: 1 }} />
           <div style={{ ...ROW, cursor: "default", justifyContent: "space-between", paddingRight: 8 }}>
             <span>Dark theme</span>

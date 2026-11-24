@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AccountDrawer, DRAWER_SWIPE_PX } from "./AccountDrawer";
 import { MobileHeader } from "./MobileHeader";
 import { NEW_ITEMS, NewSheet } from "./NewSheet";
+import { __resetPageBar, useRegisterPageBar, type PageBar } from "./phoneBarRegistry";
+import { PhoneSearchPage } from "./PhoneSearchPage";
 
 // jsdom has no PointerEvent, so fireEvent.pointerMove would drop clientX.
 class TestPointerEvent extends MouseEvent {}
@@ -21,9 +23,25 @@ const authState: { isLoggedIn: boolean; profile: unknown; user: unknown; signOut
 };
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
 
+vi.mock("@/lib/build/gallery", () => ({
+  listGallery: vi.fn(async () => ({
+    builds: [
+      { id: "b1", slug: "invoice-triage", title: "Invoice triage", outcome: "Sorts invoices" },
+      { id: "b2", slug: "invoice-bot", title: "Invoice bot", outcome: null },
+    ],
+    total: 2,
+  })),
+}));
+vi.mock("@/lib/search/phoneSearch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/search/phoneSearch")>()),
+  searchTopics: vi.fn(async () => ({ rows: [{ id: "t1", title: "How do I route invoices?", by: "@kit" }], total: 1 })),
+  searchPeople: vi.fn(async () => ({ rows: [1, 2, 3].map((n) => ({ id: `p${n}`, handle: `inv${n}`, name: `Invoice Person ${n}`, avatarUrl: null })), total: 3 })),
+}));
+
 const viewer = { id: "u1", name: "Ada Lovelace", handle: "ada" };
 
 beforeEach(() => {
+  __resetPageBar();
   authState.isLoggedIn = false;
   authState.profile = null;
   authState.user = null;
@@ -39,6 +57,91 @@ const bar = (path: string) =>
       </ThemeProvider>
     </QueryClientProvider>,
   );
+
+function Page({ bar }: { bar: PageBar }) {
+  useRegisterPageBar(bar);
+  return null;
+}
+const barWith = (path: string, page: PageBar) =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <ThemeProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <MobileHeader />
+          <Page bar={page} />
+        </MemoryRouter>
+      </ThemeProvider>
+    </QueryClientProvider>,
+  );
+
+describe("what a page tells the bar", () => {
+  it("More opens a sheet: the page's rows, then Copy link, then its danger rows last", async () => {
+    const rebuild = vi.fn();
+    barWith("/b2/invoice-triage", { more: [{ label: "Report", tone: "danger", onSelect: vi.fn() }, { label: "Rebuild", onSelect: rebuild }] });
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const sheet = await screen.findByTestId("more-sheet");
+    expect(within(sheet).getAllByRole("button").map((b) => b.textContent)).toEqual(["Rebuild", "Copy link", "Report"]);
+    expect(within(sheet).getByRole("button", { name: "Report" }).getAttribute("data-tone")).toBe("danger");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Rebuild" }));
+    expect(rebuild).toHaveBeenCalledTimes(1);
+  });
+
+  it("a link row goes to its page", async () => {
+    barWith("/b2/invoice-triage", { more: [{ label: "Lineage", to: "/b2/invoice-triage/lineage" }] });
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const sheet = await screen.findByTestId("more-sheet");
+    expect(within(sheet).getByRole("link", { name: "Lineage" }).getAttribute("href")).toBe("/b2/invoice-triage/lineage");
+  });
+
+  it("Followers shows the person's name, and a topic its space's name", () => {
+    barWith("/profile/ada/followers", { title: "Ada Lovelace" });
+    expect(screen.getByText("Ada Lovelace")).toBeTruthy();
+    expect(screen.queryByText("Followers")).toBeNull();
+  });
+
+  it("Rebuild's back names the source build", () => {
+    barWith("/rebuild/invoice-triage", { backLabel: "Back to Invoice triage", backTo: "/b2/invoice-triage" });
+    expect(screen.getByRole("button", { name: "Back to Invoice triage" })).toBeTruthy();
+  });
+
+  it("onboarding shows Skip once the page registers it, and Skip calls the page", () => {
+    const skip = vi.fn();
+    barWith("/onboarding", { skip });
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(skip).toHaveBeenCalledTimes(1);
+  });
+
+  it("Messages draws a gear only in an open conversation, and it opens that conversation's settings", () => {
+    const settings = vi.fn();
+    barWith("/messages/t1", { settings });
+    fireEvent.click(screen.getByRole("button", { name: "Conversation settings" }));
+    expect(settings).toHaveBeenCalledTimes(1);
+  });
+
+  it("the Messages list has no gear", () => {
+    bar("/messages");
+    expect(screen.queryByRole("button", { name: "Conversation settings" })).toBeNull();
+  });
+});
+
+describe("the search page", () => {
+  it("groups results by kind with the count as the heading: builds, topics and people", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <PhoneSearchPage open onOpenChange={vi.fn()} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.change(await screen.findByRole("searchbox", { name: "Search builds" }), { target: { value: "invoice" } });
+    expect(await screen.findByRole("heading", { name: "2 builds" }, { timeout: 3000 })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "1 topic" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "3 people" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Invoice triage/ }).getAttribute("href")).toBe("/b2/invoice-triage");
+    expect(screen.getByRole("link", { name: /How do I route invoices\?/ }).getAttribute("href")).toBe("/openbuilds/topics/t1");
+    expect(screen.getByRole("link", { name: /Invoice Person 2/ }).getAttribute("href")).toBe("/profile/inv2");
+  });
+});
 
 describe("the top bar container", () => {
   it("signed out on Home: a Sign in ghost button instead of the avatar, the logo, Search", () => {

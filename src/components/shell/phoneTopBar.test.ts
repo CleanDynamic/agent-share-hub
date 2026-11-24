@@ -48,9 +48,9 @@ describe("phoneBarFor (prompt 19's table)", () => {
   });
 
   it("the editor, Start a build and Rebuild: back, the logo, More", () => {
-    expect(phoneBarFor("/compose/abc")).toEqual({ left: "back", centre: logo, right: "more", backLabel: "Back to Drafts" });
+    expect(phoneBarFor("/compose/abc")).toEqual({ left: "back", centre: logo, right: "more", backLabel: "Back to Drafts", backTo: "/drafts" });
     expect(phoneBarFor("/compose/new")).toMatchObject({ left: "back", centre: logo, right: "more" });
-    expect(phoneBarFor("/rebuild/invoice-triage")).toEqual({ left: "back", centre: logo, right: "more" });
+    expect(phoneBarFor("/rebuild/invoice-triage")).toEqual({ left: "back", centre: logo, right: "more", backTo: "/builds" });
   });
 
   it("onboarding: nothing at the left or centre, Skip at the right; consent: close", () => {

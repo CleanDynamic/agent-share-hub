@@ -22,6 +22,8 @@ import { mappedHarnesses } from "@/lib/build/harnessMap";
 import { useRef, useState, type CSSProperties, type ReactNode, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
+import { useToast } from "@/hooks/use-toast";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
@@ -108,6 +110,8 @@ export interface BuildViewProps {
   classification?: ReactNode;
   /** UX-07 P2: Discussed in OpenBuilds, drawn after the classification. Absent: nothing. */
   discussed?: ReactNode;
+  /** Prompt 19: what the phone's More sheet adds to the build's actions: the maker's Edit, and Report for everyone else. */
+  bar?: { editHref?: string; onReport?: () => void };
 }
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
@@ -1003,8 +1007,26 @@ function PhoneBuild(props: BuildViewProps) {
   );
 }
 
+/** Prompt 19: the phone's top bar More sheet: the build's actions, then the maker's Edit and Report. */
+function useBuildMore({ actions, bar }: BuildViewProps) {
+  const { toast } = useToast();
+  useRegisterPageBar({
+    more: [
+      { label: "Rebuild", onSelect: actions.onRebuild },
+      { label: "Copy for AI", onSelect: () => void actions.onCopyForAI().then((ok) => ok && toast({ title: DONE.copied })) },
+      { label: "Download", onSelect: actions.onDownload },
+      ...(actions.onDownloadSetup ? [{ label: DOWNLOAD_COPY.setup, onSelect: () => actions.onDownloadSetup?.() }] : []),
+      { label: "Lineage", to: actions.lineageTo },
+      ...(actions.compareTo ? [{ label: "Compare with the original", to: actions.compareTo }] : []),
+      ...(bar?.editHref ? [{ label: "Edit build", to: bar.editHref }] : []),
+      ...(bar?.onReport ? [{ label: "Report", tone: "danger" as const, onSelect: bar.onReport }] : []),
+    ],
+  });
+}
+
 export function BuildView(props: BuildViewProps) {
   const phone = useIsPhone();
+  useBuildMore(props);
   // CA-03 P8: the line under the title, from what the build holds.
   const kind = props.hero.summary ?? (props.steps ? buildSummary(props.steps.steps.map((entry) => entry.step)) : "");
   // CA-13 P12: the patterns it uses, worked out from the build, join the facts line: "Uses a router · Long-running agent".

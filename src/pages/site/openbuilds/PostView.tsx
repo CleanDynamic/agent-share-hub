@@ -9,6 +9,7 @@
    The side panel: the space as a section headed by its fact (`412 members`), then the builds in the post's replies, headed
    by their count. */
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { PageEmpty } from "@/components/pagestate/PageState";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -167,6 +168,15 @@ function SideColumn({ space, builds }: PostViewProps["side"]) {
 
 export function PostView(view: PostViewProps) {
   const phone = useIsPhone();
+  // Prompt 19: the top bar names the topic's space; its More sheet holds the topic's actions (Copy link and Share are the bar's own).
+  useRegisterPageBar({
+    title: view.side.space?.name,
+    more: [
+      ...(view.onMessage ? [{ label: view.onMessage.label, onSelect: view.onMessage.onSelect }] : []),
+      ...(view.onReport ? [{ label: "Report", tone: "danger" as const, onSelect: view.onReport }] : []),
+      ...(view.onBlock ? [{ label: view.onBlock.label, tone: "danger" as const, onSelect: view.onBlock.onSelect }] : []),
+    ],
+  });
   const items = [{ value: "thread" as const, label: threadLabel(view.replies) }, ...(view.builds > 0 ? [{ value: "wall" as const, label: wallLabel(view.builds) }] : [])];
   const tab: PostTab = view.builds > 0 ? view.tab : "thread";
   const box = view.replyBox && view.replyBox.at !== "foot" ? { at: view.replyBox.at, node: view.replyBox.node } : undefined;

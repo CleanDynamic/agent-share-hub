@@ -5,6 +5,15 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
+/** One row of the More sheet. Give `to` for a link or `onSelect` for an action. */
+export interface MoreItem {
+  label: string;
+  to?: string;
+  onSelect?: () => void;
+  tone?: "danger";
+  disabled?: boolean;
+}
+
 export interface PageBar {
   /** Replaces the table's centre title (the person's name on Followers, the space's name on a topic). */
   title?: string;
@@ -12,8 +21,10 @@ export interface PageBar {
   backLabel?: string;
   /** Where Back goes when there is no history to step back through. */
   backTo?: string;
-  /** The page's More menu. Without it the bar draws no More. */
-  more?: () => void;
+  /** What the page adds to the bar's More sheet, above the bar's own Copy link and Share. */
+  more?: readonly MoreItem[];
+  /** Messages' gear: the open conversation's settings. */
+  settings?: () => void;
   /** Activity's write. `disabled` while nothing is unread. */
   markAll?: { run: () => void; disabled: boolean };
   /** Onboarding's Skip. */
@@ -38,14 +49,17 @@ export function usePageBar(): PageBar {
 export function useRegisterPageBar(bar: PageBar | null): void {
   const latest = useRef(bar);
   latest.current = bar;
-  const key = bar ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, !!bar.more, bar.markAll?.disabled, !!bar.markAll, !!bar.skip]) : "";
+  const key = bar
+    ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, bar.more?.map((item) => [item.label, item.to, item.tone, item.disabled, !!item.onSelect]), !!bar.settings, bar.markAll?.disabled, !!bar.markAll, !!bar.skip])
+    : "";
   useEffect(() => {
     if (!latest.current) return;
     const own: PageBar = {
       title: latest.current.title,
       backLabel: latest.current.backLabel,
       backTo: latest.current.backTo,
-      more: latest.current.more ? () => latest.current?.more?.() : undefined,
+      more: latest.current.more?.map((item, index) => ({ ...item, onSelect: item.onSelect ? () => latest.current?.more?.[index]?.onSelect?.() : undefined })),
+      settings: latest.current.settings ? () => latest.current?.settings?.() : undefined,
       markAll: latest.current.markAll ? { disabled: latest.current.markAll.disabled, run: () => latest.current?.markAll?.run() } : undefined,
       skip: latest.current.skip ? () => latest.current?.skip?.() : undefined,
     };

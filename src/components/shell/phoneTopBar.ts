@@ -18,6 +18,8 @@ export interface PhoneBarSpec {
   right: BarRight;
   /** The back control's accessible name when it is not plain "Back". */
   backLabel?: string;
+  /** Where Back goes when the page was opened directly and there is no history to step back through. */
+  backTo?: string;
 }
 
 const logo: BarCentre = { kind: "logo" };
@@ -39,8 +41,8 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
   if (path === "/auth/callback" || path.startsWith("/oauth") || path.startsWith("/consent")) return { left: "close", centre: none, right: "none" };
 
   // Editor, Start a build, Rebuild.
-  if (path.startsWith("/rebuild/")) return { left: "back", centre: logo, right: "more" };
-  if (path === SITE_NAV.create || path.startsWith("/compose")) return { left: "back", centre: logo, right: "more", backLabel: "Back to Drafts" };
+  if (path.startsWith("/rebuild/")) return { left: "back", centre: logo, right: "more", backTo: SITE_NAV.gallery };
+  if (path === SITE_NAV.create || path.startsWith("/compose")) return { left: "back", centre: logo, right: "more", backLabel: "Back to Drafts", backTo: SITE_NAV.drafts };
 
   // A build, its Lineage and Compare.
   if (path.startsWith("/b2/")) {
