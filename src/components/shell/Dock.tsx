@@ -105,7 +105,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
               <span
                 aria-hidden="true"
                 data-ui="nav-mark"
-                style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
+                style={{ position: "absolute", left: 10, right: 10, bottom: 0, height: 3, borderRadius: 2, background: t.tabBar, boxShadow: `0 1px 0 ${t.tabBarEdge}` }}
               />
             )}
             <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />

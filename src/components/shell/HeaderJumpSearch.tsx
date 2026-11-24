@@ -17,6 +17,9 @@ export function HeaderJumpSearch({ signedIn, width = 272, initialValue = "", onS
   const [value, setValue] = useState(initialValue);
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
+  /* Synth 16: a keyboard focus rings the well (2px --focus-ring, 2px off), the one ring every control shows; the input
+     inside it draws none, so the ring is read where it is drawn. */
+  const [keyboard, setKeyboard] = useState(false);
   const [active, setActive] = useState(-1);
   useEffect(() => setValue(initialValue), [initialValue]);
   useEffect(() => {
@@ -43,9 +46,9 @@ export function HeaderJumpSearch({ signedIn, width = 272, initialValue = "", onS
   return (
     <div ref={host} style={{ position: "relative", flexShrink: 1, minWidth: 140 }}>
       <form role="search" aria-label="Search builds" onSubmit={(event) => { event.preventDefault(); if (active >= 0) choose(active); else if (tidy) { onSubmit(tidy); setOpen(false); input.current?.blur(); } }} style={{ margin: 0 }}>
-        <label data-ui="header-jump-search" style={{ display: "flex", alignItems: "center", gap: 8, width: focused ? 460 : width, maxWidth: "calc(100vw - 160px)", height: 40, padding: "0 8px 0 14px", boxSizing: "border-box", borderRadius: r.field, background: t.surface, boxShadow: `inset 0 0 0 1px ${focused ? t.brandAccent : t.fieldEdge}`, fontSize: 13 }}>
+        <label data-ui="header-jump-search" style={{ display: "flex", alignItems: "center", gap: 8, width: focused ? 460 : width, maxWidth: "calc(100vw - 160px)", height: 40, padding: "0 8px 0 14px", boxSizing: "border-box", borderRadius: r.field, background: t.surface, boxShadow: `inset 0 0 0 1px ${focused ? t.brandAccent : t.fieldEdge}`, fontSize: 13, ...(focused && keyboard ? { outline: `2px solid ${t.focusRing}`, outlineOffset: 2 } : null) }}>
           <Search size={16} aria-hidden="true" style={{ flexShrink: 0, color: t.text2 }} />
-          <input ref={input} role="combobox" type="search" aria-label="Search builds" aria-autocomplete="list" aria-expanded={open} aria-controls={`${id}-list`} aria-activedescendant={open && active >= 0 ? `${id}-${active}` : undefined} maxLength={SEARCH_MAX} placeholder="Search" className="placeholder:text-[color:var(--label)] !bg-transparent !border-0 focus-visible:!outline-none" value={value} onChange={(event) => { setValue(event.target.value); setOpen(true); setActive(-1); }} onFocus={() => { setFocused(true); setOpen(true); }} onBlur={() => setFocused(false)} onKeyDown={(event) => {
+          <input ref={input} role="combobox" type="search" aria-label="Search builds" aria-autocomplete="list" aria-expanded={open} aria-controls={`${id}-list`} aria-activedescendant={open && active >= 0 ? `${id}-${active}` : undefined} maxLength={SEARCH_MAX} placeholder="Search" className="placeholder:text-[color:var(--label)] !bg-transparent !border-0 focus-visible:!outline-0" value={value} onChange={(event) => { setValue(event.target.value); setOpen(true); setActive(-1); }} onFocus={(event) => { setFocused(true); setKeyboard(event.currentTarget.matches(":focus-visible")); setOpen(true); }} onBlur={() => { setFocused(false); setKeyboard(false); }} onKeyDown={(event) => {
             if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setOpen(true); setActive((previous) => Math.max(0, Math.min(options.length - 1, previous + (event.key === "ArrowDown" ? 1 : -1)))); }
             if (event.key === "Escape") { event.preventDefault(); if (open || value) { setValue(""); setOpen(false); setActive(-1); } else input.current?.blur(); }
           }} style={{ minWidth: 0, width: "100%", background: "transparent", outline: "none", border: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text }} />

@@ -160,7 +160,7 @@ describe("phone chrome under the refined look", () => {
     expect(head).not.toContain("backdrop-filter");
   });
 
-  it("the dock is a --surface bar with a --surface-border top edge and control tiles, no glass, names kept", () => {
+  it("the dock is a --surface bar of Raised tiles, no glass, the current one with the tab bar, names kept", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
     expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
       "Home",
@@ -173,7 +173,9 @@ describe("phone chrome under the refined look", () => {
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
     expect(html).toContain("background:var(--surface)");
     expect(html).toContain("background:var(--control-on)");
-    expect(html).toContain("border:1px solid var(--control-border)");
+    // Synth 16: the current tile's bar is the header tab's: Mint (Terminal Green on light) with the 1px Ink line.
+    expect(html).toContain("background:var(--tab-bar);box-shadow:0 1px 0 var(--tab-bar-edge)");
+    expect(html).not.toContain("nav-lamp-glow");
     expect(html).not.toContain("backdrop-filter");
     expect(html).not.toContain("var(--dock)");
   });

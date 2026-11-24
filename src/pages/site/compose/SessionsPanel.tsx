@@ -369,7 +369,7 @@ function SessionSection({
         <div id={listId} style={{ paddingTop: 2 }}>
           {session.promptsError ? (
             /* G30: the shared failed state; the read's own error is reported by the query cache. */
-            <div style={{ padding: "6px 6px 7px" }}>
+            <div style={{ padding: "6px 6px 8px" }}>
               <PageState read={readOf("error", undefined, () => onRetryPrompts(session.id), PROMPTS_FAILED)} thing="these prompts" region="Prompts" skeleton={null}>
                 {() => null}
               </PageState>
@@ -380,7 +380,7 @@ function SessionSection({
               <Skeleton height={33} radius={10} />
             </LoadingRegion>
           ) : session.prompts.length === 0 ? (
-            <p style={{ margin: 0, padding: "4px 6px 7px", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>No prompts in this session.</p>
+            <p style={{ margin: 0, padding: "4px 6px 8px", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>No prompts in this session.</p>
           ) : (
             <ul style={{ margin: 0, padding: "0 0 4px", display: "flex", flexDirection: "column", gap: 2 }}>
               {session.prompts.map((prompt) => (

@@ -28,34 +28,23 @@ afterEach(() => {
 });
 
 const blocks = () => screen.getAllByTestId("loading-blocks");
-const layersOf = (block: HTMLElement) => Array.from(block.children) as HTMLElement[];
-/** A layer's rows as text. */
-const linesOf = (layer: HTMLElement) => Array.from(layer.children).map((row) => row.textContent ?? "");
 
 describe("the cell", () => {
-  it("fills a box with 8 by 12 cells: 10 across and 3 down in 80 by 36", () => {
+  it("keeps a box of 8 by 12 cells: 10 across and 3 down in 80 by 36, as a shape in the dot field (Synth 06)", () => {
     render(<LoadingBlocks kind="box" rows={3} width={80} />);
     const block = blocks()[0];
     expect(block.style.width).toBe("80px");
     expect(block.style.height).toBe("36px");
     expect(block.getAttribute("data-cols")).toBe("10");
     expect(block.getAttribute("data-rows")).toBe("3");
-    // Every layer is three lines of ten characters, eight to the cell.
-    for (const layer of layersOf(block)) {
-      expect(linesOf(layer)).toHaveLength(3);
-      for (const line of linesOf(layer)) expect(line).toHaveLength(10);
-      expect(layer.style.lineHeight).toBe("12px");
-      expect(layer.style.fontSize).toBe("11px");
-      expect(layer.getAttribute("style")).toContain("letter-spacing: calc(8px - 1ch)");
-    }
+    expect(block.getAttribute("aria-hidden")).toBe("true");
   });
 
-  it("is in the data face at 11 in the disabled text colour", () => {
-    // jsdom drops a var() colour from the DOM, so the paint is read from the markup.
+  it("draws no characters: the field paints the dots, so there is no text to read or to select", () => {
     const html = renderToStaticMarkup(<LoadingBlocks kind="line" width={8} />);
-    expect(html).toContain("color:var(--text-disabled)");
-    expect(html).toContain("var(--font-data");
-    expect(html).toContain("font-size:11px");
+    expect(html).not.toContain("var(--font-data");
+    expect(screen.queryAllByTestId("loading-blocks").every((block) => (block.textContent ?? "") === "")).toBe(true);
+    expect(html).toContain("user-select:none");
   });
 
   it("makes a line one row whatever rows says", () => {

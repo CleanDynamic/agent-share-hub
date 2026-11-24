@@ -133,11 +133,10 @@ export function PartViewer<V extends string = string>({
             paddingLeft: phone ? 10 : 12,
             fontFamily: FIGTREE,
             fontSize: 13,
-            letterSpacing: ".08em",
             color: t.text2,
           }}
         >
-          PART {n}
+          Part {n}
         </div>
         <div
           style={{

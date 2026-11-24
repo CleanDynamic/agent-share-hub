@@ -45,7 +45,7 @@ describe("the List", () => {
   it("draws a coloured session's line round its head and tiles, with room inside it only then", () => {
     const { container } = inRouter(createElement(BuildList, shapeListProps("one-sitting", source)));
     const coloured = container.querySelector(`[data-session-colour="${LINKS_COLOURS.session}"]`) as HTMLElement;
-    expect(coloured.style.border).toBe(`1px solid ${rgb(LINKS_COLOURS.session)}`);
+    expect(coloured.style.border).toBe(`1.5px solid ${rgb(LINKS_COLOURS.session)}`); // Synth 16: maker colours are 1.5px
     expect(coloured.style.borderRadius).toBe("12px");
     expect(coloured.style.padding).toBe("12px");
     expect(within(coloured).getByRole("group", { name: /^Session 2/ })).toBeTruthy();
@@ -121,9 +121,10 @@ it("the build page draws the same tiles and session line, and no colour button",
   const { title: _t, outcome: _o, ...view } = buildStepsFixture("links");
   const { container } = render(createElement(StepsList, { view, phone: false, announce: () => undefined }));
   const card = container.querySelector('[data-testid="step-card"][data-step="2"]') as HTMLElement;
-  expect(card.style.borderTopColor.toLowerCase()).toBe(rgb(LINKS_COLOURS.prompt));
+  // Synth 16: no hairline between rows; a coloured step keeps a 1.5px edge in its colour along its top.
+  expect(card.style.boxShadow.toLowerCase()).toMatch(new RegExp(`inset 0(px)? 1\\.5px 0(px)? (${LINKS_COLOURS.prompt.toLowerCase()}|${rgb(LINKS_COLOURS.prompt).replace(/[()]/g, "\\$&")})`));
   const session = container.querySelector(`[data-session-colour="${LINKS_COLOURS.session}"]`) as HTMLElement;
-  expect(session.style.border).toBe(`1px solid ${rgb(LINKS_COLOURS.session)}`);
+  expect(session.style.border).toBe(`1.5px solid ${rgb(LINKS_COLOURS.session)}`);
   expect(container.querySelector('[data-testid="colour-button"]')).toBeNull();
   expect(LINKS_S2).toBeTruthy();
 });

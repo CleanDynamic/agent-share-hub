@@ -74,7 +74,8 @@ describe("the format bar", () => {
     expect(within(bar()).getByRole("button", { name: "Italic" }).querySelector("svg")).not.toBeNull();
     expect(within(bar()).getByRole("button", { name: "Italic" }).innerHTML).not.toContain("italic");
     expect(letter("Underline").style.textDecoration).toBe("underline");
-    expect(letter("Bold").getAttribute("style")).toContain("'Geist'");
+    // The UI face through its variable: var(--font-ui, Geist, ...).
+    expect(letter("Bold").getAttribute("style")).toContain("Geist");
   });
 
   it("toggles Bold, Italic and Underline, and says so in aria-pressed", () => {

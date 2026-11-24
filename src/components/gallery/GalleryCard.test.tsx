@@ -263,7 +263,7 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
       </MemoryRouter>,
     );
 
-  it("keeps the order: author row, the post, the build line with its plaque", () => {
+  it("keeps the order: author row, the post, the build line, and no plaque", () => {
     const { container } = renderRow(
       build({ nodes: [node({ type: "prompt" })] as never }),
     );
@@ -271,7 +271,7 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
     expect(order.every(Boolean)).toBe(true);
     expect(order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(container.querySelector('[data-card-part="plaque"]')).not.toBeNull();
+    expect(container.querySelector('[data-card-part="plaque"]')).toBeNull();
   });
 
   it("puts the maker on top with a link to the profile, and links the build from its title", () => {
@@ -285,10 +285,9 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
     expect(screen.getByTestId("feed-build-title")).toHaveAttribute("tabindex", "-1");
   });
 
-  it("says what it was made with in marks, not words", () => {
+  it("draws no tool marks beside the maker (Synth: no tool or harness logos)", () => {
     renderRow(build());
-    expect(screen.getByRole("img", { name: "Made with Claude" })).toBeInTheDocument();
-    expect(screen.queryByText(/made with/i)).toBeNull();
+    expect(screen.queryByRole("img", { name: /^Made with/ })).toBeNull();
   });
 
   it("lets the plaque speak for the record it is handed, and draws no lamp above the item", () => {

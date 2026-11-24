@@ -474,7 +474,7 @@
   /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
      in semantics.ts; css-parity.test.ts holds the two together. */
   --backdrop: var(--frame);
-  --label: #858C87;
+  --label: #8C938E;
   --on-text: #04140B;
   --hairline: #1B1F1C;
   --header: transparent;

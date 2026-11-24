@@ -38,11 +38,12 @@ describe("Add › Check", () => {
     open();
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Test of part of the build");
-    expect([...dialog.querySelectorAll("label")].map((label) => label.textContent).slice(0, 2)).toEqual(["Test description", "Pass criteria"]);
+    // Synth 06: each text box carries its own "Title · optional" label; the questions come in this order.
+    expect([...dialog.querySelectorAll("label")].map((label) => label.textContent).filter((text) => text !== "Title · optional").slice(0, 2)).toEqual(["Test description", "Pass criteria"]);
     expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(2);
     expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
     expect(within(dialog).getByText("passed out of")).toBeTruthy();
-    expect(screen.getByTestId("optional-count").textContent).toBe("14 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("14 optional details");
     expect(fieldNames()).toEqual([
       "Test cases",
       "Failure notes",

@@ -182,11 +182,12 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.getAllByRole("alert")).toHaveLength(1);
   });
 
-  it("Busy this week: the meta, a Join control, hidden when empty", () => {
+  it("Busy this week: no subtitle, a Join control, hidden when empty", () => {
     atWidth(1440);
     const { unmount } = draw();
     const column = screen.getByRole("region", { name: "Busy this week" });
-    expect(within(column).getByText("Spaces with the most new posts")).toBeInTheDocument();
+    // Synth 06: a section head has no subtitle under it.
+    expect(within(column).queryByText("Spaces with the most new posts")).toBeNull();
     expect(within(column).getByText("Made by @sam · 412 members")).toBeInTheDocument();
     expect(within(column).getByRole("button", { name: "Join Evals" })).toBeInTheDocument();
     unmount();

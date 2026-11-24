@@ -5,6 +5,7 @@
 //
 // `MobileHeaderView` is pure (callbacks in, a bar out); `MobileHeader` owns the two sheets, the route and the account.
 
+import { SITE_NAME } from "@/lib/site";
 import { Bell, Menu, Search } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
 import { r } from "@/lib/theme/radius";
@@ -63,7 +64,7 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
         background: t.frame,
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+      <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH} />
       </FrameLink>
       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>

@@ -677,7 +677,8 @@ function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { 
         whiteSpace: "nowrap",
         ...type(textStep.meta, 400, state.hovered ? t.text : t.text2),
         cursor: item.disabled ? "default" : "pointer",
-        ...(current ? { background: t.controlOn, borderColor: t.segOnBorder, color: t.text, boxShadow: "none" } : null),
+        /* Synth 16: the chosen one is Ink with White words (the pack's chosen pill), carried by its fill, not an edge. */
+        ...(current ? { background: t.action, color: t.onAction, fontWeight: 600, boxShadow: "none" } : null),
         ...(item.disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
@@ -964,7 +965,8 @@ export const OPTIONAL = {
     alignItems: "center",
     justifyContent: "flex-start",
     gap: space[2],
-    minHeight: 40,
+    /* Synth 16: the touch floor on a phone. */
+    minHeight: phone ? size.touch : 40,
     padding: `${space[2]}px ${inset}px`,
     background: hovered ? hoverFill() : "transparent",
   }),

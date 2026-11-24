@@ -19,7 +19,7 @@ import {
   TYPE_COLORS,
   TYPE_COLOR_FALLBACK,
 } from "./content-types";
-import { CATEGORIES, categoryFill, normaliseCategory } from "./theme/category";
+import { CATEGORIES, categoryColour, categoryFill, normaliseCategory } from "./theme/category";
 
 /**
  * The three tokens a `TYPE_COLORS` class string spends, as [background, text,
@@ -41,7 +41,9 @@ function expectedTokens(category: string): string[] {
   const fill = categoryFill(category);
   const bg = tokensOf(fill.background)[0];
   const fg = tokensOf(fill.color)[0];
-  return [bg, fg, fg];
+  // Synth 16: the words are the ink; the border keeps the category's hue.
+  const hue = tokensOf(categoryColour(category))[0];
+  return [bg, fg, hue];
 }
 
 /** Which utility each token sits in, so a swapped pair fails rather than passes. */
@@ -110,7 +112,7 @@ describe("the legacy badge mapping table", () => {
     expect(tokensOf(TYPE_COLOR_FALLBACK)).toEqual(expectedTokens(""));
     expect(tokensOf(TYPE_COLOR_FALLBACK)).toEqual([
       "--cat-fallback-fill",
-      "--cat-fallback",
+      "--text",
       "--cat-fallback",
     ]);
   });

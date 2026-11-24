@@ -119,7 +119,7 @@ describe("EmptyState", () => {
   it("makes the action 44 tall on a phone, the touch floor", () => {
     stubMedia(["max-width: 767px"]);
     render(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick: () => {} }} />);
-    expect(screen.getByRole("button", { name: "Enter the gallery" }).style.height).toBe("44px");
+    expect(screen.getByRole("button", { name: "Enter the gallery" }).style.minHeight).toBe("44px");
   });
 });
 
@@ -192,6 +192,6 @@ describe("ErrorState", () => {
   it("makes the retry 44 tall on a phone, the touch floor", () => {
     stubMedia(["max-width: 767px"]);
     render(<ErrorState panel="The wall" onRetry={() => {}} />);
-    expect(screen.getByRole("button", { name: "Try again" }).style.height).toBe("44px");
+    expect(screen.getByRole("button", { name: "Try again" }).style.minHeight).toBe("44px");
   });
 });
