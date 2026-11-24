@@ -9,6 +9,8 @@
 import { PriorityImageScope } from "@/components/post/media/priorityImage";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
+import { PhoneFeedBones } from "./PhoneHomeLoading";
+
 import { Avatar } from "@/components/brand/Avatar";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { MobileIcon } from "@/components/brand/MobileIcon";
@@ -417,42 +419,6 @@ function TopicPost({ item, actions }: { item: Extract<HomeFeedItem, { kind: "top
 /* ═════════ loading ═════════ */
 
 /** A post while the feed loads: the avatar, two lines of words, a picture, the actions. In the dot field. */
-function PostBones() {
-  return (
-    <div style={{ ...ITEM, display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12 }}>
-      <Skeleton width={40} height={40} radius={9} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-        <Skeleton width="45%" height={20} radius={4} />
-        <Skeleton width="85%" height={20} radius={4} />
-        <Skeleton height={190} radius={16} />
-        <Skeleton height={20} radius={4} />
-      </div>
-    </div>
-  );
-}
-
-export function PhoneFeedBones({ count = 2 }: { count?: number }) {
-  return (
-    <LoadingRegion what="the feed" data-testid="home-feed-loading">
-      {Array.from({ length: count }, (_, index) => (
-        <PostBones key={index} />
-      ))}
-    </LoadingRegion>
-  );
-}
-
-/** The route's loading state on a phone: the tabs' row, then post skeletons, no tiles. */
-export function PhoneHomeLoading() {
-  useColumnPanels(true);
-  return (
-    <div data-testid="home-view" data-layout="phone" style={BOTTOM}>
-      <Title />
-      <div style={{ height: PHONE_TAB }} />
-      <PhoneFeedBones count={3} />
-    </div>
-  );
-}
-
 /* ═════════ the page ═════════ */
 
 /** The next page loads when the reader is two screens from the end. */

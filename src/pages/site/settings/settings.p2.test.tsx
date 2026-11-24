@@ -119,15 +119,15 @@ describe("on a phone", () => {
 });
 
 describe("the three entry points", () => {
-  it("the account menu has Settings between Drafts and Sign out", () => {
+  it("the account menu has Settings after the reader's own pages and Messages, before API docs and Sign out (SV-26)", () => {
     render(
       <MemoryRouter>
         <AccountMenu viewer={{ id: "u1", name: "Ada", handle: "ada", avatarUrl: null }} onSignOut={vi.fn()} defaultOpen />
       </MemoryRouter>,
     );
     const items = [...screen.getByRole("menu").querySelectorAll("a, button")];
-    expect(items.map((el) => el.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings", "Sign out"]);
-    expect(items[3].getAttribute("href")).toBe("/settings");
+    expect(items.map((el) => el.textContent)).toEqual(["Your profile", "Your drafts", "Your library", "Messages", "Settings", "API docs", "Sign out"]);
+    expect(items[4].getAttribute("href")).toBe("/settings");
   });
 
   it("Customise profile's Who sees group links to /settings/privacy", () => {

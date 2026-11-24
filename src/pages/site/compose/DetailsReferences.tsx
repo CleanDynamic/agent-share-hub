@@ -131,7 +131,6 @@ export function ColourReferences({ section, value, first = false, clamp }: { sec
     );
   }
   const { group } = section;
-  const ink = nameColourFor(group.colour, theme, "tile");
   return (
     <section data-testid="details-refs" data-state="group" aria-label={COPY.groupHead} style={frame}>
       <Head title={COPY.groupHead} sub={COPY.sharesWith(section.others)} />
@@ -139,7 +138,7 @@ export function ColourReferences({ section, value, first = false, clamp }: { sec
         <div data-testid="details-refs-panel" style={{ ...PANEL, boxShadow: `inset 3px 0 0 ${group.colour}` }}>
           <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <SquareSwatch colour={group.colour} size={10} />
-            <span data-testid="details-refs-name" style={{ ...words(textStep.body, 500, group.name ? ink : t.text2), ...ELLIPSIS }}>{group.name ?? COPY.noName}</span>
+            <span data-testid="details-refs-name" style={{ ...words(textStep.body, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{group.name ?? COPY.noName}</span>
             <span style={{ ...words(textStep.meta, 400, t.label), whiteSpace: "nowrap", flexGrow: 1 }}>{` · ${COPY.components(group.members.length)}`}</span>
             {value.onOpenGroup ? (
               <Button variant="secondary" size={32} fontSize={textStep.meta} onClick={() => value.onOpenGroup?.(group.id)} style={{ flexShrink: 0, ...BUTTON_PAD_SMALL_TEXT }}>

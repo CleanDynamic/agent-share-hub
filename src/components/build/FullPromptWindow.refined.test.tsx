@@ -89,35 +89,35 @@ describe("the refined window does what the window does", () => {
 });
 
 describe("the refined window as the board draws it", () => {
-  it("is the frame recipe (CA-15b): 640 wide, radius 12, overflow hidden, the header padded 20 20 18", () => {
+  it("is the frame recipe (CA-15b): 440 wide, radius 12, overflow hidden, the header padded 20 20 18", () => {
     open("p3");
     const dialog = screen.getByTestId("full-prompt-window");
-    expect(dialog.style.width).toBe("640px");
+    expect(dialog.style.width).toBe("440px");
     expect(dialog.style.borderRadius).toBe("var(--r-window)"); // S31
     expect(dialog.style.overflow).toBe("hidden");
     // F38: pinned at 48 from the top, with the same room under it.
     expect(dialog.style.maxHeight).toBe("calc(100dvh - 96px)");
   });
 
-  it("heads with the title, one grey line, and square 28 Previous, Next and Close", () => {
+  it("heads with the title, one grey line, and round 28 Previous, Next and Close", () => {
     open("p3");
     const line = screen.getByTestId("full-prompt-line");
     expect(line.style.fontSize).toBe("13px");
     for (const name of [/^Previous prompt/, /^Next prompt/, "Close"]) {
       const button = screen.getByRole("button", { name });
-      expect(button.style.width).toBe("32px"); // S6
-      expect(button.style.height).toBe("32px");
+      expect(button.style.width).toBe("28px"); // Synth 06: the modal's icon buttons
+      expect(button.style.height).toBe("28px");
     }
     expect(screen.getByRole("button", { name: "Rename prompt" })).toBeTruthy();
   });
 
-  it("puts the title in a field and the text in a 5-row area at 13/20 with no fade (CA-15b)", () => {
+  it("puts the title in a field and the text in a 5-row area at 15/20 with no fade (Synth 06: text boxes are 15)", () => {
     open("p3");
     const title = screen.getByLabelText("Title");
-    expect(title.style.height).toBe("32px");
+    expect(title.style.height).toBe("40px"); // Synth 06: fields are 40
     const text = screen.getByTestId("full-prompt-text");
     expect(text.style.height).toBe("120px");
-    expect(text.style.fontSize).toBe("13px");
+    expect(text.style.fontSize).toBe("15px");
     expect(text.style.lineHeight).toBe("20px");
     expect(screen.queryByTestId("full-prompt-fade")).toBeNull();
   });

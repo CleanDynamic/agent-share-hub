@@ -39,16 +39,17 @@ describe("OptionalSection (CA-28 P4)", () => {
     expect(row.tagName).toBe("BUTTON");
     expect(row.getAttribute("aria-expanded")).toBe("false");
     expect(row.getAttribute("aria-controls")).toBe(screen.getByTestId("optional-region").id);
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
-    expect(row.textContent).toContain("Optional");
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(row.textContent).toBe("2 optional details");
     expect(rows()).toHaveLength(0);
     expect(screen.queryByLabelText("Failure notes field")).toBeNull();
     expect(screen.getByTestId("optional-region").hidden).toBe(true);
   });
 
-  it("counts the fields that hold something: 'Optional · 2 fields · 1 filled'", () => {
+  it("names its fields ('2 optional details', Synth 06) and opens when one holds something", () => {
     section({ notesSummary: "The total showed 0.00" });
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields · 1 filled");
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
   });
 
   it("opens on a press and shows the fields directly: label, then the hint when there is one, then the input; no per-field row", () => {

@@ -127,7 +127,8 @@ describe("on the build page", () => {
     );
     const code = container.querySelector('[data-testid="step-card"][data-step="4"]') as HTMLElement;
     expect(labels(code)).toEqual(["Login flow"]);
-    expect(code.style.borderTopColor.toLowerCase()).toBe(rgb(REFS_COLOURS.login));
+    // Synth 16: the group's colour is the step's 1.5px top edge (no hairline between rows).
+    expect(code.style.boxShadow.toLowerCase()).toMatch(new RegExp(`1\\.5px 0(px)? (${REFS_COLOURS.login.toLowerCase()}|${rgb(REFS_COLOURS.login).replace(/[()]/g, "\\$&")})`));
     expect(labels(container.querySelector('[data-testid="step-card"][data-step="2"]') as HTMLElement)).toEqual([]);
     expect(labels(container.querySelector('[data-testid="step-card"][data-step="7"]') as HTMLElement)).toEqual([]);
     // A reader's label is a label, not a button.

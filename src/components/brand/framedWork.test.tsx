@@ -22,10 +22,14 @@ afterEach(() => document.documentElement.removeAttribute("data-theme"));
 describe("FramedWork", () => {
   it("is a raised object on Noon: white, the control edge, radius 4, padding 4, the picture on --well at radius 2", () => {
     document.documentElement.setAttribute("data-theme", "noon");
+    // Static markup takes the default room (Dusk, the dark pack), so the room is read on a client render.
+    const { container } = render(<FramedWork height={72}>x</FramedWork>);
+    const frame = container.querySelector<HTMLElement>('[data-ui="framed-work"]')!;
+    expect(frame.getAttribute("data-room")).toBe("noon");
+    expect(frame.style.borderRadius).toBe("4px");
+    expect(frame.style.padding).toBe("4px");
+    expect(frame.style.background).toBe("rgb(255, 255, 255)");
     const html = renderToStaticMarkup(<FramedWork height={72}>x</FramedWork>);
-    expect(html).toContain("border-radius:4px");
-    expect(html).toContain("padding:4px");
-    expect(html).toContain("background:#FFFFFF");
     expect(html).toContain("border:1px solid var(--control-border)");
     expect(html).toContain("background:var(--well)");
     expect(html).toContain("border-radius:2px");

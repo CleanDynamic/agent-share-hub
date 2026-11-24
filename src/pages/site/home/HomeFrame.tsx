@@ -21,7 +21,7 @@ import { useColumnPanels } from "@/components/shell/frameChrome";
 import { panelColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
-import { PhoneHomeLoading } from "./PhoneHome";
+import { PhoneHomeLoading } from "./PhoneHomeLoading";
 import { FIGTREE } from "@/lib/theme/type";
 
 /** The board's three columns show from 1101; the left goes below that, and the right joins the feed below 761. */

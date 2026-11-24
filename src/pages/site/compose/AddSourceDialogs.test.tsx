@@ -36,10 +36,10 @@ describe("Add › System prompt", () => {
     return props;
   };
 
-  it("is a 560-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
+  it("is a 440-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
     open();
     expect(screen.getByRole("dialog", { name: SYSTEM_PROMPT_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("440px");
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Instructions for several prompts");
     expect(status()).toBe("Required: Name, Text");
     expect(add().disabled).toBe(true);
@@ -132,10 +132,10 @@ describe("Add › Dataset", () => {
     return props;
   };
 
-  it("is a 560-wide dialog that asks for a name and a description", () => {
+  it("is a 440-wide dialog that asks for a name and a description", () => {
     open();
     expect(screen.getByRole("dialog", { name: DATASET_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("440px");
     expect(status()).toBe("Required: Name, Description");
     type("Name", "Tickets");
     expect(status()).toBe("Required: Description");
@@ -208,10 +208,10 @@ describe("Add › GitHub repository", () => {
   };
   const owner = (label: string) => fireEvent.click(screen.getByRole("radio", { name: label }));
 
-  it("is a 560-wide dialog that asks for a URL and an ownership", () => {
+  it("is a 440-wide dialog that asks for a URL and an ownership", () => {
     open();
     expect(screen.getByRole("dialog", { name: REPO_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("440px");
     expect(status()).toBe("Required: Repository URL, Ownership");
     type("Repository URL", "github.com/acme/shop");
     expect(status()).toBe("Required: Ownership");
@@ -324,7 +324,9 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
   const renderDataset = () => render(<AddDatasetDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} />);
   it("F31: every example says e.g., placeholders sit in --label, and the number fields have a unit instead", () => {
     renderDataset();
-    for (const name of ["Name", "Description", "Format", "Source", "Licence"]) {
+    // Synth 06: a text box in a modal is empty, so Description has no example; the one-line fields keep theirs.
+    expect((screen.getByLabelText("Description") as HTMLTextAreaElement).placeholder).toBe("");
+    for (const name of ["Name", "Format", "Source", "Licence"]) {
       if (["Format", "Source", "Licence"].includes(name)) openRow(name);
       const field = screen.getByLabelText(name) as HTMLInputElement;
       expect(field.placeholder, name).toMatch(/^e\.g\. /);
@@ -355,6 +357,7 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
     // The selected recipe is the selected edge alone (no ring), never the well a text field sits in. jsdom keeps shadows, not a var() edge.
     expect(option.style.boxShadow).not.toBe("var(--selected-ring)");
     expect(option.style.boxShadow).not.toBe("var(--well-shadow)");
-    expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toBe("var(--well-shadow)");
+    // A text field is the field recipe: its edge (or, focused, its ring) is a 1px inset shadow, which an option never takes.
+    expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toMatch(/^inset 0 0 0 1px var\(--(field-edge|focus-ring)\)$/);
   });
 });

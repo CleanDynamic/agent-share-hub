@@ -78,7 +78,9 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
 
 /** The badge at a row's left: "S2". */
 function Badge({ children, colour }: { children: ReactNode; colour?: string }) {
-  return <span style={{ ...PANEL_BADGE, ...(colour ? { color: colour } : null) }}>{children}</span>;
+  /* Synth 16: the maker colour is the badge's 1.5px edge (drawn inside, so the badge keeps its size); the letter stays in
+     the ink, which reads on Raised in both rooms. */
+  return <span style={{ ...PANEL_BADGE, ...(colour ? { color: t.text, boxShadow: `inset 0 0 0 1.5px ${colour}` } : null) }}>{children}</span>;
 }
 
 /** "Session 4 · Part B · Claude · 9 Oct", with "Part B" in the part's colour. */

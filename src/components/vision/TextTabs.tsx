@@ -1,5 +1,6 @@
 /* Synth 06: tabs that change what a page shows (Following / Everyone, Posts / Rules, lenses): 53 tall, 15/500 `--label`;
-   the current tab 15/700 `--text` with a 4px bar in `--tab-bar` (Mint), 56 wide, radius 2, centred at the bottom. No line
+   the current tab 15/700 `--text` with a 4px bar in `--tab-bar` (Mint; Terminal Green on light, with the 1px Ink line
+   `--tab-bar-edge` under it), 56 wide, radius 2, centred at the bottom. No line
    under the row. `role="tablist"` and `role="tab"` with `aria-selected`; the arrows, Home and End move between tabs, and a
    selected tab changes at once. `height`, `gap` and `rule` are kept so callers compile; the shape is the pack's. */
 
@@ -85,7 +86,7 @@ function Tab({
       {current ? (
         <span
           aria-hidden="true"
-          style={{ position: "absolute", left: "calc(50% - 28px)", bottom: 0, width: 56, height: 4, borderRadius: 2, background: t.tabBar }}
+          style={{ position: "absolute", left: "calc(50% - 28px)", bottom: 0, width: 56, height: 4, borderRadius: 2, background: t.tabBar, boxShadow: `0 1px 0 ${t.tabBarEdge}` }}
         />
       ) : null}
     </button>

@@ -42,15 +42,14 @@ describe("the words", () => {
 });
 
 describe("the tag", () => {
-  it("is 20 tall, padding 0 7, radius 5, the control recipe, the data face 10.5 in --text2", () => {
+  it("is a Raised tag with no edge, padding 0 8, radius --r-chip, 13 in Text 2 in the UI face (it is a word)", () => {
     const html = renderToStaticMarkup(<ImportingTag />);
-    expect(html).toContain("height:20px");
     expect(html).toContain("padding:0 8px"); // S15
     expect(html).toContain("border-radius:var(--r-chip)");
-    expect(html).toContain("background:var(--control);border:1px solid var(--control-border)");
-    expect(html).toContain("font-size:10.5px");
+    expect(html).toContain("background:var(--control);border:1px solid transparent");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("var(--font-data");
+    expect(html).not.toContain("var(--font-data");
   });
 });
 
@@ -138,8 +137,8 @@ describe("the bar, the count and Stop", () => {
     expect(html).toContain("background:var(--text2)");
     expect(html).toContain("gap:12px");
     expect(html).toContain("text-decoration:underline");
-    expect(html).toContain("font-size:12.5px;font-weight:500");
-    expect(html).toContain("font-size:11px");
+    expect(html).toContain("font-size:13px;font-weight:500"); // Stop
+    expect(html).toContain("var(--font-data"); // the count is a number, in mono 13
   });
 
   it("has Stop only when the import can be stopped, and Stop calls it", () => {

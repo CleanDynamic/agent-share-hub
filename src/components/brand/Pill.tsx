@@ -28,9 +28,10 @@ function paint(tone: PillTone | undefined): CSSProperties {
     case "lit-ink":
       return { background: t.module, color: t.litInk };
     default:
+      /* Synth 16: the tint names the category; the words are the ink (a hue on its own tint fell under 4.5:1 on Noon). */
       return {
         background: tokenVar(`cat-${tone}-fill` as TokenName),
-        color: tokenVar(`cat-${tone}` as TokenName),
+        color: t.text,
       };
   }
 }

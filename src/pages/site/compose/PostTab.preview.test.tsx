@@ -71,16 +71,16 @@ describe("the preview", () => {
     expect([head.style.fontSize, head.style.fontWeight]).toEqual(["13.5px", "500"]);
     expect((head.parentElement as HTMLElement).style.flexWrap).toBe("nowrap");
     const switcher = within(region).getByRole("group", { name: "Preview width" });
-    expect(switcher.style.height).toBe("22px");
+    expect(switcher.style.height).toBe("32px"); // Synth 06: pills are 32
     expect(within(switcher).getAllByRole("button").map((button) => button.textContent)).toEqual(["Phone", "Desktop"]);
   });
 
-  it("draws the maker, the tool marks, the age now, post 1 closed, and the build line with Draft in place of the plaque", () => {
+  it("draws the maker, no tool marks, the age now, post 1 closed, and the build line with Draft in place of the plaque", () => {
     column(doc(p("First post words"), brk, p("Second post words")));
     const item = within(preview()).getByRole("article");
     expect(within(item).getByTestId("feed-author-name").textContent).toBe("Ada Lovelace");
     expect(item.textContent).toContain("@ada · now");
-    expect(within(item).getByRole("img", { name: "Made with Claude Code" })).toBeTruthy();
+    expect(within(item).queryByRole("img", { name: /^Made with/ })).toBeNull();
     expect(within(item).getByText("First post words")).toBeTruthy();
     expect(item.querySelector('[data-thread-mode="closed"]')).not.toBeNull();
     expect(within(item).getByRole("button", { name: /Show more/ }).textContent).toContain("1 more post");

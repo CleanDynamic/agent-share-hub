@@ -206,7 +206,7 @@ export function PartRow({
         boxSizing: "content-box",
         /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; a one-line row's 32 above it. */
         ...(part.gap ? (phone ? { minHeight: 44 } : { height: 32 }) : phone ? { minHeight: 42 } : { height: 30 }),
-        padding: part.gap ? "0 8px" : "0 7px",
+        padding: "0 8px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */
         borderWidth: part.gap ? 1.5 : 1,
@@ -801,7 +801,7 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
   return (
     <section data-testid="build-completeness" aria-label="Completeness" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
       <SectionHead headingLevel={2} title="Completeness" meta={<span data-testid="build-completeness-private">Visible to you only</span>} />
-      <div style={{ ...moduleStyle, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ ...moduleStyle, padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, ...text(13, 400, t.label, tnum) }}>
           <span style={text(13, 500, t.text, tnum)}>{score}</span>
           <span>{`of 100 · Gallery lists from ${galleryAt}`}</span>
