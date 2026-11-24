@@ -3,8 +3,9 @@
 // with the expand icon at 16, Text 3, "Open in the notepad"), which opens the full-screen notepad. Text boxes carry no
 // placeholder words, so `placeholder` is not a prop. Text is 16px so iOS does not zoom.
 
-import { useId, type CSSProperties, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { useId, useRef, useState, type CSSProperties, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
+import { Notepad } from "@/components/brand/Notepad";
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
@@ -17,7 +18,7 @@ export const FIELD_HEIGHT = 44;
 export const FIELD_AREA_HEIGHT = 88;
 
 export type PhoneInputProps = { label: string; multiline?: false } & Omit<InputHTMLAttributes<HTMLInputElement>, "placeholder" | "size">;
-export type PhoneAreaProps = { label: string; multiline: true; onExpand?: () => void } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "placeholder">;
+export type PhoneAreaProps = { label: string; multiline: true; /** Called as the notepad opens; the notepad itself is built in. */ onExpand?: () => void } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "placeholder">;
 export type PhoneFieldProps = PhoneInputProps | PhoneAreaProps;
 
 const BOX: CSSProperties = {
@@ -63,11 +64,22 @@ function Area({ label, multiline: _m, onExpand, id, ...rest }: PhoneAreaProps) {
   const { state, handlers } = useInteractive<HTMLTextAreaElement>();
   const expand = useInteractive<HTMLButtonElement>();
   const key = id ?? auto;
+  const area = useRef<HTMLTextAreaElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const [notepad, setNotepad] = useState(false);
+  /* Done writes the text back the way typing would, so a controlled or an uncontrolled box both hear it. */
+  const write = (text: string) => {
+    const node = area.current;
+    if (!node) return;
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(node, text);
+    node.dispatchEvent(new Event("input", { bubbles: true }));
+  };
   return (
     <Frame id={key} label={label}>
       <div style={{ position: "relative" }}>
         <textarea
           {...rest}
+          ref={area}
           id={key}
           {...handlers}
           style={{ ...BOX, display: "block", minHeight: FIELD_AREA_HEIGHT, padding: `11px ${TOUCH_MIN}px 11px 12px`, resize: "none", ...focusEdge(state.focusVisible) }}
@@ -75,7 +87,11 @@ function Area({ label, multiline: _m, onExpand, id, ...rest }: PhoneAreaProps) {
         <button
           type="button"
           aria-label="Open in the notepad"
-          onClick={onExpand}
+          ref={opener}
+          onClick={() => {
+            onExpand?.();
+            setNotepad(true);
+          }}
           {...expand.handlers}
           style={{
             position: "absolute",
@@ -98,6 +114,17 @@ function Area({ label, multiline: _m, onExpand, id, ...rest }: PhoneAreaProps) {
             <MobileIcon name="expand" size={16} />
           </span>
         </button>
+        <Notepad
+          open={notepad}
+          onClose={() => setNotepad(false)}
+          field={label}
+          value={area.current?.value ?? ""}
+          onDone={(text) => {
+            write(text);
+            setNotepad(false);
+          }}
+          returnFocusTo={opener}
+        />
       </div>
     </Frame>
   );

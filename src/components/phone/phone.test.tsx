@@ -201,6 +201,19 @@ describe("BigButton, PhoneField, RoundPostButton, PhoneToast", () => {
     expect(onExpand).toHaveBeenCalledOnce();
   });
 
+  it("Expand opens the notepad with the text, and Done writes the text back", async () => {
+    const onChange = vi.fn();
+    render(<PhoneField label="Notes" multiline defaultValue="first" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open in the notepad" }));
+    const pad = await screen.findByRole("dialog");
+    const text = pad.querySelector("textarea") as HTMLTextAreaElement;
+    expect(text.value).toBe("first");
+    fireEvent.change(text, { target: { value: "first and more" } });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await vi.waitFor(() => expect((screen.getByLabelText("Notes") as HTMLTextAreaElement).value).toBe("first and more"));
+    expect(onChange).toHaveBeenCalled();
+  });
+
   it("the round post button is a named 56 Mint circle clear of the dock, and hides while the keyboard is open", () => {
     const onClick = vi.fn();
     const { unmount } = render(<RoundPostButton label="New post" onClick={onClick} />);
