@@ -254,7 +254,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {/* Head: name, @handle · age · in spaces; the reward at the right end. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: phone ? 20 : 24, marginBottom: 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone ? "nowrap" : "wrap", alignItems: "baseline", columnGap: phone ? 4 : 6 }}>
-            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(phone ? { flex: "0 100 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{name}</span>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(phone ? { flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{name}</span>
             <span style={{ ...plain, fontSize: phone ? 15 : 13, lineHeight: phone ? "20px" : 1.4, color: label, whiteSpace: phone ? "nowrap" : "pre-wrap", ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } : null) }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}

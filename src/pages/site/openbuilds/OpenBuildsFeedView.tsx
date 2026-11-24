@@ -24,7 +24,7 @@ import { TextTabs } from "@/components/vision/TextTabs";
 import { PhonePills } from "@/components/phone/PhonePills";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import { RoundPostButton } from "@/components/phone/RoundPostButton";
-import { PHONE_TOPBAR } from "@/components/shell/chromeSize";
+import { PANEL_GUTTER, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
 import { PageLink as Link } from "@/lib/routing/PageLink";
@@ -270,7 +270,7 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
     else navigate(`/openbuilds/spaces/${value.slice("space:".length)}`);
   };
   return (
-    <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
+    <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` }}>
       <FeedTitle />
       {view.signedIn ? (
         <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}>

@@ -220,7 +220,7 @@ export function FeedPost({
             tabIndex={-1}
             aria-hidden="true"
             // 44 on a phone, pulled back by its own extra 2 either side so the avatar stays where it was.
-            style={{ display: "block", width: phone ? 44 : 40, height: phone ? 44 : 40, margin: phone ? -2 : 0, borderRadius: 999 }}
+            style={{ display: "block", width: phone && !phoneFeed ? 44 : 40, height: phone && !phoneFeed ? 44 : 40, margin: phone && !phoneFeed ? -2 : 0, borderRadius: 999 }}
           >
             <Avatar size={40} userId={build.creator_id} name={name} src={makerAvatar} />
           </Link>
@@ -234,7 +234,7 @@ export function FeedPost({
         data-feed-author-row=""
         style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: phoneFeed ? 4 : 6, minHeight: phoneFeed ? 20 : 24, marginBottom: phoneFeed ? 4 : 4, whiteSpace: "nowrap" }}
       >
-        <QuietLink to={profileHref} testId="feed-author-name" touch={phone && !phoneFeed} style={{ flex: "0 100 auto", fontSize: phoneFeed ? 15 : 13, fontWeight: phoneFeed ? 600 : 500, ...(phoneFeed ? { lineHeight: "20px" } : null), ...ellipsis }} colour={t.text}>
+        <QuietLink to={profileHref} testId="feed-author-name" touch={phone && !phoneFeed} reach={phoneFeed} style={{ flex: phoneFeed ? "0 0 auto" : "0 100 auto", ...(phoneFeed ? { maxWidth: "70%" } : null), fontSize: phoneFeed ? 15 : 13, fontWeight: phoneFeed ? 600 : 500, ...(phoneFeed ? { lineHeight: "20px" } : null), ...ellipsis }} colour={t.text}>
           {name}
         </QuietLink>
         <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: phoneFeed ? 15 : 13, lineHeight: phoneFeed ? "20px" : 1.4, color: t.label }}>
@@ -383,6 +383,7 @@ function QuietLink({
   style,
   testId,
   touch = false,
+  reach = false,
   tabIndex,
   children,
 }: {
@@ -394,6 +395,8 @@ function QuietLink({
   tabIndex?: number;
   /** Below 768px: the link is a 44px target. */
   touch?: boolean;
+  /** Prompt 21: the link's hit area is 44 tall by padding 12 above and below, with the margin taking it back, so nothing moves. */
+  reach?: boolean;
   children: ReactNode;
 }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -403,6 +406,7 @@ function QuietLink({
     color: colour,
     textDecoration: "none",
     ...(touch && to ? { display: "block", lineHeight: "44px" } : null),
+    ...(reach && to ? { display: "block", padding: "12px 0", margin: "-12px 0" } : null),
     ...style,
   };
   if (!to) return <span data-testid={testId} style={base}>{children}</span>;

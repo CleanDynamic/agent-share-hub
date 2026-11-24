@@ -14,7 +14,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import { RoundPostButton } from "@/components/phone/RoundPostButton";
 import { PostControl, PostPrimary } from "@/components/post/postControls";
-import { PANEL_RADIUS, PHONE_TOPBAR } from "@/components/shell/chromeSize";
+import { PANEL_GUTTER, PANEL_RADIUS, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TextTabs } from "@/components/vision/TextTabs";
@@ -74,7 +74,7 @@ export function ParentLink() {
 function PhoneSpace({ view, member }: { view: SpaceViewProps; member: boolean }) {
   const joined = view.role !== "none";
   return (
-    <div data-testid="space-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
+    <div data-testid="space-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` }}>
       <header style={{ padding: "8px 16px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
         <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 24, fontWeight: 600, lineHeight: "28px", letterSpacing: "-0.02em", color: t.text, overflowWrap: "anywhere" }}>{view.name}</h1>
         {view.description ? <p style={words(15, t.text2)}>{view.description}</p> : null}

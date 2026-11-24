@@ -1863,6 +1863,11 @@ function componentFindings(code: string, file: string): Finding[] {
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `const PHONE_REPLY_GAP: CSSProperties = { columnGap: "10px" };`,
+    why: "Prompt 21: a phone reply's 28 avatar and its text are 10 apart, so a reply to a reply indents 38 (the mobile pack's measure).",
+  },
+  {
     rule: "spacing 3 is not in SPACE_REFINED",
     text: `gap: 3,`,
     why: "Prompt 19: the phone dock's slot puts its label 3 below its icon (the mobile pack's measure).",

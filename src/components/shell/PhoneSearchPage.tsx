@@ -17,6 +17,7 @@ import { MobileIcon } from "@/components/brand/MobileIcon";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PhoneRow } from "@/components/phone/PhoneRow";
 import { listGallery } from "@/lib/build/gallery";
+import { listBusySpaces, postKey } from "@/lib/openbuilds";
 import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
 import { groupHeading, PHONE_SEARCH_LIMIT, searchPeople, searchTopics } from "@/lib/search/phoneSearch";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
@@ -64,6 +65,13 @@ function SearchBody({ open, onOpenChange, input }: { open: boolean; onOpenChange
   });
   const topics = useQuery({ queryKey: ["phone-search", "topics", typed], queryFn: () => searchTopics(typed as string), enabled: on, staleTime: 30_000 });
   const people = useQuery({ queryKey: ["phone-search", "people", typed], queryFn: () => searchPeople(typed as string), enabled: on, staleTime: 30_000 });
+
+  // Prompt 21: with the field empty, the spaces with the most new posts this week (the desktop right panel's own read).
+  const empty = value.trim() === "";
+  const busy = useQuery({ queryKey: postKey("listBusySpaces"), queryFn: () => listBusySpaces({ limit: 8 }), enabled: open && empty, staleTime: 30_000 });
+  const busyRows = empty ? (busy.data ?? []) : [];
+  // The group gives way to the results once the reader types (and, with nothing busy, they stay as they were).
+  const showResults = !empty || busyRows.length === 0;
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -138,21 +146,35 @@ function SearchBody({ open, onOpenChange, input }: { open: boolean; onOpenChange
         </button>
       </div>
       <div aria-live="polite" style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        {buildRows.length > 0 || none ? (
+        {busyRows.length > 0 ? (
+          <section aria-label="Most new posts this week" data-testid="search-busy-spaces">
+            <h2 style={{ margin: 0, padding: `16px ${PHONE_MARGIN}px 4px`, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{groupHeading(busyRows.length, "space", "spaces")}</h2>
+            {busyRows.map((entry) => (
+              <PhoneRow
+                key={entry.space.id}
+                title={entry.space.name}
+                line={`${entry.recent} new ${entry.recent === 1 ? "post" : "posts"} this week`}
+                to={`/openbuilds/spaces/${entry.space.slug}`}
+                trail={{ kind: "chevron" }}
+              />
+            ))}
+          </section>
+        ) : null}
+        {showResults && (buildRows.length > 0 || none) ? (
           <Group heading={groupHeading(buildCount, "build", "builds")}>
             {buildRows.map((build) => (
               <PhoneRow key={build.id} title={build.title} line={build.outcome ?? undefined} to={`/b2/${build.slug}`} trail={{ kind: "chevron" }} />
             ))}
           </Group>
         ) : null}
-        {topicRows.length > 0 ? (
+        {showResults && topicRows.length > 0 ? (
           <Group heading={groupHeading(topicCount, "topic", "topics")}>
             {topicRows.map((topic) => (
               <PhoneRow key={topic.id} title={topic.title} line={topic.by ?? undefined} to={`/openbuilds/topics/${topic.id}`} trail={{ kind: "chevron" }} />
             ))}
           </Group>
         ) : null}
-        {peopleRows.length > 0 ? (
+        {showResults && peopleRows.length > 0 ? (
           <Group heading={groupHeading(peopleCount, "person", "people")}>
             {peopleRows.map((person) => (
               <PhoneRow

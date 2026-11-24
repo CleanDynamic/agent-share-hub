@@ -9,6 +9,8 @@ import { forwardRef, useState, type ButtonHTMLAttributes, type CSSProperties, ty
 import { Link } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { AttachmentView, PicturesBlock } from "@/components/post/PostCard";
 import { PostControl } from "@/components/post/postControls";
@@ -32,6 +34,12 @@ export const replyAnchor = (replyId: string): string => `reply-${replyId}`;
 
 /** A menu opened from the page stands above the page's own layers. */
 export const MENU_Z = 80;
+
+/** The phone's pinned reply Card: padding 12 14 (prompt 21). */
+const PHONE_CARD_PAD = "12px 14px";
+
+/** The phone reply's 28 avatar and its text: a 10 gap (the avatar's 28 plus 10 is the 38 a reply to a reply indents). */
+const PHONE_REPLY_GAP: CSSProperties = { columnGap: "10px" };
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 
@@ -57,7 +65,7 @@ export interface ReplyActions {
 }
 
 /** A text button: 13 in Text 3, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
-export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function TextButton({ children, style, type = "button", ...rest }, ref) {
+export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { icon?: MobileIconName }>(function TextButton({ children, style, type = "button", icon, ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>({
     onMouseEnter: rest.onMouseEnter as never,
@@ -77,7 +85,7 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       style={{
         ...plain,
         /* A text link button: 24 high with 4 either side; on a phone the padding reaches 44 and the margin keeps the line. */
-        ...(phone ? { padding: `${reach}px 0`, margin: `${-reach}px 0` } : { display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px" }),
+        ...(phone && icon ? { display: "inline-flex", alignItems: "center", gap: 6, minHeight: TOUCH_MIN, padding: "0 8px", margin: 0 } : phone ? { padding: `${reach}px 0`, margin: `${-reach}px 0` } : { display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px" }),
         background: "none",
         border: 0,
         borderRadius: r.control,
@@ -92,6 +100,7 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
         ...style,
       }}
     >
+      {phone && icon ? <MobileIcon name={icon} size={16} /> : null}
       {children}
     </button>
   );
@@ -150,17 +159,18 @@ function Attachments({ attachments }: { attachments: readonly CardAttachment[] }
 }
 
 /** UX-07: a reply's anatomy (its author, words and attachments), with whatever sits under it: the Thread's actions, or nothing (Home's reply groups). */
-export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?: ReactNode }) {
+export function ReplyAnatomy({ reply, children, phone = false }: { reply: ReplyItem; children?: ReactNode; phone?: boolean }) {
   const pinned = reply.pinnedBy !== null;
   const meta = [reply.author.handle ? `@${reply.author.handle}` : null, reply.age, pinned ? `Pinned by ${reply.pinnedBy}` : null].filter(Boolean).join(" · ");
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
-      <Avatar size={24} userId={reply.author.id} name={reply.author.name} src={reply.author.avatarUrl} />
+    <div style={{ display: "grid", gridTemplateColumns: phone ? "28px minmax(0, 1fr)" : "24px minmax(0, 1fr)", ...(phone ? PHONE_REPLY_GAP : { columnGap: 12 }) }}>
+      <Avatar size={phone ? 28 : 24} userId={reply.author.id} name={reply.author.name} src={reply.author.avatarUrl} />
       <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: 24 }}>
-          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 4 }}>
-            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{reply.author.name}</span>
-            <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label }}>{meta}</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: phone ? 20 : 24 }}>
+          {/* Prompt 21: on a phone the name and the age share one line, cut with an ellipsis. */}
+          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone ? "nowrap" : "wrap", alignItems: "center", columnGap: phone ? 4 : 6, rowGap: 4 }}>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(phone ? { flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{reply.author.name}</span>
+            <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label, ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{meta}</span>
             {reply.about ? (
               <>
                 <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label }}>· on</span>
@@ -184,6 +194,7 @@ const NO_ONE: ReadonlySet<string> = new Set();
 /** One reply, its actions, and (at the first level) its own replies. */
 export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions: ReplyActions; last: boolean; box?: { at: string; node: ReactNode } }) {
   const [asking, setAsking] = useState(false);
+  const phone = useIsPhone();
   const pinned = reply.pinnedBy !== null;
   const collapsed = isCollapsed(reply.author.id, actions.blockedAuthors ?? NO_ONE);
   const content = collapsed ? (
@@ -191,10 +202,10 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
       {BLOCK_COPY.collapsedReply}
     </p>
   ) : (
-    <ReplyAnatomy reply={reply}>
-        <div role="group" aria-label={`Actions for ${reply.author.name}'s reply`} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 16, rowGap: 8, marginTop: 8 }}>
-          <TextButton onClick={() => actions.onReply(reply.id)}>Reply</TextButton>
-          <TextButton aria-pressed={reply.liked} onClick={() => actions.onLike(reply.id, !reply.liked)} style={reply.liked ? { color: t.text } : undefined}>
+    <ReplyAnatomy reply={reply} phone={phone}>
+        <div role="group" aria-label={`Actions for ${reply.author.name}'s reply`} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: phone ? 8 : 16, rowGap: 8, marginTop: phone ? 0 : 8 }}>
+          <TextButton icon="reply" onClick={() => actions.onReply(reply.id)}>Reply</TextButton>
+          <TextButton icon={reply.liked ? "heartf" : "heart"} aria-pressed={reply.liked} onClick={() => actions.onLike(reply.id, !reply.liked)} style={reply.liked ? { color: t.text } : undefined}>
             {reply.likes > 0 ? `Like ${reply.likes}` : "Like"}
           </TextButton>
           {reply.build ? (
@@ -225,11 +236,11 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
   );
 
   return (
-    <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
-      {pinned && !collapsed ? <div data-testid="reply-pinned" style={{ background: t.module, borderRadius: 12, padding: 16 }}>{content}</div> : content}
+    <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: phone ? "8px 0" : "16px 0", borderBottom: last || phone ? "none" : `1px solid ${t.hairline}` }}>
+      {pinned && !collapsed ? <div data-testid="reply-pinned" style={{ background: t.module, borderRadius: 12, padding: phone ? PHONE_CARD_PAD : 16 }}>{content}</div> : content}
       {box?.at === reply.id ? <div style={{ marginTop: 16 }}>{box.node}</div> : null}
       {reply.children.length > 0 ? (
-        <ol aria-label={`Replies to ${reply.author.name}`} style={{ margin: "8px 0 0 34px", padding: 0 }}>
+        <ol aria-label={`Replies to ${reply.author.name}`} style={{ margin: phone ? `0 0 0 ${reply.depth >= 1 ? 0 : 38}px` : "8px 0 0 34px", padding: 0 }}>
           {reply.children.map((child, index) => (
             <Reply key={child.id} reply={child} actions={actions} last={index === reply.children.length - 1} box={box} />
           ))}
@@ -244,8 +255,9 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
 function LinkText({ to, same = false, children }: { to: string; same?: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const Tag = same ? Link : PageLink;
+  const phone = useIsPhone();
   return (
-    <Tag to={to} {...handlers} style={{ ...plain, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", fontSize: 13, lineHeight: "16px", color: state.hovered ? t.text2 : t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
+    <Tag to={to} {...handlers} style={{ ...plain, display: "inline-flex", alignItems: "center", height: phone ? TOUCH_MIN : 24, padding: "0 4px", fontSize: 13, lineHeight: "16px", color: state.hovered ? t.text2 : t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
       {children}
     </Tag>
   );

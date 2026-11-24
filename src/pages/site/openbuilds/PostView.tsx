@@ -187,12 +187,14 @@ export function PostView(view: PostViewProps) {
   });
   const items = [{ value: "thread" as const, label: threadLabel(view.replies) }, ...(view.builds > 0 ? [{ value: "wall" as const, label: wallLabel(view.builds) }] : [])];
   const tab: PostTab = view.builds > 0 ? view.tab : "thread";
-  const box = view.replyBox && view.replyBox.at !== "foot" ? { at: view.replyBox.at, node: view.replyBox.node } : undefined;
+  const box = !phone && view.replyBox && view.replyBox.at !== "foot" ? { at: view.replyBox.at, node: view.replyBox.node } : undefined;
   // The link above the post goes up one level: to the topic's space, or to OpenBuilds when it is in none.
   const up = view.crumbs[view.crumbs.length - 1];
 
   const main = (
-    <div>
+    // Prompt 21: on a phone the one reply bar is pinned to the bottom and the replies keep its height free under them.
+    <div style={phone ? { padding: "8px 16px 16px" } : undefined}>
+      {phone && view.replyBox ? view.replyBox.node : null}
       {up && !phone ? (
         <nav aria-label="Where this post is" style={{ ...words(13, t.label), marginBottom: 12 }}>
           <UpLink to={up.to}>{up.label}</UpLink>
@@ -231,7 +233,7 @@ export function PostView(view: PostViewProps) {
           ) : (
             <ReplyList items={view.thread.items} actions={view.actions} box={box} />
           )}
-          {view.replyBox?.at === "foot" ? <div style={{ paddingTop: 16 }}>{view.replyBox.node}</div> : null}
+          {view.replyBox?.at === "foot" && !phone ? <div style={{ paddingTop: 16 }}>{view.replyBox.node}</div> : null}
         </div>
       )}
     </div>

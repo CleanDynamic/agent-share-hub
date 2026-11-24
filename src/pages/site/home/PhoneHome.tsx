@@ -21,7 +21,7 @@ import { PhoneRow } from "@/components/phone/PhoneRow";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import { PostCard } from "@/components/post/PostCard";
 import { PostThread } from "@/components/post/PostThread";
-import { PHONE_TAB, PHONE_TOPBAR } from "@/components/shell/chromeSize";
+import { PANEL_GUTTER, PHONE_TAB, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { LazyBottomSheet } from "@/components/shell/LazyBottomSheet";
 import { MoreSheet } from "@/components/shell/MoreSheet";
@@ -35,7 +35,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, SENTIENT } from "@/lib/theme/type";
 
 import { atHandle, HOME_FILTERS, shortAgo, STILL_OPEN_HREF, STILL_OPEN_PHRASE, type HomeBuildPost, type HomeFilter, type HomeFeedItem, type HomePerson, type HomeRebuildPost } from "./homeModel";
 import type { HomeScope, HomeViewProps } from "./HomeView";
@@ -45,7 +45,7 @@ import { useNear } from "./useNear";
 const ITEM: CSSProperties = { padding: "12px 16px", boxSizing: "border-box" };
 
 /** Where the dock and the safe area leave room under the last post. */
-const BOTTOM: CSSProperties = { paddingBottom: "calc(72px + env(safe-area-inset-bottom))" };
+const BOTTOM: CSSProperties = { paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` };
 
 /** The page's name, for screen readers only. */
 function Title() {
@@ -261,7 +261,6 @@ function BuildPost({ item, srcByPath, now, onNear }: { item: HomeBuildPost; srcB
           makerName={item.maker.name}
           makerAvatar={item.maker.avatarUrl ?? null}
           modelsUsed={item.modelsUsed}
-          plaqueBuild={item.plaque}
           classification={item.classification}
           engagement={item.engagement}
           now={now}
@@ -314,7 +313,7 @@ function RebuildPost({ item, srcByPath, now, onNear }: { item: HomeRebuildPost; 
       {item.note ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>{item.note}</p> : null}
       <div style={{ marginTop: item.note ? 12 : 0, padding: "12px 14px", background: t.module, borderRadius: r.card }}>
         <span style={{ display: "block", ...meta13 }}>Rebuilt from</span>
-        <span style={{ display: "block", fontFamily: "var(--font-display, 'Geist Serif', Georgia, serif)", fontSize: 15, lineHeight: "20px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.source.title}</span>
+        <span style={{ display: "block", fontFamily: SENTIENT, fontSize: 15, lineHeight: "20px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.source.title}</span>
         {source ? <span style={{ display: "block", ...meta13 }}>{source}</span> : null}
       </div>
     </>
@@ -325,7 +324,7 @@ function RebuildPost({ item, srcByPath, now, onNear }: { item: HomeRebuildPost; 
         <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, minHeight: 20, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", flex: "0 100 auto" }}>{item.maker.name}</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", flex: "0 0 auto", maxWidth: "70%" }}>{item.maker.name}</span>
             <span style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.label, overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{line}</span>
             <span style={{ flex: 1 }} />
             <MoreDots onPress={() => setMore(true)} />
