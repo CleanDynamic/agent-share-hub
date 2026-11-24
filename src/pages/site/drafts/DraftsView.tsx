@@ -48,6 +48,7 @@ import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { DraftsPhone } from "./DraftsPhone";
 import {
   ControlButton,
   DraftsHead,
@@ -381,7 +382,7 @@ function Connections({ tools, onConnect }: { tools: ReturnType<typeof connectedT
 
 const list: CSSProperties = { margin: 0, padding: 0 };
 
-export function DraftsView({
+function DraftsDesktop({
   now,
   draftsRead,
   sessionsRead,
@@ -547,6 +548,11 @@ export function DraftsView({
       connectionsSection={sessionsShown ? <Connections tools={tools} onConnect={onConnect} /> : null}
     />
   );
+}
+
+/** Below 768 the page is the phone's (`DraftsPhone`); from 768 up it is the two panels, unchanged. */
+export function DraftsView(props: DraftsViewProps) {
+  return useIsPhone() ? <DraftsPhone {...props} /> : <DraftsDesktop {...props} />;
 }
 
 export default DraftsView;

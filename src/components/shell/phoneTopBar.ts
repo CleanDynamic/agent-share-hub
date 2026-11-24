@@ -66,7 +66,11 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
   if (path === "/messages" || path.startsWith("/messages/")) return { left: "back", centre: title("Messages"), right: "settings" };
   if (path === "/search") return { left: "back", centre: title("Search"), right: "none" };
 
-  // Any other page (Connect, Import, legal, About): back, and the page's own name left to its heading.
+  // Import and Connect are tasks that end: close, and the page's name.
+  if (path === "/import") return { left: "close", centre: title("Import"), right: "none" };
+  if (path === "/connect") return { left: "close", centre: title("Connect a tool"), right: "none" };
+
+  // Any other page (legal, About): back, and the page's own name left to its heading.
   return { left: "back", centre: none, right: "none" };
 }
 
@@ -88,6 +92,8 @@ export function dockHiddenFor(pathname: string, search = ""): boolean {
   if (new URLSearchParams(search).has("signin")) return true;
   if (path === SITE_NAV.create || path.startsWith("/compose") || path.startsWith("/rebuild/")) return true;
   if (path === "/onboarding" || path.startsWith("/onboarding/")) return true;
+  /* Connect pins its main action to the bottom edge, where the dock would sit. */
+  if (path === "/connect") return true;
   if (/^\/messages\/[^/]+$/.test(path)) return true;
   if (path === "/auth/callback" || path.startsWith("/oauth") || path.startsWith("/consent")) return true;
   return false;

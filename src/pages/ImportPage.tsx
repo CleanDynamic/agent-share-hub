@@ -58,11 +58,19 @@ import {
 } from "@/components/compose/useBuildFileDrop";
 import { DropField } from "@/components/brand/DropField";
 import { Button } from "@/components/ui/button";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { BigButton, BIG_BUTTON_HEIGHT } from "@/components/phone/BigButton";
+import { PhoneModule } from "@/components/phone/PhoneModule";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { DONE } from "@/lib/copy/copy";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 
 import { r } from "@/lib/theme/radius";
 import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { body as bodyText, data as dataText, hero, label as labelText, measure } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, body as bodyText, data as dataText, hero, label as labelText, measure } from "@/lib/theme/type";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { fade, feedback } from "@/lib/theme/motion";
 import { SITE_NAME } from "@/lib/site";
@@ -86,6 +94,8 @@ const COMPILER_FILENAME = "OPENBUILDS_COMPILER.md";
 
 /** Long enough to read, short enough not to look stuck. */
 const COPIED_MS = 2200;
+/** On a phone the "Copied" word holds for two seconds. */
+const PHONE_COPIED_MS = 2000;
 
 /**
  * One kit document, fetched at most once.
@@ -179,6 +189,7 @@ function CopyDocumentButton({
   document: ReturnType<typeof useKitDocument>;
 }) {
   const [state, setState] = useState<CopyState>("idle");
+  const phone = useIsPhone();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -191,8 +202,8 @@ function CopyDocumentButton({
   const settle = useCallback((next: CopyState) => {
     setState(next);
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setState("idle"), COPIED_MS);
-  }, []);
+    timer.current = setTimeout(() => setState("idle"), phone ? PHONE_COPIED_MS : COPIED_MS);
+  }, [phone]);
 
   const copy = useCallback(async () => {
     try {
@@ -205,6 +216,19 @@ function CopyDocumentButton({
     }
   }, [kit, settle]);
 
+  if (phone) {
+    /* Mobile prompt 25: a BigButton; it reads "Copied" for two seconds and the repo's `DONE.copied` is announced. */
+    return (
+      <span style={{ display: "contents" }}>
+        <BigButton data-testid={testId} onClick={() => void copy()} style={{ flex: "1 1 auto", padding: "0 20px" }}>
+          {state === "copied" ? "Copied" : label}
+        </BigButton>
+        <span role="status" aria-live="polite" className={state === "idle" ? undefined : state === "copied" ? "sr-only" : undefined} style={state === "failed" ? { ...labelText, flexBasis: "100%", color: t.catBreakage } : undefined}>
+          {state === "copied" ? DONE.copied : state === "failed" ? "Could not copy. Use the download." : ""}
+        </span>
+      </span>
+    );
+  }
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
       {/* BG-P24 — THE KIT'S SECONDARY BUTTON.
@@ -257,6 +281,22 @@ function DownloadLink({
   href: string;
   filename: string;
 }) {
+  const phone = useIsPhone();
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  if (phone) {
+    /* The same shape as a BigButton, as a real anchor so `download` works. */
+    return (
+      <a
+        {...(testId ? { "data-testid": testId } : {})}
+        href={href}
+        download={filename}
+        {...handlers}
+        style={{ boxSizing: "border-box", flex: "1 1 auto", height: BIG_BUTTON_HEIGHT, padding: "0 20px", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 24, background: t.control, color: t.text, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", textDecoration: "none", whiteSpace: "nowrap", ...ring(state.focusVisible) }}
+      >
+        Download
+      </a>
+    );
+  }
   return (
     /* The same secondary treatment as Copy beside it: the two are alternatives
        to each other — clipboard or file — and an underlined text link next to
@@ -289,6 +329,23 @@ function Step({
   title: string;
   children: React.ReactNode;
 }) {
+  const phone = useIsPhone();
+  if (phone) {
+    /* A Panel module: the 28 number box and the 17/600 heading on one line, then what the step asks. */
+    return (
+      <li data-visual-slot="import-step" style={{ listStyle: "none" }}>
+        <PhoneModule style={{ margin: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span aria-hidden data-testid={`import-step-${ordinal}`} style={{ width: 28, height: 28, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: t.control, color: t.text, fontFamily: DM_MONO, fontSize: 13 }}>
+              {ordinal}
+            </span>
+            <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</h2>
+          </div>
+          {children}
+        </PhoneModule>
+      </li>
+    );
+  }
   return (
     <li
       data-visual-slot="import-step"
@@ -365,12 +422,19 @@ function DropTarget({
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [hovered, setHovered] = useState(false);
+  const phone = useIsPhone();
 
   /** Drag-over outranks hover: a file in hand is the stronger fact. */
   const armed = isDragging || hovered;
 
   return (
     <>
+      {phone ? (
+        /* A phone cannot drop: the way in is the native picker. */
+        <BigButton main data-testid="import-drop" onClick={() => inputRef.current?.click()}>
+          Choose a file
+        </BigButton>
+      ) : (
       <DropField
         as="button"
         type="button"
@@ -403,6 +467,7 @@ function DropTarget({
           {`or click to choose one. ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
         </span>
       </DropField>
+      )}
 
       <input
         ref={inputRef}
@@ -427,6 +492,9 @@ export default function ImportPage() {
   const extractor = useKitDocument(EXTRACTOR_URL, true);
   const compiler = useKitDocument(COMPILER_URL, compilerOpen);
 
+  const phone = useIsPhone();
+  /* On a phone the frame's panel steps back: the steps are modules on the Page shade. */
+  useColumnPanels(phone);
   const drop = useBuildFileDrop();
   /** Reading, reviewing or refusing: the steps have been left behind. */
   const taking = drop.state.name !== "idle";
@@ -465,13 +533,14 @@ export default function ImportPage() {
           maxWidth: 680,
           margin: "0 auto",
           padding: `0 ${SPACE_COMPACT.md}px`,
+          ...(phone ? { gap: 16 } : null),
         }}
       >
         {/* It disappears once a file is in hand: `taking` is true from the moment a Build File is being read, reviewed or
             refused, and the intake gets the page to itself. */}
         {taking ? null : (
           <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <h1 style={{ ...hero, margin: 0, color: t.text }}>Import a Build File</h1>
+            <h1 style={phone ? { margin: 0, fontFamily: FIGTREE, fontSize: 24, fontWeight: 600, lineHeight: "28px", letterSpacing: "-0.02em", color: t.text } : { ...hero, margin: 0, color: t.text }}>Import a Build File</h1>
             <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>Post a build without writing it up.</p>
           </header>
         )}
@@ -494,7 +563,7 @@ export default function ImportPage() {
               padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 24,
+              gap: phone ? 8 : 24,
             }}
           >
             <Step ordinal={1} title="Copy the Extractor">
@@ -541,7 +610,7 @@ export default function ImportPage() {
               </p>
             </Step>
 
-            <Step ordinal={3} title="Drop it here">
+            <Step ordinal={3} title={phone ? "Choose your Build File" : "Drop it here"}>
               <DropTarget
                 isDragging={drop.isDragging}
                 onFile={(file) => void drop.acceptFile(file)}
