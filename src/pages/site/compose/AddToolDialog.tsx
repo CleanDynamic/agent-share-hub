@@ -30,6 +30,7 @@ import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from 
 import { FieldArea, FieldInput, Hint, MODAL_WIDTH, RemovableTag, Row, SegmentedField, TagList, Block, BlockHead } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
+import { PickMenu } from "./PickMenu";
 
 export const TOOL_DIALOG_COPY = {
   title: "Add a tool",
@@ -114,10 +115,20 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
       {/* Nine options: the full width of the window, its label above, so each says its name. */}
       <Block noRule testId="tool-connection">
         <BlockHead label={TOOL_DIALOG_COPY.connected} />
-        <ChoiceGrid<ToolConnection> label={TOOL_DIALOG_COPY.connected} items={CONNECTION_CHOICES} value={connection} onChange={setConnection} phone={phone} allowClear />
+        {phone ? (
+          /* Prompt 24: a picker on a phone; picking the chosen method again clears it, as the grid does. */
+          <PickMenu<ToolConnection> label={TOOL_DIALOG_COPY.connected} options={CONNECTION_CHOICES} value={connection} onChange={(next) => setConnection((current) => (current === next ? null : next))} phone field />
+        ) : (
+          <ChoiceGrid<ToolConnection> label={TOOL_DIALOG_COPY.connected} items={CONNECTION_CHOICES} value={connection} onChange={setConnection} phone={phone} allowClear />
+        )}
       </Block>
       <Row id={`${uid}-did`} label={TOOL_DIALOG_COPY.did} phone={phone}>
-        <FieldInput id={`${uid}-did`} phone={phone} value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} />
+        {phone ? (
+          /* Prompt 24: multi-line on a phone, with its optional title and Expand. */
+          <FieldArea id={`${uid}-did`} phone rows={3} value={did} maxLength={TOOL_SCOPES_MAX} onChange={(event) => setDid(event.target.value)} />
+        ) : (
+          <FieldInput id={`${uid}-did`} phone={phone} value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} />
+        )}
       </Row>
       <Row id={`${uid}-permissions`} label={TOOL_DIALOG_COPY.permissions} group phone={phone} top>
         <SegmentedField<ToolPermission>

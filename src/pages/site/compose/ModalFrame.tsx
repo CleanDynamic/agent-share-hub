@@ -189,9 +189,11 @@ export interface ModalFormProps {
   /** Synth 09: the footer's line in the window's own words ("Required: an application", "Goes after Prompt 3"), in place of
       the one `missing` makes. The fields still say "Required" under themselves from `missing`. */
   status?: string | null;
+  /** Prompt 24: on a phone, a line 13 Text 3 just above the footer (Mark still open's note). */
+  note?: string;
 }
 
-export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, status, children }: ModalFormProps) {
+export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, status, note, children }: ModalFormProps) {
   const ready = missing === null && !blocked;
   /* Synth 09: every box's title, by its name, handed to whoever opened the window when it is saved. */
   const sink = useContext(BoxTitleSinkContext);
@@ -223,6 +225,11 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         </div>
         </MissingFields.Provider>
       </ModalInset.Provider>
+      {phone && note ? (
+        <p data-testid="modal-note" style={{ margin: `${space[2]}px 0 0`, fontSize: 13, lineHeight: "16px", color: t.label }}>
+          {note}
+        </p>
+      ) : null}
       <div data-testid="modal-footer" style={phone ? PHONE_FOOTER : footerStyle(phone)}>
         <span data-testid="modal-status" role="status" style={FOOT_NOTE}>
           {status ?? requiredLine(missing)}

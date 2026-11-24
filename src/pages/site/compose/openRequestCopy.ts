@@ -14,6 +14,8 @@ export const OPEN_REQUEST_COPY = {
   label: "What's missing",
   submit: "Mark still open",
   empty: "Say what's missing.",
+  /** Prompt 24: on a phone, the line above the footer. */
+  topicNote: "A topic is started on OpenBuilds when the build is published.",
 } as const;
 
 /** UX-08 P1: when the topics a publish should start did not all go. The build is live whatever happens here. */

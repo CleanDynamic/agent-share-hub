@@ -111,7 +111,7 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
 
       <Block>
         <BlockHead label={SYSTEM_PROMPT_DIALOG_COPY.text} htmlFor={`${uid}-text`} count={`${body.length.toLocaleString("en-GB")} / ${SYSTEM_PROMPT_TEXT_MAX.toLocaleString("en-GB")}`} />
-        <FieldArea phone={phone} id={`${uid}-text`} rows={8} maxLength={SYSTEM_PROMPT_TEXT_MAX} value={body} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onChange={(event) => setBody(event.target.value)} />
+        <FieldArea phone={phone} tapOpens id={`${uid}-text`} rows={8} maxLength={SYSTEM_PROMPT_TEXT_MAX} value={body} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onChange={(event) => setBody(event.target.value)} />
       </Block>
 
       <Block label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo}>

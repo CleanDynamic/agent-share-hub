@@ -43,6 +43,7 @@ import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PHONE_SHEET_RADIUS } from "@/components/shell/chromeSize";
 import { SHEET_TOP_GAP as STEP_SHEET_TOP } from "@/components/phone/BottomSheet";
+import { useKeyboardInset } from "@/components/phone/useKeyboardInset";
 import { ChangedText } from "@/components/build/ChangedText";
 import { CodeLines } from "@/components/code/CodeLines";
 import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
@@ -206,7 +207,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
-  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal: sessionPrompts.length, sessionName: group && dated ? `Session ${group.number}` : null };
+  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal: sessionPrompts.length, sessionName: group && dated ? `Session ${group.number}` : null, placeLess: [tool, when || null].filter(Boolean).join(" · ") };
 }
 
 /* ── the refined look (UI-P94) ── */
@@ -555,7 +556,7 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
   const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
   const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal, sessionName } = bodyFacts(props, step, prompts);
+  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal, sessionName, placeLess } = bodyFacts(props, step, prompts);
 
   // Opening puts focus on the text box.
   useEffect(() => {
@@ -587,7 +588,8 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
             </Dialog.Title>
           )}
           <p data-testid="full-prompt-line" style={{ ...SUBTITLE, overflowWrap: "anywhere" }}>
-            {line}
+            {/* Prompt 24: on a phone the progress under the header says the position, so the line leaves it out. */}
+            {phone && sessionTotal > 0 && inSession > 0 ? placeLess || name : line}
           </p>
         </div>
         <div style={HEADER_ICONS}>
@@ -705,6 +707,8 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
 
 export function FullPromptWindow(props: FullPromptWindowProps) {
   const phone = useIsPhone();
+  /* Prompt 24: the step sheet ends at the keyboard's top. */
+  const keyboard = useKeyboardInset();
   const prompts = windowPrompts(props.steps);
   const step = props.openId ? prompts.find((candidate) => candidate.id === props.openId) : undefined;
   const { onNavigate } = props;
@@ -741,7 +745,7 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           style={{
             ...(phone
               ? /* Prompt 24: the step sheet, a full sheet (59 below the top) on Card, radius 16 at the top, sliding up. */
-                { position: "fixed", zIndex: LAYER.promptWindow, left: 0, right: 0, bottom: 0, top: STEP_SHEET_TOP, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`, background: t.module, color: t.text, fontFamily: FIGTREE }
+                { position: "fixed", zIndex: LAYER.promptWindow, left: 0, right: 0, bottom: keyboard, top: STEP_SHEET_TOP, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`, background: t.module, color: t.text, fontFamily: FIGTREE }
               : /* F38, Synth 09: the shared window placement, its top pinned at 48 (F25), so a section that opens moves nothing above it. */
                 windowPlacement(MODAL_WIDTH.wide, LAYER.promptWindow)),
           }}

@@ -14,6 +14,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
+import { PhonePickList } from "@/components/phone/PhonePickList";
 import { size } from "@/lib/theme/space";
 
 export interface PickOption<V extends string> {
@@ -41,6 +42,15 @@ export function PickMenu<V extends string>({ label, options, value, onChange, ph
   const [open, setOpen] = useState(false);
   const chosen = options.find((option) => option.value === value);
   const shown = chosen ? (chosen.label ?? chosen.value) : "";
+  /* Prompt 24: on a phone the field is a 44 tall box with a chevron that pushes a searchable list inside the sheet. */
+  if (phone) {
+    return (
+      <>
+        <PickerFieldButton id={id} aria-label={label} aria-haspopup="dialog" value={shown || null} placeholder={placeholder} phone open={open} style={style} onClick={() => setOpen(true)} />
+        <PhonePickList open={open} onClose={() => setOpen(false)} title={label} value={value} groups={[{ items: options.map((option) => ({ value: option.value, label: option.label ?? option.value })) }]} onPick={(next) => onChange(next as V)} />
+      </>
+    );
+  }
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>
       <Menu.Trigger asChild>

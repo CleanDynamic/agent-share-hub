@@ -32,7 +32,7 @@ import { AGENT_SETUP_COPY, savedModels, setupReady, useAgentSetupFields, type Ag
 import { ChoiceGrid } from "./ChoiceGrid";
 import { HelpersField } from "./HelpersField";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { Block, ChoiceCards, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
+import { Block, BlockHead, ChoiceCards, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const AGENT_DIALOG_COPY = {
@@ -246,11 +246,21 @@ function Form({
 
       {team ? null : parts.models}
 
+      {/* Prompt 24: on a phone the instructions follow Name and Model in the body, before the fold. */}
+      {phone ? (
+        <Block label={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} testId="agent-instructions">
+          <BlockHead label={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} htmlFor={`${uid}-instructions`} />
+          <FieldArea phone id={`${uid}-instructions`} rows={4} value={instructions} onChange={(event) => setInstructions(event.target.value)} />
+        </Block>
+      ) : null}
+
       <OptionalSection>
         {/* SV-28 P1: a team's window edits the team's own instructions, which every agent in it follows; `{name}` variables allowed. */}
+        {phone ? null : (
         <OptionalField name={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
           <FieldArea phone={phone} rows={4} aria-label={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={team ? TEAM_INSTRUCTIONS_COPY.placeholder : AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
         </OptionalField>
+        )}
 
         {team ? null : (
         <OptionalField name="Available tools" description={AGENT_DIALOG_COPY.toolsLine} summary={summaryOf(toolNames)} phone={phone}>

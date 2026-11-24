@@ -32,6 +32,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 
 import { GlyphButton, ModalShell } from "./ModalFrame";
+import { PhonePushPanel } from "@/components/phone/PushPanel";
 import { COUNT, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, Row, TextLink, bodyStyle, footerStyle } from "./modalRecipes";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, InnerPanel, PAD, SECTION_LABEL, SortableRows, SquareSwatch, UndoRedo, data, words } from "./referencePieces";
 
@@ -68,6 +69,8 @@ export const GROUP_WINDOW_COPY = {
   deleteAction: "Delete",
   noName: "No name",
   inGroup: "In another group",
+  /** Prompt 24: the notes' head on a phone. */
+  notesPhone: "How these components work together · optional",
   post: (n: number) => `Post ${n}`,
 } as const;
 
@@ -103,12 +106,30 @@ export interface ReferenceGroupWindowProps {
   onSave: (draft: ReferenceGroup) => boolean;
   onDelete: () => void;
   onClose: () => void;
+  /** Prompt 24, phone: a component's "Go to it": close the sheets, show its tile and pulse its colour once. */
+  onGoToMember?: (to: string, colour: string) => void;
 }
 
 /* ── one member row ── */
 
-function MemberRow({ grip, entry, phone, onRemove }: { grip: React.ReactNode; entry: RefEntry | undefined; phone: boolean; onRemove: () => void }) {
+function MemberRow({ grip, entry, phone, onRemove, onGoTo }: { grip: React.ReactNode; entry: RefEntry | undefined; phone: boolean; onRemove: () => void; onGoTo?: () => void }) {
   const name = entry ? (entry.kind === "Session" || entry.kind === "Part" ? shownName(entry) : entry.title) : "";
+  if (phone) {
+    /* Prompt 24: the number box, the title 15/500 and a ghost "Go to it". */
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, minHeight: 52 }}>
+        {grip}
+        <Badge>{entry?.number ?? ""}</Badge>
+        <span style={{ ...words(15, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{name}</span>
+        {onGoTo ? (
+          <RecipeButton variant="ghost" phone small onClick={onGoTo} aria-label={`${GROUP_WINDOW_COPY.goTo}: ${name}`}>
+            {GROUP_WINDOW_COPY.goTo}
+          </RecipeButton>
+        ) : null}
+        <GlyphButton glyph="x" label={GROUP_WINDOW_COPY.remove(name)} phone onClick={onRemove} />
+      </span>
+    );
+  }
   return (
     <span style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0 }}>
       {grip}
@@ -249,10 +270,11 @@ function GroupForm(props: ReferenceGroupWindowProps) {
   const notes = draft.notes ?? "";
   const named = start.name ?? GROUP_WINDOW_COPY.noName;
   const inset = phone ? 0 : MODAL_PAD;
-  const block = { display: "flex", flexDirection: "column" as const, gap: GAP.column, padding: `14px ${inset}px 16px`, borderTop: `1px solid ${t.hairlineModule}`, minWidth: 0 };
+  /* Prompt 24: on a phone the sections are spaced, not ruled. */
+  const block = { display: "flex", flexDirection: "column" as const, gap: GAP.column, padding: `14px ${inset}px 16px`, borderTop: phone ? 0 : `1px solid ${t.hairlineModule}`, minWidth: 0 };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13 }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: phone ? "100%" : 0, flex: "1 1 auto", fontSize: phone ? 16 : 13 }}>
       <ModalInset.Provider value={inset}>
         <div data-testid="group-window-body" style={bodyStyle(phone)}>
           <Row label={GROUP_WINDOW_COPY.name} id="group-name" phone={phone} noRule>
@@ -260,7 +282,11 @@ function GroupForm(props: ReferenceGroupWindowProps) {
           </Row>
           <Row label={GROUP_WINDOW_COPY.colour} id="group-colour" phone={phone}>
             <span style={{ display: "flex", alignItems: "center", gap: GAP.row, minWidth: 0 }}>
-              <SquareSwatch colour={coloured ? draft.colour : null} size={30} />
+              {phone ? (
+                <span aria-hidden="true" data-testid="group-swatch" style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 10, background: coloured ? draft.colour : t.control }} />
+              ) : (
+                <SquareSwatch colour={coloured ? draft.colour : null} size={30} />
+              )}
               <FieldInput
                 id="group-colour"
                 phone={phone}
@@ -323,13 +349,21 @@ function GroupForm(props: ReferenceGroupWindowProps) {
                 return {
                   key: ref,
                   name,
-                  render: (grip) => <MemberRow grip={grip} entry={entry} phone={phone} onRemove={() => setDraft((current) => ({ ...current, members: current.members.filter((member) => member !== ref) }))} />,
+                  render: (grip) => (
+                    <MemberRow
+                      grip={grip}
+                      entry={entry}
+                      phone={phone}
+                      onGoTo={props.onGoToMember && coloured ? () => props.onGoToMember?.(ref, draft.colour) : undefined}
+                      onRemove={() => setDraft((current) => ({ ...current, members: current.members.filter((member) => member !== ref) }))}
+                    />
+                  ),
                 };
               })}
             />
           </div>
           <div role="group" aria-labelledby="group-notes" data-testid="group-notes" style={block}>
-            <BlockTitle title={GROUP_WINDOW_COPY.notes} id="group-notes">
+            <BlockTitle title={phone ? GROUP_WINDOW_COPY.notesPhone : GROUP_WINDOW_COPY.notes} id="group-notes">
               <span data-testid="group-notes-count" style={COUNT}>
                 {GROUP_WINDOW_COPY.notesCount(notes.length)}
               </span>
@@ -341,8 +375,8 @@ function GroupForm(props: ReferenceGroupWindowProps) {
           </div>
         </div>
       </ModalInset.Provider>
-      <div data-testid="group-window-footer" style={footerStyle(phone)}>
-        <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />
+      <div data-testid="group-window-footer" style={phone ? { ...footerStyle(phone), position: "sticky", bottom: 0, margin: "12px -16px 0", padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", background: t.surface } : footerStyle(phone)}>
+        {phone ? null : <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />}
         {isNew ? null : (
           <button type="button" data-testid="group-delete" onClick={() => setDeleting(true)} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(textStep.meta, 500, DANGER) }}>
             {GROUP_WINDOW_COPY.delete}
@@ -351,9 +385,12 @@ function GroupForm(props: ReferenceGroupWindowProps) {
         <span data-testid="group-window-note" role="status" style={FOOT_NOTE}>
           {note ?? ""}
         </span>
-        <RecipeButton phone={phone} onClick={onClose}>
-          {GROUP_WINDOW_COPY.cancel}
-        </RecipeButton>
+        {/* Prompt 24: on a phone Back is the way out without saving; the footer's action is Save. */}
+        {phone ? null : (
+          <RecipeButton phone={phone} onClick={onClose}>
+            {GROUP_WINDOW_COPY.cancel}
+          </RecipeButton>
+        )}
         <RecipeButton variant="primary" phone={phone} disabled={Boolean(note)} onClick={() => onSave(draft) && onClose()}>
           {GROUP_WINDOW_COPY.save}
         </RecipeButton>
@@ -376,7 +413,15 @@ function GroupForm(props: ReferenceGroupWindowProps) {
 }
 
 export function ReferenceGroupWindow(props: ReferenceGroupWindowProps) {
-  const { open, onClose, draft } = props;
+  const { open, onClose, draft, phone } = props;
+  /* Prompt 24: on a phone the group is pushed inside the sheet (over Colours, when it came from there), with a back chevron. */
+  if (phone) {
+    return (
+      <PhonePushPanel open={open} onClose={onClose} title={GROUP_WINDOW_COPY.title} data-testid="group-window" flush>
+        <GroupForm key={`${draft.id}:${open}`} {...props} />
+      </PhonePushPanel>
+    );
+  }
   return (
     <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={GROUP_WINDOW_COPY.title} subtitle={GROUP_WINDOW_COPY.subtitle} testId="group-window">
       <GroupForm key={`${draft.id}:${open}`} {...props} />

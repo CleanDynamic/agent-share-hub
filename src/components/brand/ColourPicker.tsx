@@ -407,11 +407,11 @@ function SaveCircle({ disabled, onSave }: { disabled: boolean; onSave: () => voi
 }
 
 /** A saved swatch, with its menu on right-click (press and hold on a phone): Use this colour, Remove from saved. */
-export function SavedSwatch({ hex, current, onUse, onRemove, large = false }: { hex: string; current: boolean; onUse: () => void; onRemove: () => void; large?: boolean }) {
+export function SavedSwatch({ hex, current, onUse, onRemove, large = false, touch = false }: { hex: string; current: boolean; onUse: () => void; onRemove: () => void; large?: boolean; /** Prompt 24: a phone's 44 hit area round the 28 swatch (a long press opens its menu). */ touch?: boolean }) {
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
-        <span style={{ display: "inline-flex" }} data-saved-swatch={hex}>
+        <span style={{ display: "inline-flex", ...(touch ? { padding: 8, margin: -8 } : null) }} data-saved-swatch={hex}>
           <Swatch hex={hex} current={current} onPick={onUse} onKeyDown={moveAlong} large={large} />
         </span>
       </ContextMenu.Trigger>

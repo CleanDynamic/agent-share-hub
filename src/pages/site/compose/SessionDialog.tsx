@@ -329,7 +329,16 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
                 value={date}
                 maxLength={10}
                 placeholder={SESSION_DIALOG_COPY.dateHint}
-                onChange={(event) => setDate(event.target.value)}
+                /* Prompt 24: the phone's own date picker (its value is the same 2026-10-12); a pick saves as a blur would. */
+                type={phone ? "date" : "text"}
+                onChange={(event) => {
+                  setDate(event.target.value);
+                  const day = event.target.value.trim();
+                  if (phone && isIsoDay(day) && day !== (view.editable?.date ?? "")) {
+                    setWrongDate(false);
+                    h.onSessionMeta?.(key, { date: day });
+                  }
+                }}
                 onBlur={() => {
                   const day = date.trim();
                   const ok = isIsoDay(day);
@@ -382,6 +391,14 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
           </Block>
         ) : null}
 
+        {/* Prompt 24: on a phone Cost and Tokens stand in their own group, before the optional fold. */}
+        {h.onSessionExtras && phone ? (
+          <Block label={SESSION_DIALOG_COPY.costAndTokens} testId="session-cost-tokens">
+            <BlockHead label={SESSION_DIALOG_COPY.costAndTokens} />
+            <CostControl id={key} extras={extras} phone onChange={saveExtras} />
+            <TokensControl id={key} extras={extras} phone onChange={saveExtras} />
+          </Block>
+        ) : null}
         {h.onSessionExtras ? (
           <OptionalSection>
             <OptionalField name={EXTRAS_COPY.modelId} summary={modelIdHeld(extras)} phone={phone}>
@@ -396,15 +413,19 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             <OptionalField name="Access" summary={accessHeld(extras)} phone={phone}>
               <AccessControl id={key} extras={extras} proposed={proposedAccess((view.setup ?? []).filter((row) => row.kind === SETUP_KIND_LABEL.server).map((row) => row.name))} phone={phone} onChange={saveExtras} />
             </OptionalField>
-            <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
-              <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
-            </OptionalField>
+            {phone ? null : (
+              <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
+                <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+              </OptionalField>
+            )}
             <OptionalField name={EXTRAS_COPY.time} description={EXTRAS_COPY.timeHint} summary={timeHeld(extras)} phone={phone}>
               <TimeControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>
-            <OptionalField name={EXTRAS_COPY.tokens} summary={tokensHeld(extras)} phone={phone}>
-              <TokensControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
-            </OptionalField>
+            {phone ? null : (
+              <OptionalField name={EXTRAS_COPY.tokens} summary={tokensHeld(extras)} phone={phone}>
+                <TokensControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+              </OptionalField>
+            )}
             <OptionalField name={EXTRAS_COPY.trace} description={EXTRAS_COPY.traceHint} summary={extras.traceUrl ?? null} phone={phone}>
               <TraceControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>

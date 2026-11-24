@@ -195,7 +195,7 @@ function ColoursBody(props: ColoursWindowProps) {
       <ModalInset.Provider value={inset}>
         <div data-testid="colours-body" style={bodyStyle(phone)}>
           <div role="group" aria-labelledby="colours-groups" data-testid="colours-groups" style={{ ...block, borderTop: 0 }}>
-            <BlockTitle title={COLOURS_COPY.groups} id="colours-groups" sub={COLOURS_COPY.order(groups.length)} />
+            <BlockTitle title={COLOURS_COPY.groups} small={phone} id="colours-groups" sub={COLOURS_COPY.order(groups.length)} />
             {groups.length === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noGroups}</span> : null}
             <SortableRows
               label={COLOURS_COPY.groups}
@@ -251,7 +251,7 @@ function ColoursBody(props: ColoursWindowProps) {
             />
           </div>
           <div role="group" aria-labelledby="colours-singles" data-testid="colours-singles" style={block}>
-            <BlockTitle title={COLOURS_COPY.singles} id="colours-singles" sub={COLOURS_COPY.singlesCount(singlesCount)} />
+            <BlockTitle title={COLOURS_COPY.singles} small={phone} id="colours-singles" sub={COLOURS_COPY.singlesCount(singlesCount)} />
             {singlesCount === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noSingles}</span> : null}
             <SortableRows
               label={COLOURS_COPY.singles}
@@ -263,6 +263,17 @@ function ColoursBody(props: ColoursWindowProps) {
                   key: ref,
                   name: nameOf(ref),
                   render: (grip) => (
+                    phone ? (
+                      /* Prompt 24: a single colour on a phone: a 16 swatch (radius 4), the name 15/500, "linked text" 13 Text 3. */
+                      <span data-colours-single={ref} style={{ display: "flex", alignItems: "center", gap: 12, flexGrow: 1, minWidth: 0, minHeight: 52 }}>
+                        {grip}
+                        <span aria-hidden="true" style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, background: colour }} />
+                        <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+                          <span style={{ ...words(15, 500, t.text), ...ELLIPSIS }}>{nameOf(ref)}</span>
+                          {isLinked(ref) ? <span style={words(13, 400, t.label)}>{COLOURS_COPY.linked}</span> : null}
+                        </span>
+                      </span>
+                    ) : (
                     <span data-colours-single={ref} style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, padding: "0 4px" }}>
                       {grip}
                       <SquareSwatch colour={colour} size={14} />
@@ -271,6 +282,7 @@ function ColoursBody(props: ColoursWindowProps) {
                       <span style={{ ...COUNT, flexGrow: 1 }}>{colour}</span>
                       {isLinked(ref) ? <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>{COLOURS_COPY.linked}</span> : null}
                     </span>
+                    )
                   ),
                 };
               })}
@@ -285,11 +297,11 @@ function ColoursBody(props: ColoursWindowProps) {
             ))}
           </div>
           <div role="group" aria-labelledby="colours-saved" data-testid="colours-saved" style={block}>
-            <BlockTitle title={COLOURS_COPY.saved} id="colours-saved" sub={COLOURS_COPY.savedHint} />
+            <BlockTitle title={COLOURS_COPY.saved} small={phone} id="colours-saved" sub={COLOURS_COPY.savedHint} />
             {props.swatches.favourites.length === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noSaved}</span> : null}
-            <div data-swatch-row="" style={{ display: "flex", flexWrap: "wrap", gap: GAP.swatch }}>
+            <div data-swatch-row="" style={{ display: "flex", flexWrap: "wrap", gap: phone ? 16 : GAP.swatch, ...(phone ? { padding: 8 } : null) }}>
               {props.swatches.favourites.map((hex) => (
-                <SavedSwatch key={hex} large hex={hex} current={false} onUse={() => undefined} onRemove={() => props.onSwatches({ ...props.swatches, favourites: props.swatches.favourites.filter((entry) => entry !== hex) })} />
+                <SavedSwatch key={hex} large touch={phone} hex={hex} current={false} onUse={() => undefined} onRemove={() => props.onSwatches({ ...props.swatches, favourites: props.swatches.favourites.filter((entry) => entry !== hex) })} />
               ))}
             </div>
           </div>

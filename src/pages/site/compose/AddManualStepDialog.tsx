@@ -29,7 +29,7 @@ import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
 
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
+import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, PhonePictureButtons, RecipeButton, SegmentedField, TextLink } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 import { ApprovalForm, type ApprovalChoices } from "./ApprovalForm";
@@ -138,7 +138,12 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit, aft
       {edit?.before ? edit.before(input()) : null}
       <Block label={MANUAL_DIALOG_COPY.where} noRule>
         <BlockHead label={MANUAL_DIALOG_COPY.where} />
-        <OptionGrid<WhereKind> label={MANUAL_DIALOG_COPY.where} bare phone={phone} items={WHERE_CHOICES} chosen={[kind]} onPick={setKind} />
+        {phone ? (
+          /* Prompt 24: on a phone the places are chips in one row that scrolls sideways. */
+          <SegmentedField<WhereKind> label={MANUAL_DIALOG_COPY.where} phone scroll items={WHERE_CHOICES} value={kind} onChange={setKind} testId="manual-where" />
+        ) : (
+          <OptionGrid<WhereKind> label={MANUAL_DIALOG_COPY.where} bare phone={phone} items={WHERE_CHOICES} chosen={[kind]} onPick={setKind} />
+        )}
         {kind === "app" ? <ToolPicker label="App" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an app" field /> : null}
         {kind === "site" ? <FieldInput phone={phone} mono inputMode="url" aria-label={MANUAL_DIALOG_COPY.siteLink} placeholder="https://" value={site} onChange={(event) => setSite(event.target.value)} /> : null}
       </Block>
@@ -174,11 +179,30 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit, aft
             </li>
           ))}
         </ol>
-        <TextLink phone={phone} disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
-          {MANUAL_DIALOG_COPY.addLine}
-        </TextLink>
+        {phone ? (
+          <span>
+            <RecipeButton variant="ghost" phone disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
+              {MANUAL_DIALOG_COPY.addLine}
+            </RecipeButton>
+          </span>
+        ) : (
+          <TextLink phone={phone} disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
+            {MANUAL_DIALOG_COPY.addLine}
+          </TextLink>
+        )}
       </Block>
 
+      {/* Prompt 24: on a phone the picture is two big buttons, Camera and Add a picture, under the lines. */}
+      {phone ? (
+        <Block label={MANUAL_DIALOG_COPY.picture} testId="manual-picture-block">
+          <PhonePictureButtons choose={MANUAL_DIALOG_COPY.addPicture} label={MANUAL_DIALOG_COPY.addPicture} onFiles={choose} testId="manual-picture" />
+          {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone /> : null}
+          {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone /> : null}
+          {fileError ? <Alert>{fileError}</Alert> : null}
+        </Block>
+      ) : null}
+
+      {phone ? null : (
       <OptionalSection>
         <OptionalField name={MANUAL_DIALOG_COPY.picture} summary={summaryOf(file?.name, file ? null : kept)} phone={phone}>
           <Inline>
@@ -191,6 +215,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit, aft
           {fileError ? <Alert>{fileError}</Alert> : null}
         </OptionalField>
       </OptionalSection>
+      )}
       {edit?.after ? edit.after(input()) : null}
     </ModalForm>
   );
