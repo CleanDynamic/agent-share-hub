@@ -26,6 +26,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
+import { PhoneFiltersSheet } from "./BuildsFiltersPhone";
 import { BuildsControl, BuildsTextButton, text } from "./BuildsFrame";
 import { DeleteSetDialog, SetNameDialog } from "./SetDialogs";
 
@@ -616,6 +617,7 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
 /** BF-07: the Filters dialog with the panel in it, and the name search in its header. The search is held here, where both the
     header and the body reach it, and is cleared when the dialog closes. */
 export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersViewProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const phone = useIsPhone();
   const [search, setSearch] = useState("");
   /* Close, Escape and Cancel drop the draft; Apply commits it. Either way the search goes. */
   const close = (next: boolean) => {
@@ -629,6 +631,8 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
     setSearch("");
     onOpenChange(false);
   };
+  /* Prompt 21: on a phone the dialog is a full sheet from the bottom (`BuildsFiltersPhone`), with the same draft, Apply and Cancel. */
+  if (phone) return <PhoneFiltersSheet props={props} open={open} onClose={() => close(false)} onDone={apply} match={props.match ? <MatchSelect match={props.match} /> : undefined} />;
   return (
     <BuildsFiltersDialog
       open={open}

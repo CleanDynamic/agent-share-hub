@@ -1020,18 +1020,19 @@ describe("BF-12 every head sorts when its answer is true", () => {
 });
 
 describe("BF-12 one sort control on the page", () => {
-  it("the Sort menu and the heads never disagree", async () => {
+  it("the Sort sheet (a phone's one sort control) and the page never disagree", async () => {
     window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
     listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1), build(2)], total: 2 });
     renderAt("/builds?sort=steps&dir=asc");
-    await screen.findByRole("link", { name: "Build 1" });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Steps" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Rebuilds" }));
+    await screen.findByRole("link", { name: /Build 1/ });
+    /* Prompt 21: below 768 Sort is a sheet of 52-tall rows; choosing one closes it and sorts. */
+    fireEvent.click(screen.getByRole("button", { name: "Sort: Steps" }));
+    fireEvent.click(await screen.findByRole("radio", { name: "Rebuilds" }));
     await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Rebuilds" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Steps" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sort: Rebuilds" }));
+    fireEvent.click(await screen.findByRole("radio", { name: "Steps" }));
     await waitFor(() => expect(address).toBe("/builds?sort=steps"));
-    expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
+    expect(await screen.findByRole("button", { name: "Sort: Steps" })).toBeTruthy();
   });
 });
 

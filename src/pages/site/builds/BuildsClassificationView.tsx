@@ -14,6 +14,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { Empty } from "@/components/vision/Empty";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
@@ -23,10 +24,11 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BUILDS_PANEL, BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BUILDS_PANEL, BuildsControl, panelFor, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { ActiveFilters, type TableChip } from "./BuildsTableView";
+import { CheckSheet, PHONE_CARD, PhoneShowMore, phoneText } from "./BuildsPhone";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
 export interface BuildsClassificationViewProps {
@@ -149,6 +151,61 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
   );
 }
 
+/* ── on a phone (prompt 21): a Panel card per build; one row per facet with no lines: a 112 column with the facet's name and its
+   source under it, then the values as links (13 Text, dotted underline at offset 3), 4 by 10 apart. ── */
+
+function PhoneValue({ value }: { value: ClassValueView }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  if (value.href === null) return <span>{value.label}</span>;
+  return (
+    <Link
+      to={value.href}
+      preventScrollReset
+      {...handlers}
+      style={{ color: t.text, textDecorationLine: "underline", textDecorationStyle: "dotted", textDecorationColor: t.label, textUnderlineOffset: 3, display: "inline-block", minHeight: 24, borderRadius: r.chip, ...ring(state.focusVisible) }}
+    >
+      {value.label}
+    </Link>
+  );
+}
+
+function PhoneFacetRow({ row }: { row: ClassRowView }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "112px minmax(0, 1fr)", columnGap: 12 }}>
+      <dt style={{ ...phoneText(13, 400, t.text) }}>
+        {row.name}
+        {row.source ? <span style={{ display: "block", ...phoneText(12, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
+      </dt>
+      <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 10px", ...phoneText(13, 400, t.text) }}>
+        {row.values.length === 0 ? <span style={{ color: t.label }}>Not stated</span> : row.values.map((value, index) => <PhoneValue key={`${value.label}-${index}`} value={value} />)}
+      </dd>
+    </div>
+  );
+}
+
+function PhoneClassificationCard({ card, index }: { card: ClassCardView; index: number }) {
+  const blank = card.rows.every((row) => row.values.length === 0);
+  return (
+    <article data-testid="classification-card" style={{ ...PHONE_CARD, ...(index >= 4 ? { contentVisibility: "auto", containIntrinsicSize: `auto ${96 + card.rows.length * 40}px` } : null) }}>
+      <span style={{ minWidth: 0 }}>
+        <Link to={card.href} style={{ display: "block", ...ellipsis, ...phoneText(15, 600, t.text), textDecoration: "none" }}>
+          {card.title}
+        </Link>
+        <span style={{ display: "block", ...phoneText(13, 400, t.label) }}>{card.subtitle}</span>
+      </span>
+      {blank ? (
+        <p style={{ margin: 0, ...phoneText(13, 400, t.label) }}>Not classified yet</p>
+      ) : (
+        <dl style={{ margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          {card.rows.map((row) => (
+            <PhoneFacetRow key={row.facet} row={row} />
+          ))}
+        </dl>
+      )}
+    </article>
+  );
+}
+
 /** The 15 facets as checkboxes; at least one stays. */
 function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, "facets" | "onFacets">) {
   const toggle = (facet: Facet) => {
@@ -175,7 +232,52 @@ export default function BuildsClassificationView(props: BuildsClassificationView
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
+  const phone = useIsPhone();
   useColumnPanels(true);
+  if (phone) {
+    const toggle = (id: string) => {
+      const facet = id as Facet;
+      const next = facets.includes(facet) ? facets.filter((entry) => entry !== facet) : [...facets, facet];
+      if (next.length > 0) onFacets(next);
+    };
+    return (
+      <div data-testid="builds-classification" style={{ ...ROOT, ...panelFor(true) }}>
+        <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px", overflowX: "auto", scrollbarWidth: "none" }}>
+          <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />
+          <BuildsControl aria-haspopup="dialog" aria-expanded={facetsOpen} onClick={() => setFacetsOpen(true)}>
+            <span style={{ color: t.text2 }}>Facets shown</span>
+            <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>
+          </BuildsControl>
+          <UpdatingStatus updating={updating} />
+        </div>
+        <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
+        {filters ? <BuildsFilters {...filters} open={filtersOpen} onOpenChange={setFiltersOpen} /> : null}
+        <CheckSheet
+          open={facetsOpen}
+          onOpenChange={setFacetsOpen}
+          title="Facets shown"
+          titleNote={`${facets.length} of ${ALL_FACETS.length}`}
+          groups={[{ rows: ALL_FACETS.map((facet) => ({ id: facet, label: FACET_LABEL[facet], checked: facets.includes(facet), disabled: facets.includes(facet) && facets.length === 1 })) }]}
+          onToggle={toggle}
+        />
+        <p data-testid="classification-key" style={{ margin: 0, padding: "12px 16px 0", ...phoneText(12, 400, t.label) }}>
+          Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>derived</span> when the tiles were not kept, <span style={{ color: t.text2 }}>stated</span> by the maker, or{" "}
+          <span style={{ color: t.text2 }}>corrected</span> by the maker
+        </p>
+        {cards.length === 0 && empty ? (
+          <div style={{ margin: "20px 16px 0" }}>{empty}</div>
+        ) : (
+          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...(updating ? { opacity: 0.5 } : null) }}>
+            {cards.map((card, index) => (
+              <PhoneClassificationCard key={card.id} card={card} index={index} />
+            ))}
+          </div>
+        )}
+        {onMore ? <PhoneShowMore onMore={onMore} loading={loadingMore} /> : null}
+      </div>
+    );
+  }
   return (
     <div data-testid="builds-classification" style={{ ...ROOT, ...BUILDS_PANEL }}>
       <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
