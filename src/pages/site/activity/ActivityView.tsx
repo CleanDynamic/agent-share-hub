@@ -348,7 +348,8 @@ function Head({ unread, live, onMarkAllRead, phone, onShowMe }: { unread: number
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `0 ${PAD}px 8px`, minHeight: 40, flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-        <h1 style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
+        {/* Prompt 19: on a phone the top bar names the page, so the heading is for screen readers only. */}
+        <h1 className={phone ? "sr-only" : undefined} style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
         <LiveState live={live} />
         {/* The unread count, for screen readers: the bars on the rows say it to the eye. */}
         {unread === null ? null : (
@@ -363,9 +364,12 @@ function Head({ unread, live, onMarkAllRead, phone, onShowMe }: { unread: number
             Show me
           </Button>
         ) : null}
-        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
-          Mark all read
-        </Button>
+        {/* On a phone "Mark all read" is the top bar's right slot (the page registers it). */}
+        {phone ? null : (
+          <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+            Mark all read
+          </Button>
+        )}
       </div>
     </div>
   );

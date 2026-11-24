@@ -18,6 +18,7 @@ import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { ProfilePlaceholder } from "@/lib/routing/placeholders";
 import { usePageReady } from "@/lib/routing/pageReady";
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { FollowListView, followTitle } from "./FollowListView";
 import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED } from "@/lib/copy/copy";
 
@@ -77,6 +78,9 @@ export function FollowListPage({ which }: { which: FollowList }) {
       toast({ title: follow ? FOLLOW_PERSON_FAILED : UNFOLLOW_PERSON_FAILED, variant: "destructive" });
     }
   };
+
+  // Prompt 19: the top bar names the person, not the list.
+  useRegisterPageBar({ title: profile ? (profile.displayName ?? `@${handle}`) : undefined });
 
   return (
     /* G32: the page is drawn once the session is known; while the reads are out the list's own skeleton stands in its place. */

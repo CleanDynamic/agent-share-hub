@@ -1062,6 +1062,10 @@ function BuildPageBody() {
             maker={viewerIsCreator ? { editHref: `/compose/${build.id}` } : undefined}
           />
         }
+        bar={{
+          editHref: viewerIsCreator ? `/compose/${build.id}` : undefined,
+          onReport: viewerIsCreator ? undefined : () => setReporting({ type: "build", id: build.id }),
+        }}
         hero={{
           title: build.title,
           outcome: (build.outcome ?? "").trim(),

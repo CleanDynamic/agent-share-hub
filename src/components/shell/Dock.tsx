@@ -1,32 +1,30 @@
-// The dock (UI-P19): five floating tiles at the bottom of the phone.
+// The dock (prompt 19): the phone's bottom bar, five equal slots on Page. Home, Builds, New, OpenBuilds, Activity.
 //
-// `<nav aria-label="Primary">`, fixed, centred, 16px above the bottom edge plus
-// the safe-area inset so it clears the home indicator. Glass (`--dock`) — one of
-// the two blurred surfaces on a phone, with the header. Tiles are 62×44 links
-// (62×54 inside 7px before the UI-P55 density pass; 44 is the table's and the
-// touch floor's, and the dock is 5px around them):
-// Home, Builds, New (always `--action`), OpenBuilds, Activity. The current tile is
-// `--text` with `--on-text` and carries a lamp above it (`--lit`, with
-// `--nav-lamp-glow`); amber is light, never text. Activity shows a badge when
-// something is unread, and its accessible name says how many.
+// `<nav aria-label="Primary">`, fixed to the bottom edge, full width, no glass, no blur, no lamp, no glow. The current slot is
+// the filled icon with its label in Text; New is a Mint pill that opens the New sheet; Activity's unread state is a Mint
+// square at the icon and its accessible name says the count. Hidden where a pinned footer replaces it (`dockHiddenFor`), and
+// under 480 tall it scrolls with the page (`SHORT_WINDOW`).
 //
-// `DockView` is pure; `Dock` reads the route and the unread count. `placement`
-// is `fixed` everywhere except the catalogue, which draws it inside a strip.
+// `DockView` is pure; `Dock` reads the route and the unread count. `placement` is `fixed` everywhere except the catalogue.
 
 import { useShortWindow } from "./useMinWidth";
-import { memo } from "react";
+import { memo, useState, type CSSProperties } from "react";
+import { useLocation } from "react-router-dom";
 import { useCurrentPath } from "@/lib/routing/go";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { CONTROL } from "@/lib/theme/refinedControl";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
 import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
-import { DOCK_PAD, DOCK_TILE_HEIGHT } from "./chromeSize";
+import { PHONE_DOCK } from "./chromeSize";
+import { NewSheet } from "./NewSheet";
+import { dockHiddenFor } from "./phoneTopBar";
 
 export type DockTileName = "home" | "gallery" | "new" | "openbuilds" | "activity";
 
@@ -39,21 +37,55 @@ const TILES: readonly { name: DockTileName; label: string; href: string; icon: M
 ];
 
 export interface DockViewProps {
-  /** The tile with the lamp, or none. New is never current. */
+  /** The current slot, or none. New is never current. */
   current: Exclude<DockTileName, "new"> | null;
   unread: number;
   /** `absolute` only where the dock is drawn inside a strip (the catalogue). */
   placement?: "fixed" | "absolute" | "static";
+  /** New opens the New sheet. */
+  onNew?: () => void;
 }
 
-/* UI-P87, refined: no glass. A bar the width of the screen on `--surface` with a 1px `--surface-border` top edge, and
-   five control-recipe tiles in it, 44 high, radius 6, 6 apart: the glyph at 16 over the label at 10.5/500. The current
-   tile is the bell's current state, the `--control-on` fill and `--control-border` edge in `--text`, with the 2px
-   `--nav-mark` bar along its foot; never a colour. The unread count is the header's 12px `--lit-mark` badge. */
-/* Prompt 18: the phone icon set at 24, outline at rest and filled for the current tile. */
+/* Prompt 19: the dock on the phone. Fixed to the bottom edge, full width, on Page: no glass, no blur, no lamp, no glow, no
+   line. 56 tall plus the safe-area inset, a grid of five equal slots. Each slot is the icon at 24 over its label (13/16 500),
+   3 apart, in Text 3; the current slot is the filled icon with its label 600 in Text. New is a 44 by 32 Mint pill with the plus
+   at 20 in On-mint, and it opens the New sheet. Activity's unread state is a 9px Mint square with a 2px Page ring at the icon's
+   top right; the accessible name says the count. */
 const filled = (icon: MobileIconName, current: boolean): MobileIconName => (current && icon !== "new" ? (`${icon}f` as MobileIconName) : icon);
 
-function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps) {
+const SLOT: CSSProperties = {
+  position: "relative",
+  minWidth: 0,
+  height: PHONE_DOCK,
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 3,
+  border: 0,
+  background: "transparent",
+  padding: 0,
+  fontFamily: FIGTREE,
+  fontSize: 13,
+  lineHeight: "16px",
+  textDecoration: "none",
+  cursor: "pointer",
+};
+
+function NewSlot({ onNew }: { onNew?: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button type="button" data-testid="dock-tile-new" aria-haspopup="dialog" aria-label="New" onClick={onNew} {...handlers} style={{ ...SLOT, color: t.label, fontWeight: 500, ...ring(state.focusVisible) }}>
+      <span aria-hidden="true" style={{ width: 44, height: 32, borderRadius: 16, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <MobileIcon name="new" size={20} />
+      </span>
+      <span aria-hidden="true">New</span>
+    </button>
+  );
+}
+
+function RefinedDockView({ current, unread, placement = "fixed", onNew }: DockViewProps) {
   return (
     <nav
       data-testid="dock"
@@ -65,14 +97,15 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
         right: 0,
         bottom: 0,
         zIndex: 30,
-        display: "flex",
-        gap: 6,
-        padding: `${DOCK_PAD}px 8px calc(${DOCK_PAD}px + env(safe-area-inset-bottom))`,
+        display: "grid",
+        gridTemplateColumns: "repeat(5, 1fr)",
+        paddingBottom: "env(safe-area-inset-bottom)",
         boxSizing: "border-box",
-        background: t.surface,
+        background: t.bg,
       }}
     >
       {TILES.map(({ name, label, href, icon }) => {
+        if (name === "new") return <NewSlot key={name} onNew={onNew} />;
         const isCurrent = name === current;
         const badged = name === "activity" && unread > 0;
         return (
@@ -82,61 +115,19 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
             data-testid={`dock-tile-${name}`}
             aria-current={isCurrent ? "page" : undefined}
             aria-label={badged ? `Activity, ${unread} unread` : label}
-            style={{
-              position: "relative",
-              flex: 1,
-              minWidth: 0,
-              height: DOCK_TILE_HEIGHT,
-              boxSizing: "border-box",
-              borderRadius: 6,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              fontFamily: FIGTREE,
-              fontSize: 13,
-              fontWeight: 500,
-              ...CONTROL,
-              ...(isCurrent ? { background: t.controlOn, color: t.text } : { color: t.text2 }),
-            }}
+            style={{ ...SLOT, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.label }}
           >
-            {isCurrent && (
-              <span
-                aria-hidden="true"
-                data-ui="nav-mark"
-                style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
-              />
-            )}
-            <MobileIcon name={filled(icon, isCurrent)} size={24} />
+            <span style={{ position: "relative", display: "inline-flex" }}>
+              <MobileIcon name={filled(icon, isCurrent)} size={24} />
+              {badged && (
+                <span
+                  aria-hidden="true"
+                  data-testid="dock-unread"
+                  style={{ position: "absolute", top: -1, right: -3, width: 9, height: 9, borderRadius: 3, background: t.brandAccent, boxShadow: `0 0 0 2px ${t.bg}` }}
+                />
+              )}
+            </span>
             <span aria-hidden="true">{label}</span>
-            {badged ? " " : null}
-            {/* G7: after the word, so the visible text reads "Activity 3" as the name does; it is placed, so where it sits in the
-                markup moves nothing. */}
-            {badged && (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: 3,
-                  right: 3,
-                  minWidth: 12,
-                  height: 12,
-                  padding: "0 3px",
-                  boxSizing: "border-box",
-                  borderRadius: 6,
-                  background: t.litMark,
-                  color: t.onLit,
-                  fontFamily: FIGTREE,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  lineHeight: "12px",
-                  textAlign: "center",
-                }}
-              >
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
           </FrameLink>
         );
       })}
@@ -161,7 +152,16 @@ function DockContainer() {
       : null;
   // G22: in a short window the dock follows the page instead of covering its foot.
   const short = useShortWindow();
-  return <DockView current={current} unread={count} placement={short ? "static" : "fixed"} />;
+  const { search } = useLocation();
+  const [newOpen, setNewOpen] = useState(false);
+  // Prompt 19: a pinned footer or a full-screen task (the editor, a sheet's reply bar, sign in) replaces the dock.
+  if (dockHiddenFor(pathname, search)) return null;
+  return (
+    <>
+      <DockView current={current} unread={count} placement={short ? "static" : "fixed"} onNew={() => setNewOpen(true)} />
+      <NewSheet open={newOpen} onOpenChange={setNewOpen} />
+    </>
+  );
 }
 
 /* UI-P40: memoised, and it takes no props, so a page's data changing (which

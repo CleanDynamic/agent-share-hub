@@ -6,6 +6,7 @@
    moderators. Then the Posts and Rules tabs, and under Posts the order line and the space's topic cards in the order the space sets
    (a pinned card says so above its author line). */
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { PageState } from "@/components/pagestate/PageState";
 import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
@@ -71,6 +72,13 @@ export function SpaceView(view: SpaceViewProps) {
   useColumnPanels(true);
   const phone = useIsPhone();
   const member = primaryFor(view.role) === "post";
+  // Prompt 19: the phone's More sheet holds the space's actions (Copy link and Share are the bar's own).
+  useRegisterPageBar({
+    more: [
+      member ? { label: "Post here", onSelect: view.onPost } : { label: "Join space", onSelect: view.onJoin },
+      ...(view.role === "moderator" ? [{ label: "Settings", onSelect: view.onSettings }] : []),
+    ],
+  });
   const primary: ReactNode = member ? (
     <PostPrimary onClick={view.onPost} block>
       Post here

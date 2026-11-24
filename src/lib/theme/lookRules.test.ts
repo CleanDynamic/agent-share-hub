@@ -1863,6 +1863,11 @@ function componentFindings(code: string, file: string): Finding[] {
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   {
+    rule: "spacing 3 is not in SPACE_REFINED",
+    text: `gap: 3,`,
+    why: "Prompt 19: the phone dock's slot puts its label 3 below its icon (the mobile pack's measure).",
+  },
+  {
     rule: "spacing 14 is not in SPACE_REFINED",
     text: `<Link to={to} data-visual-slot="btn-primary" {...handlers} style={{ ...controlBase, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 `,
     why: "SV-14: the OpenBuilds board pads Run an untested build 0 14.",

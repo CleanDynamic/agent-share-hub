@@ -186,10 +186,13 @@ describe("ActivityView on a phone (Synth 12)", () => {
     expect(kinds()).not.toContain("rebuilt");
   });
 
-  it("keeps Mark all read, disabled while nothing is unread", () => {
+  /* Prompt 19: on a phone "Mark all read" is the top bar's right slot (the page registers it with `useRegisterPageBar`), so the
+     list's head draws no second button and its heading is for screen readers only. */
+  it("leaves Mark all read to the top bar and hides its heading from the eye", () => {
     phone(true);
     mount({ unread: 0 });
-    expect((screen.getByRole("button", { name: "Mark all read" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "Mark all read" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Activity" }).className).toBe("sr-only");
   });
 });
 

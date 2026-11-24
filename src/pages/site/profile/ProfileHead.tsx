@@ -23,6 +23,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { linkHostOf, type MetaPart, type RecordPart } from "./profileFeedModel";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 
 export interface HeadCrop {
   x: number;
@@ -131,6 +132,20 @@ export function ProfileHead(props: ProfileHeadProps) {
   const size = phone ? 72 : 96;
   const inset = phone ? 16 : 24;
   const { isOwn, following } = props;
+
+  // Prompt 19: the phone's More sheet holds the profile's actions (Copy link and Share are the bar's own).
+  const blockedByMe = props.blocked === "by_me";
+  const hidePair = props.blocked === "by_them" || Boolean(props.privateLine && !following && !isOwn);
+  useRegisterPageBar({
+    more: isOwn
+      ? [{ label: HEAD_COPY.edit, onSelect: props.onEdit }]
+      : [
+          ...(props.blocked || hidePair ? [] : [{ label: following ? HEAD_COPY.following : HEAD_COPY.follow, onSelect: following ? props.onUnfollow : props.onFollow }, { label: HEAD_COPY.message, onSelect: props.onMessage }]),
+          ...(blockedByMe && props.onUnblock ? [{ label: HEAD_COPY.unblock, onSelect: props.onUnblock }] : []),
+          ...(props.onReport ? [{ label: HEAD_COPY.report, tone: "danger" as const, onSelect: props.onReport }] : []),
+          ...(props.onBlock && !props.blocked ? [{ label: `${HEAD_COPY.block} @${props.handle}`, tone: "danger" as const, onSelect: props.onBlock }] : []),
+        ],
+  });
 
   const actions = isOwn ? (
     <PostControl onClick={props.onEdit}>{HEAD_COPY.edit}</PostControl>

@@ -1,6 +1,6 @@
 /* The shell's fixed bars, measured once, so a menu or a scroll that must stay clear of them reads these instead of typing
    the numbers again. Synth draft: the desktop header is 88 tall and sits on the page shade with no line and no fill; the
-   phone header is 64. The phone's dock is its 44 tiles inside 6 of padding above and below, plus the safe-area inset,
+   phone top bar is 52. The phone's dock is its 44 tiles inside 6 of padding above and below, plus the safe-area inset,
    which CSS adds where it is used. */
 
 /** The desktop site header's height. */
@@ -13,8 +13,8 @@ export const HEADER_COMPACT_HEIGHT = 56;
 export const LOGO_WIDTH = 96;
 export const LOGO_COMPACT_WIDTH = HEADER_COMPACT_HEIGHT;
 
-/** The phone header's height, and its beaver's width. */
-export const PHONE_HEADER_HEIGHT = 64;
+/** The phone top bar's height (prompt 19: 52, under the top safe-area inset), and the old header's beaver width. */
+export const PHONE_HEADER_HEIGHT = 52;
 export const PHONE_LOGO_WIDTH = 40;
 
 /** The footer's beaver, the sign-in dialog's, and the one above a standalone card. */

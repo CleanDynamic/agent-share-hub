@@ -19,6 +19,9 @@ import {
   SectionFact,
   Shelf,
 } from "@/components/phone";
+import { AccountDrawer } from "@/components/shell/AccountDrawer";
+import { DockView } from "@/components/shell/Dock";
+import { NewSheet } from "@/components/shell/NewSheet";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -41,12 +44,26 @@ export default function KitPhone() {
   const [pill, setPill] = useState<string | null>("all");
   const [sheet, setSheet] = useState(false);
   const [action, setAction] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const [newSheet, setNewSheet] = useState(false);
   return (
     <div data-design-page="phone" data-design-theme={theme} style={{ width: "100%", maxWidth: 430, minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FIGTREE, paddingBottom: 48 }}>
       <section data-catalogue="top-bar">
         <PhoneTopBar left="account" centre="logo" viewer={{ name: "Maya Okafor" }} unread right={{ icon: "search", label: "Search" }} theme={theme === "noon" ? "noon" : "dusk"} />
         <PhoneTopBar left="back" leftLabel="Back to Drafts" centre="A long page title that is cut with an ellipsis" right={{ icon: "more", label: "More" }} />
         <PhoneTopBar left="close" centre="Filters" />
+        {/* Prompt 19: the bars with words in a side slot (Activity, signed out, onboarding). */}
+        <PhoneTopBar left="account" centre="Activity" titleAs="p" viewer={{ name: "Maya Okafor" }} right={{ text: "Mark all read", label: "Mark all read" }} />
+        <PhoneTopBar left={null} leftAction={{ text: "Sign in", label: "Sign in" }} centre="logo" right={{ icon: "search", label: "Search" }} theme={theme === "noon" ? "noon" : "dusk"} />
+      </section>
+      <section data-catalogue="dock">
+        <DockView current="gallery" unread={3} placement="static" />
+        <div style={{ display: "flex", gap: 8, padding: 16 }}>
+          <button type="button" onClick={() => setDrawer(true)}>Account drawer</button>
+          <button type="button" onClick={() => setNewSheet(true)}>New sheet</button>
+        </div>
+        <NewSheet open={newSheet} onOpenChange={setNewSheet} />
+        <AccountDrawer open={drawer} onOpenChange={setDrawer} viewer={{ id: "kit", name: "Maya Okafor", handle: "maya" }} dark={theme !== "noon"} onToggleDark={() => undefined} onSignOut={() => setDrawer(false)} />
       </section>
       <section data-catalogue="tabs-pills">
         <PhoneTabs tabs={TABS} value={tab} onChange={setTab} label="Feed" equal />

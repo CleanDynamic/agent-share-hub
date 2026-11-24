@@ -21,7 +21,11 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 export const PHONE_LOGO_WIDTH_BAR = 56;
 
 export interface PhoneTopBarAction {
-  icon: MobileIconName;
+  /** An icon button. Omit it and give `text` for a ghost text button. */
+  icon?: MobileIconName;
+  /** A ghost text button, 13/600 ("Mark all read", "Sign in", "Skip"). The words are its accessible name. */
+  text?: string;
+  disabled?: boolean;
   /** The accessible name. */
   label: string;
   onClick?: () => void;
@@ -31,8 +35,12 @@ export interface PhoneTopBarAction {
 
 export interface PhoneTopBarProps {
   left: "account" | "back" | "close" | null;
-  /** `"logo"` or the page's title, drawn as the h1. */
+  /** A ghost text button in the left slot instead (signed out: "Sign in"). Wins over `left`. */
+  leftAction?: PhoneTopBarAction | null;
+  /** `"logo"`, the page's title, or `""` for nothing. */
   centre: "logo" | (string & {});
+  /** What the title is drawn as. The page's own h1 stays the page's; the bar's words are a `p` there. */
+  titleAs?: "h1" | "p";
   right?: PhoneTopBarAction | null;
   /** What the left control does. */
   onLeft?: () => void;
@@ -60,19 +68,42 @@ const HIT: CSSProperties = {
   cursor: "pointer",
 };
 
-function IconButton({ icon, label, onClick, to }: PhoneTopBarAction) {
+function IconButton({ icon, text, disabled, label, onClick, to }: PhoneTopBarAction) {
   const { state, handlers } = useInteractive<HTMLButtonElement & HTMLAnchorElement>();
+  if (text) {
+    const ghost: CSSProperties = {
+      ...HIT,
+      width: "auto",
+      minWidth: TOUCH_MIN,
+      padding: "0 8px",
+      borderRadius: r.full,
+      fontFamily: FIGTREE,
+      fontSize: 13,
+      fontWeight: 600,
+      lineHeight: "16px",
+      whiteSpace: "nowrap",
+      color: disabled ? t.label : t.text,
+      cursor: disabled ? "default" : "pointer",
+      textDecoration: "none",
+      ...ring(state.focusVisible),
+    };
+    return (
+      <button type="button" aria-label={label === text ? undefined : label} disabled={disabled} onClick={onClick} {...handlers} style={ghost}>
+        {text}
+      </button>
+    );
+  }
   const style: CSSProperties = { ...HIT, textDecoration: "none", ...ring(state.focusVisible) };
   if (to) {
     return (
       <FrameLink to={to} aria-label={label} style={style}>
-        <MobileIcon name={icon} size={24} />
+        <MobileIcon name={icon ?? "more"} size={24} />
       </FrameLink>
     );
   }
   return (
     <button type="button" aria-label={label} onClick={onClick} {...handlers} style={style}>
-      <MobileIcon name={icon} size={24} />
+      <MobileIcon name={icon ?? "more"} size={24} />
     </button>
   );
 }
@@ -134,7 +165,10 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
   );
 }
 
-export function PhoneTopBar({ left, centre, right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk" }: PhoneTopBarProps) {
+export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk" }: PhoneTopBarProps) {
+  /* Words in a side slot are wider than 48: the sides then take equal shares and the centre its own width. */
+  const wide = Boolean(leftAction?.text || right?.text);
+  const Title = titleAs;
   return (
     <header
       data-testid="phone-top-bar"
@@ -148,9 +182,11 @@ export function PhoneTopBar({ left, centre, right = null, onLeft, leftLabel, vie
         background: t.bg,
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", height: PHONE_TOPBAR, padding: "0 8px", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          {left === "account" ? (
+      <div style={{ display: "grid", gridTemplateColumns: wide ? "minmax(48px, 1fr) minmax(0, auto) minmax(48px, 1fr)" : "48px 1fr 48px", alignItems: "center", height: PHONE_TOPBAR, padding: "0 8px", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", justifyContent: wide ? "flex-start" : "center" }}>
+          {leftAction ? (
+            <IconButton {...leftAction} />
+          ) : left === "account" ? (
             <AccountButton viewer={viewer} unread={unread} onClick={onLeft} />
           ) : left === "back" ? (
             <IconButton icon="back" label={leftLabel ?? "Back"} onClick={onLeft} />
@@ -158,12 +194,14 @@ export function PhoneTopBar({ left, centre, right = null, onLeft, leftLabel, vie
             <IconButton icon="close" label={leftLabel ?? "Close"} onClick={onLeft} />
           ) : null}
         </div>
-        {centre === "logo" ? (
+        {centre === "" ? (
+          <span />
+        ) : centre === "logo" ? (
           <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
             <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH_BAR} />
           </FrameLink>
         ) : (
-          <h1
+          <Title
             style={{
               margin: 0,
               minWidth: 0,
@@ -179,9 +217,9 @@ export function PhoneTopBar({ left, centre, right = null, onLeft, leftLabel, vie
             }}
           >
             {centre}
-          </h1>
+          </Title>
         )}
-        <div style={{ display: "flex", justifyContent: "center" }}>{right ? <IconButton {...right} /> : null}</div>
+        <div style={{ display: "flex", justifyContent: wide ? "flex-end" : "center" }}>{right ? <IconButton {...right} /> : null}</div>
       </div>
     </header>
   );
