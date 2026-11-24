@@ -157,12 +157,12 @@ describe("Detail", () => {
 describe("StripedBar", () => {
 
   it("is a named progressbar with its value, min and max", () => {
-    render(<StripedBar value={42} colour="var(--lit)" label="XP to level 5" valueText="42 of 100 XP" />);
-    const bar = screen.getByRole("progressbar", { name: "XP to level 5" });
+    render(<StripedBar value={42} colour="var(--lit)" label="Steps done" valueText="42 of 100" />);
+    const bar = screen.getByRole("progressbar", { name: "Steps done" });
     expect(bar.getAttribute("aria-valuenow")).toBe("42");
     expect(bar.getAttribute("aria-valuemin")).toBe("0");
     expect(bar.getAttribute("aria-valuemax")).toBe("100");
-    expect(bar.getAttribute("aria-valuetext")).toBe("42 of 100 XP");
+    expect(bar.getAttribute("aria-valuetext")).toBe("42 of 100");
   });
 
   it("does not animate", () => {

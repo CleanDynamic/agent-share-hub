@@ -29,6 +29,7 @@ import {
   countOf,
   useAdminMode,
 } from "@/components/admin/AdminFrame";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/brand/Button";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { SITE_NAME } from "@/lib/site";
@@ -416,10 +417,10 @@ function ServicesTab({ listings, loading, onToggle, busy }: { listings: any[] | 
   const [selected, setSelected] = useState<string | null>(null);
   const picked = listings?.find((listing) => listing.id === selected) ?? null;
   const price = (listing: any) => `£${Number(listing.price_gbp ?? 0).toFixed(2)}`;
+  /* The listing's on/off switch, as it was before Synth 15: the same Switch, on when the listing is active, off when it is not. The
+     Status column and the detail's Status fact already say which, so no word sits beside it. */
   const toggle = (listing: any) => (
-    <RowAction disabled={busy} onClick={() => onToggle(listing.id, !listing.is_active)}>
-      {listing.is_active ? "Deactivate" : "Activate"}
-    </RowAction>
+    <Switch checked={Boolean(listing.is_active)} onCheckedChange={(checked) => onToggle(listing.id, checked)} disabled={busy} />
   );
   return (
     <AdminSection fact={loading ? "Service listings" : countOf(listings?.length ?? 0, "service listing")}>

@@ -106,7 +106,7 @@ describe("the side column", () => {
 });
 
 describe("the side column's read", () => {
-  it("is one request, and reads every count, the level and the spaces", async () => {
+  it("is one request, and reads every count and the spaces", async () => {
     rpc.mockResolvedValue({
       data: { builds: 14, topics: 22, replies: 9, notes: 5, reproduced_by_others: 9, rebuilt_from: 6, first_rebuild_slug: "x", steps_added: 11, topics_started: 4, level: 7, works_in: ["Claude Code"], spaces: [{ slug: "evals", name: "Evals", standing: "created" }] },
       error: null,
@@ -114,11 +114,11 @@ describe("the side column's read", () => {
     const side = await getProfileSide("maya");
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith("get_profile_side", { p_username: "maya" });
-    expect(side).toMatchObject({ counts: { builds: 14, topics: 22, replies: 9, notes: 5 }, level: 7, worksIn: ["Claude Code"], spaces: [{ standing: "created" }] });
+    expect(side).toMatchObject({ counts: { builds: 14, topics: 22, replies: 9, notes: 5 }, worksIn: ["Claude Code"], spaces: [{ standing: "created" }] });
   });
 
-  it("answers nothing for a private profile, and no level when the owner hides it", () => {
+  it("answers nothing for a private profile, and carries no level even when the function sends one", () => {
     expect(toProfileSide(null)).toBeNull();
-    expect(toProfileSide({ builds: 1, level: null })?.level).toBeNull();
+    expect(toProfileSide({ builds: 1, level: 7 })).not.toHaveProperty("level");
   });
 });

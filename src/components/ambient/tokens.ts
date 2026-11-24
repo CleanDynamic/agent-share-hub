@@ -1,4 +1,4 @@
-// Shared design tokens for the ambient XP / gamification toasts.
+// Shared design tokens for the ambient badge and streak toasts.
 // Plain TS module — visuals are applied via inline style={{}} in each component.
 //
 // REPOINTING FINISHED — BG-P29. An earlier pass moved the easy half of this
@@ -19,12 +19,12 @@
 // 2. TWO CATEGORY HUES WERE BORROWED. `purple` pointed at `--cat-agents` and
 //    `green` at `--cat-configuration`. The nine `--cat-*` hues encode part
 //    categories and the theme forbids borrowing one for anything that is not a
-//    part category — an XP toast is not an agent config. They take the mapping
+//    part category — a toast is not an agent config. They take the mapping
 //    BG-P25 set for the profile surface instead: purple is progress, so
 //    `--lit`; "live" and "it worked" are one claim, so `--evidence`.
 //
 // THESE TOASTS ARE APPLICATION CHROME, which is why the module is repointed
-// rather than left: `XpToast` and `BadgeEarnedToast` mount from
+// rather than left: `BadgeEarnedToast` mounts from
 // `src/components/shell/ProfileDrawer.tsx` and `src/pages/Upload.tsx`, so they
 // can appear over any route in either theme.
 //
@@ -88,7 +88,6 @@ export const tokens = {
 } as const
 
 // Gamification colour language
-export const xpColor = tokens.orange // XP = the primary action fill
 export const reputationColor = tokens.teal // Reputation = evidence
 export const streakColor = tokens.amber // Streaks = light
 

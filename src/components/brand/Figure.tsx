@@ -14,7 +14,7 @@ import { LampBar } from "./LampDot";
 
 export interface FigureProps {
   value: ReactNode;
-  /** "xp", "of 100", "%". */
+  /** "of 100", "%". */
   unit?: ReactNode;
   label?: ReactNode;
   /** A lamp bar before the label. */

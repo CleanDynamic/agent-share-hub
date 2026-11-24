@@ -41,8 +41,6 @@ export interface ProfileHeadProps {
   avatarAlt: string | null;
   header: { url: string; crop: HeadCrop | null; alt: string | null } | null;
   meta: readonly MetaPart[];
-  /** "Level 7", shown only when the owner allows it or it is your own profile. */
-  level: number | null;
   oneLine: string | null;
   links: readonly string[];
   record: readonly RecordPart[];
@@ -243,12 +241,6 @@ export function ProfileHead(props: ProfileHeadProps) {
                 );
               }}
             />
-          </div>
-        ) : null}
-
-        {props.level !== null ? (
-          <div data-testid="profile-level" style={{ marginTop: 2, fontSize: 15, lineHeight: "20px", color: t.label }}>
-            {`Level ${props.level}`}
           </div>
         ) : null}
 

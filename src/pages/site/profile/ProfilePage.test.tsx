@@ -46,7 +46,6 @@ vi.mock("@/lib/messaging", () => ({ createDirectThread: vi.fn(), sendTextMessage
 import { profileItems } from "@/dev/fixtures/profile";
 
 import { ProfilePage } from "./ProfilePage";
-import { levelView, xpLine } from "./profileModel";
 
 const summary = (over: Record<string, unknown> = {}) => ({
   id: "maker-1",
@@ -66,7 +65,7 @@ const summary = (over: Record<string, unknown> = {}) => ({
   links: [],
   ...over,
 });
-const SIDE = { counts: { builds: 14, topics: 22, replies: 9, notes: 5 }, reproducedByOthers: 9, rebuiltFrom: 6, firstRebuildSlug: "x", stepsAdded: 0, topicsStarted: 0, level: null, worksIn: [], spaces: [] };
+const SIDE = { counts: { builds: 14, topics: 22, replies: 9, notes: 5 }, reproducedByOthers: 9, rebuiltFrom: 6, firstRebuildSlug: "x", stepsAdded: 0, topicsStarted: 0, worksIn: [], spaces: [] };
 
 function renderAt(entry: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -90,7 +89,7 @@ beforeEach(() => {
   stubs.summary.mockReset().mockResolvedValue(summary());
   stubs.side.mockReset().mockResolvedValue(SIDE);
   stubs.feed.mockReset().mockResolvedValue({ items: profileItems, extras: { work: { builds: new Map(), nodes: new Map() }, signed: new Map(), digests: new Map() }, next: null });
-  stubs.progress.mockReset().mockResolvedValue({ level: 7, xpTotal: 1840, track: "curator", streakDays: 12, streakBest: 31, lastRespecAt: null });
+  stubs.progress.mockReset().mockResolvedValue({ track: "curator", streakDays: 12, streakBest: 31, lastRespecAt: null });
   stubs.setUserTrack.mockClear();
   stubs.respecTrack.mockClear();
 });
@@ -114,24 +113,24 @@ describe("the first screen", () => {
 });
 
 describe("Your progress (P9)", () => {
-  it("is on your own profile: Level, the XP line, the streak and the four tracks", async () => {
+  it("is on your own profile: the streak and the four tracks, with no level and no XP", async () => {
     auth.user = { id: "maker-1" };
     stubs.summary.mockResolvedValue(summary({ isOwnProfile: true, isFollowing: null }));
     renderAt("/profile/maya");
     const box = await screen.findByTestId("profile-progress");
-    expect(within(box).getByText(`Level ${levelView({ level: 7, xpTotal: 1840, track: "curator", streakDays: 12, streakBest: 31 }).level}`)).toBeInTheDocument();
-    expect(within(box).getByText(xpLine(levelView({ level: 7, xpTotal: 1840, track: "curator", streakDays: 12, streakBest: 31 })) as string)).toBeInTheDocument();
+    expect(box.textContent).not.toMatch(/Level\s|\bXP\b/i);
     expect(within(box).getByText("12-day streak")).toBeInTheDocument();
     expect(within(box).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Architect", "Curator", "Mentor", "Explorer"]);
     expect(box.querySelector("svg circle")).toBeNull();
   });
 
-  it("is never on someone else's profile, whatever level_visible says, and their progress is not read", async () => {
-    stubs.side.mockResolvedValue({ ...SIDE, level: 7 });
+  it("is never on someone else's profile, and their progress is not read", async () => {
+    stubs.side.mockResolvedValue({ ...SIDE });
     renderAt("/profile/maya");
     await screen.findAllByTestId("profile-feed-item");
     expect(screen.queryByTestId("profile-progress")).toBeNull();
-    expect(screen.getByTestId("profile-level").textContent).toBe("Level 7");
+    expect(screen.queryByTestId("profile-level")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Level\s/);
     expect(calls).not.toContain("progress");
     expect(document.body.textContent).not.toMatch(/\bxp\b/i);
   });
@@ -139,7 +138,7 @@ describe("Your progress (P9)", () => {
   it("writes the track where it always has: the first choice with setUserTrack, a switch after the confirmation with respecTrack", async () => {
     auth.user = { id: "maker-1" };
     stubs.summary.mockResolvedValue(summary({ isOwnProfile: true, isFollowing: null }));
-    stubs.progress.mockResolvedValue({ level: 7, xpTotal: 1840, track: null, streakDays: 0, streakBest: 0, lastRespecAt: null });
+    stubs.progress.mockResolvedValue({ track: null, streakDays: 0, streakBest: 0, lastRespecAt: null });
     renderAt("/profile/maya");
     const box = await screen.findByTestId("profile-progress");
     fireEvent.click(within(box).getByRole("radio", { name: "Mentor" }));

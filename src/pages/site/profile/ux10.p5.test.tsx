@@ -19,7 +19,6 @@ const props = (over: Partial<ProfileHeadProps> = {}): ProfileHeadProps => ({
   avatarAlt: null,
   header: null,
   meta: metaParts({ handle: "maya", place: "Leeds", joined: "Feb 2026", followers: 412, following: 180 }),
-  level: null,
   oneLine: "Builds finance agents a person can check",
   links: ["https://www.maya.dev/about"],
   record: recordParts("maya", { builds: 14, rebuiltFrom: 6, firstRebuildSlug: "inbox-sorter-2", topicsAndReplies: 31 }),
@@ -141,12 +140,10 @@ describe("pictures", () => {
 });
 
 describe("Level", () => {
-  it("shows Level 7 only when the page gives it", () => {
-    mount({ level: 7 });
-    expect(screen.getByTestId("profile-level").textContent).toBe("Level 7");
-    cleanup();
-    mount({ level: null });
+  it("is never drawn: no level, no XP, beside the name", () => {
+    mount();
     expect(screen.queryByTestId("profile-level")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Level\s|\bXP\b/i);
   });
 });
 

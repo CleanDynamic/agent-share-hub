@@ -104,7 +104,6 @@ export function profileFixture(state: DesignState = "populated", own = false): P
       avatarAlt: null,
       header: null,
       meta: metaParts({ handle: "maya", place: "Leeds", joined: "Feb 2026", followers: 412, following: 180 }),
-      level: own ? 7 : null,
       oneLine: "Builds finance agents a person can check",
       links: ["https://maya.dev", "https://github.com/maya"],
       record: recordParts("maya", { ...side, builds: side.counts.builds, topicsAndReplies: side.counts.topics + side.counts.replies }),
@@ -150,7 +149,7 @@ export function profileFixture(state: DesignState = "populated", own = false): P
       others: othersLines("maya", side),
       collections: [],
       marks: empty ? [] : ["First build", "Reproduced by ten"],
-      progress: own ? { level: 7, xpLine: "1,840 / 2,400 xp", streak: "12-day streak", track: "curator", tracks: TRACK_ITEMS, onTrack: noop } : null,
+      progress: own ? { streak: "12-day streak", track: "curator", tracks: TRACK_ITEMS, onTrack: noop } : null,
     },
   };
 }

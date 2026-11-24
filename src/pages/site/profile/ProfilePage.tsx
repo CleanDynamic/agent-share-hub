@@ -7,13 +7,13 @@
    cards are read inside getProfileFeed, one read per kind. At /profile (your own, no handle yet) the side and the feed wait for
    the profile's handle. The page is ready when the head and the feed's first page are in.
 
-   WHAT A VISITOR SEES is decided in the database: drafts, hidden replies, notes the owner keeps to themselves, a level they hide
+   WHAT A VISITOR SEES is decided in the database: drafts, hidden replies, notes the owner keeps to themselves
    and everything behind a private profile never arrive. Saves are never read.
 
    REPORT is not offered on a profile: content_reports takes a build, a comment or a topic, not a person (UX-10 report).
 
    WRITES: follow, a message, the track (as before), a picture or header (useProfilePictures), Customise profile's one Save, Pin
-   and Unpin, and a build's own display. None notifies anyone. Nothing here awards XP. */
+   and Unpin, and a build's own display. None notifies anyone. Nothing here awards anything. */
 
 import { readOf } from "@/components/pagestate/pageStateModel";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
@@ -56,7 +56,7 @@ import type { FeedEntry } from "./ProfileFeed";
 import { ProfileView, ProfileViewSkeleton, ProfileViewState } from "./ProfileView";
 import { entryOf } from "./profileEntries";
 import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines, privateLine, recordParts, shownFilter, STANDING_LABEL } from "./profileFeedModel";
-import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
+import { TRACK_ITEMS, progressFacts, streakLine } from "./profileModel";
 import { useProfilePictures } from "./useProfilePictures";
 import { screenError } from "@/lib/auth/authMessages";
 import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED, COPY_LINK_FAILED, DONE } from "@/lib/copy/copy";
@@ -343,7 +343,7 @@ export function ProfilePage() {
     : [];
   const pinnedCount = pinsQuery.data?.length ?? entries.filter((entry) => entry.pinned).length;
   const links = (summary.links ?? []).length > 0 ? (summary.links ?? []) : summary.website?.startsWith("https://") ? [summary.website] : [];
-  const level = isOwn ? (progressQuery.data ? levelView(progressQuery.data) : null) : null;
+  const facts = isOwn ? (progressQuery.data ? progressFacts(progressQuery.data) : null) : null;
 
   const head = {
     userId: summary.id,
@@ -353,7 +353,6 @@ export function ProfilePage() {
     avatarAlt: summary.avatarAlt ?? null,
     header: summary.coverUrl ? { url: summary.coverUrl, crop: summary.bannerCrop ?? null, alt: summary.bannerAlt ?? null } : null,
     meta: metaParts({ handle: summary.handle, place: summary.location, joined: joinedLabel(summary.joinedAt), followers: summary.counts.followers, following: summary.counts.following }),
-    level: isOwn ? (level?.level ?? side?.level ?? null) : (side?.level ?? null),
     oneLine: oneLineOf(summary.customBio),
     links,
     record: side
@@ -443,11 +442,9 @@ export function ProfilePage() {
           })),
           marks: BADGES.filter((badge) => marksQuery.data?.has(badge.id)).map((badge) => badge.name),
           progress:
-            isOwn && level
+            isOwn && facts
               ? {
-                  level: level.level,
-                  xpLine: xpLine(level),
-                  streak: level.streakDays > 0 ? streakLine(level, true) : null,
+                  streak: facts.streakDays > 0 ? streakLine(facts, true) : null,
                   track: currentTrack,
                   tracks: TRACK_ITEMS,
                   onTrack: (next: TrackId) => onTrack(next),

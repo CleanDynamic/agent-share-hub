@@ -19,7 +19,7 @@ export default function RemixButton({
   const [hover, setHover] = useState(false)
 
   return (
-    <Tooltip label="Build on this — the author gets credit and a share of XP">
+    <Tooltip label="Build on this. The author gets credit.">
       <button
         type="button"
         onClick={onRemix}

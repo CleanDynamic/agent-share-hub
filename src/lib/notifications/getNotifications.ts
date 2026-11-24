@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isHiddenNotification } from "./hidden";
 import { buildIdOf, resolveNotificationBuilds, resolveNotificationTargets } from "./resolveTarget";
 import type {
   Notification,
@@ -39,7 +40,8 @@ export async function getNotifications({
 
   const { data, count, error } = await query;
   if (error) throw error;
-  const rows = (data ?? []) as unknown as NotificationRow[];
+  // Notifications about XP or a level are stored but not shown.
+  const rows = ((data ?? []) as unknown as NotificationRow[]).filter((row) => !isHiddenNotification(row));
 
   // Batched actor lookup
   const actorIds = Array.from(
