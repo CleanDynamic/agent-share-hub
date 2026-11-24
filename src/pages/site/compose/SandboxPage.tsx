@@ -135,6 +135,7 @@ import type { LeaveWindow as LeaveWindowImpl } from "./saveWindows";
 import type { ClashWindow as ClashWindowImpl } from "./ClashWindow";
 import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
+import { BoxTitleSinkContext } from "./modalRecipes";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { rowOf } from "./useComposeNodes";
 import { ComposeDnd } from "./ComposeDnd";
@@ -197,6 +198,15 @@ async function previewOfFile(file: File): Promise<string[]> {
 }
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
+/** A step anywhere in the build: in an agent or a team, or sent with another. */
+const findStepIn = (steps: readonly Step[], id: string): Step | null => {
+  for (const step of steps) {
+    if (step.id === id) return step;
+    const inner = findStepIn([...(step.children ?? []), ...(step.sentWith ?? [])], id);
+    if (inner) return inner;
+  }
+  return null;
+};
 
 /** Shown when Publish is pressed with no connection. */
 const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
@@ -846,11 +856,34 @@ function SandboxPageBody() {
   const selection = useBuildSelection({ drawn, onSelect: select, phone });
   /* CA-20 P5: every change the maker makes, other than typing, is a step of the build's history. `asStep` makes a handler one. */
   const track = buildHistory.track;
+  /* Synth 09: the box titles an Add window was saved with, waiting for the tile it makes. The window hands them over just
+     before it calls its add, so the step that writes the tile takes them (and clears them) at once. */
+  const pendingTitles = useRef<Record<string, string> | null>(null);
+  const titleSink = useMemo(
+    () => ({
+      commit: (titles: Record<string, string>) => {
+        pendingTitles.current = titles;
+        /* A window that adds calls its step in the same tick it is saved; a window that does not (Mark still open, an edit) must
+           not leave its titles waiting for the next tile someone adds. */
+        window.setTimeout(() => {
+          if (pendingTitles.current === titles) pendingTitles.current = null;
+        }, 0);
+      },
+    }),
+    [],
+  );
   const asStep = useCallback(
     <A extends unknown[], R>(sentence: string | ((first: A[0]) => string), fn: (...args: A) => R | Promise<R>) =>
-      (...args: A): Promise<R> =>
-        track(typeof sentence === "string" ? sentence : sentence(args[0]), async () => fn(...args)),
-    [track],
+      (...args: A): Promise<R> => {
+        const titles = pendingTitles.current;
+        pendingTitles.current = null;
+        return track(typeof sentence === "string" ? sentence : sentence(args[0]), async () => {
+          const made = await fn(...args);
+          if (titles && typeof made === "string" && Object.values(titles).some((title) => title.trim())) await prompts.setBoxTitles(made, titles);
+          return made;
+        });
+      },
+    [track, prompts],
   );
 
   promptOpenRef.current = () => {
@@ -1258,6 +1291,8 @@ function SandboxPageBody() {
 
   /* CA-18: the tile whose own window is open (to change it), seen as Details sees it. */
   const [editId, setEditId] = useState<string | null>(null);
+  /** Synth 09: the text box a tile's titled row asked to open in the notepad, with the tile's window under it. */
+  const [editBox, setEditBox] = useState<string | null>(null);
   /** SV-28 P7: the agent or team whose setup prompt is shown; copying it loads the assembler on the click. */
   /* UX-08 P1: a step tile marked still open (`is_gap` and its problem text), or the mark taken off. */
   const onStillOpen = (id: string, problem: string | null) => {
@@ -1285,6 +1320,12 @@ function SandboxPageBody() {
         : null,
     [editId, steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
   );
+  /* Synth 09: the tile's own window starts from its box titles and writes them back when it is saved. */
+  const editTitles = useMemo(() => {
+    const step = editId ? findStepIn(steps, editId) : null;
+    const seed = Object.fromEntries((step?.boxTitles ?? []).map((box) => [box.field, box.title]));
+    return { seed, expand: editBox, commit: (titles: Record<string, string>) => void (editId ? prompts.setBoxTitles(editId, titles) : undefined) };
+  }, [editId, editBox, steps, prompts]);
   /** CA-18: how Details names the other tiles a section points at. */
   const buildFacts = useMemo(() => buildFactsOf({ steps, groups, names: listFacts.names, results: listFacts.results }), [steps, groups, listFacts.names, listFacts.results]);
   /** CA-18: a prompt as Details reads it, for the prompt window's Model, Uses and Makes. */
@@ -1313,6 +1354,35 @@ function SandboxPageBody() {
     },
     [select],
   );
+
+  /* Synth 09: a tile's titled box row opens that box in the notepad over the tile's own window: a prompt's in the prompt window,
+     every other kind's in its edit window. */
+  const [promptBox, setPromptBox] = useState<string | null>(null);
+  const openBox = useCallback(
+    (id: string, field: string) => {
+      if (findStepIn(steps, id)?.kind === "prompt") {
+        setPromptBox(field);
+        openPrompt(id);
+        return;
+      }
+      setEditBox(field);
+      setEditId(id);
+    },
+    [steps, openPrompt],
+  );
+  /* The prompt window saves as it goes, so each box's title is written as it is left. */
+  const promptTitles = useMemo(() => {
+    const step = openPromptId ? findStepIn(steps, openPromptId) : null;
+    return {
+      seed: Object.fromEntries((step?.boxTitles ?? []).map((box) => [box.field, box.title])),
+      expand: promptBox,
+      onTitle: (field: string, title: string) => {
+        if (!openPromptId) return;
+        const had = step?.boxTitles?.find((box) => box.field === field)?.title ?? "";
+        if (had !== title.trim()) void prompts.setBoxTitles(openPromptId, { [field]: title });
+      },
+    };
+  }, [openPromptId, promptBox, steps, prompts]);
 
   /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
   const afterWrite = useCallback(() => {
@@ -2749,6 +2819,7 @@ function SandboxPageBody() {
     : null;
 
   return (
+    <BoxTitleSinkContext.Provider value={titleSink}>
     <UnsentContext.Provider value={unsent}>
     <MotionChannelContext.Provider value={motion}>
     <BuildHistoryContext.Provider value={buildHistory}>
@@ -2787,6 +2858,7 @@ function SandboxPageBody() {
       <ComposeDnd phone={phone}>
       <SandboxView
         {...viewProps}
+        addMenu={phone ? undefined : <AddMenu phone={false} variant="title" {...addHandlers} />}
         noticeRoom={buildHistory.notice ? NOTICE_ROOM : undefined}
         classification={classification}
         saveProblem={compose.saveFailure}
@@ -2857,6 +2929,7 @@ function SandboxPageBody() {
             onSelect={selection.selectTile}
             onOpenPrompt={openPrompt}
             onEditTile={openTile}
+            onOpenBox={openBox}
             onRename={prompts.rename}
             onMove={stepOf.move}
             onRemove={actions.removeTile}
@@ -3048,8 +3121,11 @@ function SandboxPageBody() {
           select(id);
         }}
       />
-      <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
+      <BoxTitleSinkContext.Provider value={editTitles}>
+        <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => { setEditId(null); setEditBox(null); }} />
+      </BoxTitleSinkContext.Provider>
       <SetupPromptWindow id={promptFor} tree={nodes.tree} onCopy={copySetup} onClose={() => setPromptFor(null)} />
+      <BoxTitleSinkContext.Provider value={promptTitles}>
       <FullPromptWindow
         steps={steps}
         groups={groups}
@@ -3066,12 +3142,14 @@ function SandboxPageBody() {
         onNavigate={openPrompt}
         onClose={() => {
           setOpenPromptId(null);
+          setPromptBox(null);
           links.closeWindows();
         }}
         fromPost={links.fromPost}
         onBackToPost={links.backToPost}
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
+      </BoxTitleSinkContext.Provider>
       {colourPicker}
       <ClashWindow view={twoTabs.clash} busy={twoTabs.busy} onUseOther={twoTabs.useOther} onKeepThis={twoTabs.keepThis} />
       <LeaveWindow open={leaving.open} count={leaving.count} unsent={unsentBoxes.map((box) => box.sessionNumber)} onStay={leaving.stay} onLeave={leaving.leave} />
@@ -3100,6 +3178,7 @@ function SandboxPageBody() {
     </BuildHistoryContext.Provider>
     </MotionChannelContext.Provider>
     </UnsentContext.Provider>
+    </BoxTitleSinkContext.Provider>
   );
 }
 

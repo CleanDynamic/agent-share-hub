@@ -1,4 +1,4 @@
-// UX-06 Part 5: the Wall. Its columns (three, two below 1101, one below 761, 24 apart), a published card and an in-progress one, and
+// UX-06 Part 5, Synth 11: the Wall. Its columns (three, two below 1101, one below 761, 8 apart), a published card and an in-progress one, and
 // the way in: the line and the view's one primary, which the box replaces while it is open.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
@@ -12,7 +12,7 @@ import type { WallCard } from "./postModel";
 
 const author = { id: "kit", name: "Kit Ward", handle: "kit", avatarUrl: null };
 const cards: WallCard[] = [
-  { kind: "published", replyId: "r1", title: "Kit's screener", author, line: "Claude Code · Rebuilt from @maya", plaque: { reproduction_count: 2, last_confirmed_at: "2026-11-01T00:00:00Z", last_confirmed_model: null, published_at: "2026-10-01T00:00:00Z" }, pinned: true, to: "/b2/kits", rebuildTo: "/rebuild/kits" },
+  { kind: "published", replyId: "r1", title: "Kit's screener", author, line: "Rebuilt from @maya", pinned: true, to: "/b2/kits", rebuildTo: "/rebuild/kits" },
   { kind: "in-progress", replyId: "r2", title: "Ana's screener", author: { ...author, id: "ana", handle: "ana" }, line: "In progress · 2 sessions", updated: "updated 20m ago", pinned: false },
 ];
 
@@ -37,23 +37,25 @@ describe("the Wall", () => {
     [761, 2],
     [760, 1],
     [390, 1],
-  ])("at %i wide draws %i columns, 24 apart", (width, columns) => {
+  ])("at %i wide draws %i columns, 8 apart", (width, columns) => {
     at(width);
     draw();
     const list = screen.getByRole("list", { name: "Builds in replies" });
-    expect(list).toHaveStyle({ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "24px" });
+    expect(list).toHaveStyle({ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" });
   });
 
-  it("draws a published build in the module box with its credit, reproductions, Pinned and three controls", () => {
+  it("draws a published build as a Card with its credit, Pinned and three controls, and no reproduction wording", () => {
     at(1440);
     draw();
     const [kit] = screen.getAllByTestId("wall-card");
     expect(kit).toHaveAttribute("data-kind", "published");
     expect(within(kit).getByRole("heading", { name: "Kit's screener" })).toBeInTheDocument();
     expect(within(kit).getByText("@kit")).toBeInTheDocument();
-    expect(within(kit).getByText("Claude Code · Rebuilt from @maya")).toBeInTheDocument();
+    expect(within(kit).getByText("Rebuilt from @maya")).toBeInTheDocument();
+    expect(within(kit).getByRole("heading", { name: "Kit's screener" }).style.fontSize).toBe("15px");
+    expect(kit.textContent).not.toMatch(/reproduc|confirmed|ran your build/i);
     expect(within(kit).getByText("Pinned")).toBeInTheDocument();
-    expect(within(kit).getByRole("link", { name: "Open" })).toHaveAttribute("href", "/b2/kits");
+    expect(within(kit).getByRole("link", { name: "Open build" })).toHaveAttribute("href", "/b2/kits");
     expect(within(kit).getByRole("link", { name: "Rebuild" })).toHaveAttribute("href", "/rebuild/kits");
     expect(within(kit).getByRole("button", { name: "Reply" })).toBeInTheDocument();
     // No picture area.
@@ -68,7 +70,7 @@ describe("the Wall", () => {
     expect(ana).toHaveAttribute("data-ui", "dashed-slot");
     expect(within(ana).getByText("In progress · 2 sessions")).toBeInTheDocument();
     expect(within(ana).getByText("updated 20m ago")).toBeInTheDocument();
-    expect(within(ana).queryByRole("link", { name: "Open" })).toBeNull();
+    expect(within(ana).queryByRole("link", { name: "Open build" })).toBeNull();
   });
 
   it("offers the way in with the view's one primary, and the box takes its place once open", () => {

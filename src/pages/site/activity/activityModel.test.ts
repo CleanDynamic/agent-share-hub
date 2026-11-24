@@ -21,6 +21,8 @@ import {
   runsLabel,
   scaleSeries,
   toggleKind,
+  switchKind,
+  kindShown,
   unreadHeading,
   unreadLine,
   type ActivityGroup,
@@ -78,9 +80,9 @@ describe("the days", () => {
     expect(dayOf(local(2026, 9, 2, 15, 29), NOW)).toBe("Today");
     expect(dayOf(justBefore(2026, 9, 2), NOW)).toBe("Yesterday");
     expect(dayOf(local(2026, 9, 1, 0, 0), NOW)).toBe("Yesterday");
-    expect(dayOf(justBefore(2026, 9, 1), NOW)).toBe("Earlier this week");
-    expect(dayOf(local(2026, 8, 28, 0, 0), NOW)).toBe("Earlier this week");
-    expect(dayOf(justBefore(2026, 8, 28), NOW)).toBe("Earlier");
+    expect(dayOf(justBefore(2026, 9, 1), NOW)).toBe("This week");
+    expect(dayOf(local(2026, 8, 28, 0, 0), NOW)).toBe("This week");
+    expect(dayOf(justBefore(2026, 8, 28), NOW)).toBe("27 Sept");
   });
 
   it("counts a time a moment ahead of the clock as today", () => {
@@ -90,11 +92,11 @@ describe("the days", () => {
   it("starts the week on Monday", () => {
     const monday = new Date(2026, 9, 5, 9, 0);
     expect(dayOf(local(2026, 9, 4, 12, 0), monday)).toBe("Yesterday");
-    expect(dayOf(local(2026, 9, 3, 12, 0), monday)).toBe("Earlier");
+    expect(dayOf(local(2026, 9, 3, 12, 0), monday)).toBe("3 Oct");
 
     const sunday = new Date(2026, 9, 4, 9, 0);
     expect(dayOf(local(2026, 9, 3, 12, 0), sunday)).toBe("Yesterday");
-    expect(dayOf(local(2026, 8, 28, 12, 0), sunday)).toBe("Earlier this week");
+    expect(dayOf(local(2026, 8, 28, 12, 0), sunday)).toBe("This week");
   });
 
   it("puts a time it cannot read in earlier", () => {
@@ -111,17 +113,31 @@ describe("the days", () => {
       ],
       NOW,
     );
-    expect(ACTIVITY_DAYS).toEqual(["Today", "Yesterday", "Earlier this week", "Earlier"]);
-    expect(groups.map((group) => group.day)).toEqual(["Today", "Yesterday", "Earlier"]);
+    expect(ACTIVITY_DAYS).toEqual(["Today", "Yesterday", "This week", "Earlier"]);
+    expect(groups.map((group) => group.day)).toEqual(["Today", "Yesterday", "1 Sept"]);
     expect(groups[0].rows.map((item) => item.id)).toEqual(["t1", "t2"]);
     expect(groupByDay([], NOW)).toEqual([]);
   });
 });
 
 describe("the kinds and the filter", () => {
-  it("draws the seven kinds the database writes, once each", () => {
-    expect([...ACTIVITY_KINDS].sort()).toEqual([...BUILD_NOTIFICATION_KINDS].sort());
-    expect(new Set(ACTIVITY_KINDS).size).toBe(7);
+  it("draws the six kinds the database writes other than runs, once each (Synth 12)", () => {
+    expect([...ACTIVITY_KINDS].sort()).toEqual([...BUILD_NOTIFICATION_KINDS].filter((kind) => kind !== "reproduced").sort());
+    expect(new Set(ACTIVITY_KINDS).size).toBe(6);
+  });
+
+  it("turns a Show me switch off and on over the same chosen set, everything shown when all are on", () => {
+    const off = switchKind(new Set(), "like");
+    expect(off.has("like")).toBe(false);
+    expect(off.size).toBe(ACTIVITY_KINDS.length - 1);
+    expect(kindShown("like", off)).toBe(false);
+    expect(kindShown("follow", off)).toBe(true);
+    expect(switchKind(off, "like").size).toBe(0);
+  });
+
+  it("never draws a run, whatever is chosen", () => {
+    const groups: ActivityGroup[] = [{ day: "Today", rows: [row("r", local(2026, 9, 2), { kind: "reproduced" }), row("l", local(2026, 9, 2), { kind: "like" })] }];
+    expect(filterGroups(groups, new Set())[0].rows.map((item) => item.id)).toEqual(["l"]);
   });
 
   it("gives the phone one chip for each kind it names, all of them drawn", () => {
@@ -133,7 +149,7 @@ describe("the kinds and the filter", () => {
     expect(counts.reproduced).toBe(2);
     expect(counts.follow).toBe(1);
     expect(counts.rebuilt).toBe(0);
-    expect(Object.keys(counts).sort()).toEqual([...ACTIVITY_KINDS].sort());
+    expect(Object.keys(counts).sort()).toEqual([...BUILD_NOTIFICATION_KINDS].sort());
     expect(Object.values(counts).reduce((sum, n) => sum + n, 0)).toBe(3);
   });
 
@@ -173,7 +189,8 @@ describe("one notification as a row", () => {
       id: "n-1",
       kind: "reproduced",
       at: "2026-10-02T10:00:00.000Z",
-      who: "@ada ran",
+      who: "@ada ran your build",
+      actorLabel: "@ada",
       title: "Invoice triage agent",
       detail: "it worked",
       unread: true,
@@ -185,14 +202,14 @@ describe("one notification as a row", () => {
   });
 
   it("leaves the detail empty when the stored message only repeats the verb", () => {
-    expect(activityRowOf(notification({ kind: "rebuilt", body: "rebuilt your build" }), null)).toMatchObject({ who: "@ada rebuilt", detail: null });
+    expect(activityRowOf(notification({ kind: "rebuilt", body: "rebuilt your build" }), null)).toMatchObject({ who: "@ada rebuilt your build", detail: null, square: "rebuilt" });
     expect(activityRowOf(notification({ kind: "like", body: "liked your build" }), null).detail).toBeNull();
     expect(activityRowOf(notification({ body: null }), null).detail).toBeNull();
   });
 
   it("shows a stored message that is not one of the fixed texts whole", () => {
     const made = activityRowOf(notification({ kind: "comment", body: "“does it handle attachments?”" }), null);
-    expect(made).toMatchObject({ who: "@ada commented on", detail: "“does it handle attachments?”" });
+    expect(made).toMatchObject({ who: "@ada commented on your build", detail: "“does it handle attachments?”" });
   });
 
   it("hangs the signed thumbnail on the build's cover", () => {
@@ -208,9 +225,9 @@ describe("one notification as a row", () => {
 
   it("names the actor by handle, then by name, then as someone", () => {
     const byName = notification({ actor: { id: "actor-1", username: null, display_name: "Ada Lovelace", avatar_url: null } });
-    expect(activityRowOf(byName, null).who).toBe("Ada Lovelace ran");
+    expect(activityRowOf(byName, null).who).toBe("Ada Lovelace ran your build");
     const nobody = notification({ actor: null });
-    expect(activityRowOf(nobody, null)).toMatchObject({ who: "Someone ran", actor: { id: "actor-1", name: "Someone" } });
+    expect(activityRowOf(nobody, null)).toMatchObject({ who: "Someone ran your build", actor: { id: "actor-1", name: "Someone" } });
   });
 
   it("draws a follow with no title and no cover, and leads to the follower's profile", () => {

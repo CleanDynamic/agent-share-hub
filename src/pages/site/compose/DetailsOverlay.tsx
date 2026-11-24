@@ -1,6 +1,6 @@
 /* CA-18 P5, CA-27 P4: Details in a window too narrow to hold it beside the build.
 
-   From 768 up to where Details fits (about 1244): a 300-wide panel that slides in over the right edge of the composer's box, the full
+   From 768 up to where Details fits (Synth 09: up to 1100): a 340-wide panel that slides in over the right edge of the composer's box, the full
    height of the columns area (it stays in view as the page scrolls), opened by a tap on a tile and closed by a tap outside, its button
    or Escape; not modal. The window recipe: `--window`, a 1px `--window-border`, radius 12, a shadow cast to the left, padding 14.
    Tapping what is in it opens the tile's window, except Copy, a link, Read all and the close button. Its foot, at the bottom left, reads

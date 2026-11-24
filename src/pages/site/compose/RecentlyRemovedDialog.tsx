@@ -14,7 +14,7 @@ import { REMOVED_COPY, agoLine, type RemovedEntry } from "@/lib/build/removedLog
 import { t } from "@/lib/theme/tokens";
 
 import { ModalShell } from "./ModalFrame";
-import { FOOT_NOTE, LABEL, RecipeButton, bodyStyle, footerStyle } from "./modalRecipes";
+import { FOOT_NOTE, LABEL, RecipeButton, bodyStyle, footerStyle, MODAL_WIDTH } from "./modalRecipes";
 import { Badge, ELLIPSIS, words } from "./referencePieces";
 import { size } from "@/lib/theme/space";
 
@@ -30,7 +30,7 @@ export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { o
     return () => window.clearInterval(timer);
   }, [open]);
   return (
-    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={REMOVED_COPY.title} subtitle={REMOVED_COPY.subtitle} width={480} testId="recently-removed-window">
+    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={REMOVED_COPY.title} subtitle={REMOVED_COPY.subtitle} width={MODAL_WIDTH.standard} testId="recently-removed-window">
       <div style={bodyStyle(phone)}>
         {entries.length === 0 ? (
           <p data-testid="removed-empty" style={{ ...LABEL, margin: 0, padding: "20px" }}>

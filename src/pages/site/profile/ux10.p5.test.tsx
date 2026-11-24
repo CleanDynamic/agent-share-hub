@@ -22,7 +22,7 @@ const props = (over: Partial<ProfileHeadProps> = {}): ProfileHeadProps => ({
   level: null,
   oneLine: "Builds finance agents a person can check",
   links: ["https://www.maya.dev/about"],
-  record: recordParts("maya", { builds: 14, reproducedByOthers: 9, rebuiltFrom: 6, firstRebuildSlug: "inbox-sorter-2", topicsAndReplies: 31 }),
+  record: recordParts("maya", { builds: 14, rebuiltFrom: 6, firstRebuildSlug: "inbox-sorter-2", topicsAndReplies: 31 }),
   isOwn: false,
   following: false,
   onFollow: vi.fn(),
@@ -57,19 +57,17 @@ describe("the meta line", () => {
 });
 
 describe("the record line", () => {
-  it("reads 14 builds · 9 reproduced by others · rebuilt from 6 times · 31 topics and replies, only reproduced in the evidence colour", () => {
+  it("reads 14 builds · rebuilt from 6 times · 31 topics and replies, with no reproduction count (Synth 12)", () => {
     mount();
     const record = screen.getByTestId("profile-record");
-    expect(record.textContent).toBe("14 builds · 9 reproduced by others · rebuilt from 6 times · 31 topics and replies");
+    expect(record.textContent).toBe("14 builds · rebuilt from 6 times · 31 topics and replies");
     const links = within(record).getAllByRole("link");
-    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/profile/maya?show=builds", "/profile/maya?show=builds", "/b2/inbox-sorter-2", "/profile/maya?show=topics"]);
-    const coloured = links.filter((link) => link.getAttribute("data-tone") === "evidence");
-    expect(coloured.map((link) => link.textContent)).toEqual(["9 reproduced by others"]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/profile/maya?show=builds", "/b2/inbox-sorter-2", "/profile/maya?show=topics"]);
   });
 
   it("drops a zero part, and is absent when every part is zero", () => {
-    expect(recordParts("maya", { builds: 1, reproducedByOthers: 0, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }).map((part) => part.text)).toEqual(["1 build"]);
-    mount({ record: recordParts("maya", { builds: 0, reproducedByOthers: 0, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }) });
+    expect(recordParts("maya", { builds: 1, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }).map((part) => part.text)).toEqual(["1 build"]);
+    mount({ record: recordParts("maya", { builds: 0, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }) });
     expect(screen.queryByTestId("profile-record")).toBeNull();
   });
 });
@@ -122,7 +120,7 @@ describe("the buttons", () => {
   it("the name is the page's h1, in the body font, not the serif", () => {
     mount();
     const h1 = screen.getByRole("heading", { level: 1, name: "Maya Ali" });
-    expect(h1.style.fontSize).toBe("20px");
+    expect(h1.style.fontSize).toBe("31px");
     expect(h1.style.fontWeight).toBe("600");
   });
 });

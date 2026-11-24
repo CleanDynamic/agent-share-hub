@@ -1,7 +1,7 @@
 // The post page's choice budgets, counted in the rendered page (UX-06 Part 7) ⟦hicks-law › Enforcing It in the Code⟧.
 //
 // Exactly one primary in each state: reading (the reply box at the Thread's foot carries Reply), replying (the box under a reply,
-// and none at the foot), and the Wall (Reply with a build). One Segmented, with at most two options. No control named Sort: the
+// and none at the foot), and the Wall (Reply with a build). One switch (Synth 11: the Thread and Wall pills), with at most two options. No control named Sort: the
 // order is stated, Oldest first.
 
 import { HelmetProvider } from "react-helmet-async";
@@ -88,12 +88,13 @@ describe("the post page's choice budgets", () => {
     expect(primaries()[0]).toHaveTextContent("Reply with a build");
   });
 
-  it.each(["/openbuilds/topics/p1", "/openbuilds/topics/p1?view=wall"])("has one Segmented, with at most two options, at %s", async (path) => {
+  it.each(["/openbuilds/topics/p1", "/openbuilds/topics/p1?view=wall"])("has one switch, the pills, with at most two options, at %s", async (path) => {
     renderPage(path);
     await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
-    const groups = document.querySelectorAll('[data-ui="segmented"]');
+    const groups = screen.getAllByRole("group", { name: "Show" });
     expect(groups).toHaveLength(1);
-    expect(within(groups[0] as HTMLElement).getAllByRole("button").length).toBeLessThanOrEqual(2);
+    expect(within(groups[0]).getAllByRole("button").length).toBeLessThanOrEqual(2);
+    expect(document.querySelectorAll('[data-ui="segmented"]')).toHaveLength(0);
   });
 
   it("has no control named Sort, and states the order", async () => {

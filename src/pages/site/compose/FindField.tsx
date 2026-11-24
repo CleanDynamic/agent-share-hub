@@ -1,17 +1,16 @@
-/* CA-27 P1: Find in build in the Build head row.
+/* CA-27 P1: Find in build. Synth 09: in the title row, closed as a pill with its key (`/`), open as the same pill-shaped field.
 
    The button (28 square, ghost, the search glyph) stands just left of View. The field opens between the counts and View: 300 wide,
    shrinking to 200, 34 tall, the well, radius 8, with the search glyph, the input, the count in the data face, Previous match,
    Next match and Close find. */
 
-import { Search } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
-import { IconButton } from "@/components/brand/IconButton";
 import { FIND_COPY } from "@/lib/build/findInBuild";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, textStep } from "@/lib/theme/type";
 
@@ -21,10 +20,50 @@ import { size, space } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
-/** Find in build: the ghost button before View. */
+/** Synth 09: Find in build, in the title row: a pill drawn as a field (Panel fill, the field's edge, radius 20, 32 tall) with the
+    search glyph, "Find" in Text 3 and its key, `/`, in mono at the right. Pressing it (or `/`) opens the field. */
 export function FindButton({ find }: { find: Pick<BuildFind, "show"> }) {
-  return <IconButton style={iconButtonSide()} icon={Search} glyph="search" boxed={false} label={FIND_COPY.button} size={28} data-testid="find-button" onClick={find.show} />;
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-label={FIND_COPY.button}
+      aria-keyshortcuts="/"
+      data-testid="find-button"
+      data-hit=""
+      onClick={find.show}
+      {...handlers}
+      style={{
+        ...bareButton,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: space[2],
+        height: size.control,
+        minWidth: 160,
+        padding: `0 ${space[3]}px`,
+        boxSizing: "border-box",
+        borderRadius: r.field,
+        background: state.hovered ? hoverFill(t.surface) : t.surface,
+        boxShadow: `inset 0 0 0 1px ${t.fieldEdge}`,
+        color: t.label,
+        cursor: "pointer",
+        flexShrink: 0,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <Glyph name="search" size={size.icon} />
+      <span aria-hidden="true" style={{ ...text(textStep.body, 400, t.label), flexGrow: 1, textAlign: "left" }}>
+        {FIND_PILL_WORD}
+      </span>
+      <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label }}>
+        /
+      </span>
+    </button>
+  );
 }
+
+/** The word on the closed Find pill. */
+export const FIND_PILL_WORD = "Find";
 
 const FIELD: CSSProperties = {
   flex: "0 1 300px",
@@ -35,9 +74,10 @@ const FIELD: CSSProperties = {
   alignItems: "center",
   gap: space[2],
   padding: `0 ${space[3]}px`,
-  background: t.well,
-  border: `1px solid ${t.hairlineModule}`,
-  borderRadius: r.control,
+  background: t.surface,
+  border: 0,
+  boxShadow: `inset 0 0 0 1px ${t.fieldEdge}`,
+  borderRadius: r.field,
 };
 
 /** A 20 square button inside the field. */

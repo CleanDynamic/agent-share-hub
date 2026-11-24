@@ -73,7 +73,8 @@ import { readOf } from "@/components/pagestate/pageStateModel";
 const PROMPTS_FAILED = { name: "PromptsError", message: "a session's prompts did not load" };
 
 export const SESSION_DIALOG_COPY = {
-  title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
+  /** Synth 09: the session by its number alone; its harness is a field inside. */
+  title: (n: number, _tool?: string) => `Session ${n}`,
   subtitle: "Harness, date, cost and setup",
   appAndModel: "Harness and model",
   /** SV-27 P1: the session's harness (`sessions_meta[key].tool`, key unchanged). */

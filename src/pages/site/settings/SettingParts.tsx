@@ -1,4 +1,8 @@
-/* UX-15 P2: the pieces every section is made of. PURE.
+/* Synth 13 Part A: groups have no boxes. A section is a visually hidden h1 (the chosen row in the list names it) and its
+   groups, at most 720 wide: a 17/600 heading, then rows: the label 15, one line of explanation 13 Text 3, one control at the
+   right. On a phone the section is a page of its own and its h1 shows, with a back link to the list.
+
+   UX-15 P2: the pieces every section is made of. PURE.
 
    A section is an `h1`, then groups. A group is a `module` box with a `SectionHead` and rows. A row is a label in `text`, one line of
    explanation in `label`, and one control on the right (below, on a phone). Nothing here animates and nothing is new: the box is
@@ -9,8 +13,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { SectionHead } from "@/components/vision/SectionHead";
-import { r } from "@/lib/theme/radius";
+import { PageLink } from "@/lib/routing/PageLink";
+import { settingsPath } from "@/lib/settings/sections";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { FieldMessage } from "@/pages/site/signin/AuthParts";
@@ -29,24 +33,29 @@ export const sectionTitle: CSSProperties = {
     the page's "Settings" on a desktop, and the page's `h1` on a phone, where the section is a page of its own. */
 export function SectionPage({ title, children }: { title: string; children: ReactNode }) {
   const phone = useIsPhone();
-  const Heading = phone ? "h1" : "h2";
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: FIGTREE }}>
-      <Heading style={{ ...sectionTitle, fontSize: phone ? 20 : 15 }}>{title}</Heading>
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>{children}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: phone ? 16 : 0, fontFamily: FIGTREE, maxWidth: 720 }}>
+      {phone ? (
+        <PageLink to={settingsPath()} style={{ alignSelf: "flex-start", fontSize: 13, lineHeight: "16px", color: t.label, textDecoration: "underline", textUnderlineOffset: 3 }}>
+          Back to settings
+        </PageLink>
+      ) : null}
+      <h1 className={phone ? undefined : "sr-only"} style={{ ...sectionTitle, fontSize: 20, fontWeight: 600, lineHeight: "24px" }}>
+        {title}
+      </h1>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>{children}</div>
     </div>
   );
 }
 
-/** A `module` box with its head. */
+/** A group: its 17/600 heading and its rows, with no box. */
 export function Group({ title, meta, children, testId }: { title: string; meta?: ReactNode; children: ReactNode; testId?: string }) {
   return (
-    <section
-      aria-label={title}
-      data-testid={testId}
-      style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}
-    >
-      <SectionHead title={title} meta={meta} headingLevel={2} />
+    <section aria-label={title} data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "24px", color: t.text }}>{title}</h2>
+        {meta ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{meta}</span> : null}
+      </div>
       <div style={{ display: "flex", flexDirection: "column" }}>{children}</div>
     </section>
   );
@@ -68,11 +77,11 @@ export interface SettingRowProps {
 export function SettingRow({ label, hint, control, last = false, below, id }: SettingRowProps) {
   const phone = useIsPhone();
   return (
-    <div style={{ borderBottom: last ? "none" : `1px solid ${t.hairline}`, padding: "12px 0" }} data-ui="setting-row">
+    <div style={{ padding: "12px 0" }} data-ui="setting-row" data-last={last ? "" : undefined}>
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", gap: phone ? 8 : 16, minHeight: 32 }}>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <div id={id} style={{ fontSize: 13, fontWeight: 500, lineHeight: "20px", color: t.text }}>{label}</div>
-          {hint ? <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.4, color: t.label, marginTop: 2 }}>{hint}</div> : null}
+          <div id={id} style={{ fontSize: 15, fontWeight: 400, lineHeight: "20px", color: t.text }}>{label}</div>
+          {hint ? <div style={{ fontSize: 13, fontWeight: 400, lineHeight: "16px", color: t.label, marginTop: 2 }}>{hint}</div> : null}
         </div>
         {control ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: phone ? "flex-start" : "flex-end" }}>{control}</div> : null}
       </div>
@@ -136,7 +145,7 @@ const bar = (width: string, height: number) => <Skeleton width={width} height={h
     sizes, so the card is the loaded card's height when it holds the fewest rows it can. */
 function GroupSkeleton({ rows, hint = false }: GroupBones) {
   return (
-    <div data-testid="settings-card-bones" aria-hidden="true" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div data-testid="settings-card-bones" aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ fontSize: 15, lineHeight: 1.3 }}>{bar("30%", 12)}</div>
       {rows === 0 ? (
         <div style={{ fontSize: 13, lineHeight: 1.4 }}>{bar("70%", 10)}</div>
@@ -155,7 +164,7 @@ function GroupSkeleton({ rows, hint = false }: GroupBones) {
 export function SectionLoading({ title, groups }: { title: string; groups: readonly GroupBones[] }) {
   return (
     <SectionPage title={title}>
-      <LoadingRegion what={title.toLowerCase()} announce style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <LoadingRegion what={title.toLowerCase()} announce style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {groups.map((group, index) => (
           <GroupSkeleton key={index} {...group} />
         ))}

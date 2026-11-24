@@ -101,11 +101,11 @@ describe("Classification: the sheet", () => {
     expect(within(dialog).queryByRole("button", { name: "Edit the post" })).toBeNull();
   });
 
-  it("is the modal window, 560 wide, the title at 15/500 with its subtitle", async () => {
+  it("is the modal window, 440 wide (Synth 09: every editor window), the title at 15/500 with its subtitle", async () => {
     live();
     mount();
     const sheet = await screen.findByTestId("sandbox-card");
-    expect(sheet.style.width).toBe("560px");
+    expect(sheet.style.width).toBe("440px");
     expect(sheet.style.borderRadius).toBe("var(--r-window)"); // S31
     expect(sheet.style.boxShadow).toBe("var(--window-shadow)");
     const title = screen.getByRole("heading", { name: "Classification" });

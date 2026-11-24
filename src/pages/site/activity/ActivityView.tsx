@@ -1,61 +1,49 @@
-/* UI-P92 — Activity in the refined look, as `design/reference/refined/{dusk,noon}/activity.html` draws it.
+/* Synth 12 Part C: Activity on the Synth draft pack.
 
-   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `ActivityView` stays the current look; this is the same page with the same props (imported from
-   it, not copied), the same data, handlers, copy, accessible names and order of parts. `ActivityPage` and the dev page
-   choose between the two with `useLook()`.
+   PANELS inside a 980 container, `minmax(0, 1fr) 340px`. The list panel: "Activity" as the h1 (20/600) with the live state
+   beside it ("● live" in mono 13 Mint; "Reconnecting" in Warn while the channel is down), Mark all read (small secondary)
+   at the right. The days are groups headed 13/500 Text 3: Today, Yesterday, This week, then dates. Each row is one link:
+   the avatar at 40 with its kind's 10px square (radius 2, a 2px Panel ring) on the top right shoulder, the line ("@kit"
+   15/600 Text, the words, the build or topic name 15/600 Text), and the age 13 Text 3. Unread: a 3px Mint bar at the
+   left and the line in Text; read lines are in Text 2. Show more after 50.
 
-   DESKTOP: the frame draws the breadcrumb; this is a wrapping row, gap 48 — the list (`flex: 999 1 560px`, gap 32:
-   the head, then one hairlined group per day) and the aside (`flex: 1 1 300px`, max 340, a hairline on its left, gap
-   24: the people this week beside Listening, the runs chart, Show me). No panels: the frame's one surface is the
-   ground, and parts are told apart by hairlines.
+   THE SIDE PANEL: "5 people this week" (the people in this week's rows, avatars 36 in a row) and "Show me", a switch per
+   kind with its square. At 760 and below there is one panel, and Show me opens in a sheet from a "Show me" button in the
+   head.
 
-   PHONE: today's order — the heading with Mark all read, the kind chips, then the days — in refined rows.
+   Runs are not drawn: no "ran your build", no runs chart, no count of people who ran your builds. The page still reads
+   them; the view leaves them out.
 
-   ONE KIND, ONE INK. Each kind's tone is spent on its badge (an 8×8 square on the avatar's shoulder) and its square in
-   Show me, and nowhere else. Unread is the lamp bar before the row and the line in `--text`, never a fill.
-
-   THE ROW IS ONE LINK, as today: the build's title is drawn as the board draws its link (500, `--text`) inside it, not
-   as a second link nested in the first. */
+   THE ROW IS ONE LINK: the build's name inside it is type, not a second link. */
 
 import { PageFailed, PageState, WriteFailed as MovedWriteFailed } from "@/components/pagestate/PageState";
 import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { BottomSheet } from "@/components/brand/BottomSheet";
 import { Button } from "@/components/brand/Button";
-import { CardHead } from "@/components/brand/CardHead";
-import { CoverFallback } from "@/components/brand/CoverFallback";
-import type { PanelFailure } from "@/components/pagestate/PageState";
-import { Eyebrow } from "@/components/brand/Eyebrow";
-import { Figure } from "@/components/brand/Figure";
-import { FilterChip } from "@/components/brand/FilterChip";
-import { FramedWork } from "@/components/brand/FramedWork";
-import { LampBar } from "@/components/brand/LampDot";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { useRoom } from "@/components/brand/useRoom";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { FrameLink } from "@/components/shell/FrameLink";
-import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
-import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
-import { ScrollRow } from "@/components/shell/ScrollRow";
-import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { PANEL_GAP } from "@/components/shell/pageGrid";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { Switch } from "@/components/ui/switch";
 import { shortAgo } from "@/pages/site/home/homeModel";
-import { ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
-import { CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import {
   ACTIVITY_KINDS,
-  PHONE_CHIPS,
-  chartSubtitle,
+  KIND_LABEL,
   filterGroups,
-  toggleKind,
-  unreadHeading,
+  kindShown,
+  switchKind,
   unreadLine,
   type ActivityKind,
   type ActivityRow,
+  type ActivitySquare,
   type KindCounts,
   type ActivityGroup,
 } from "./activityModel";
@@ -102,12 +90,11 @@ export interface ActivityViewProps {
   live: boolean;
   /** Each kind's count among the loaded notifications. */
   kindCounts: KindCounts;
-  /** Different people who ran the viewer's builds this week; null until known. */
-  peopleThisWeek: number | null;
-  /** That count could not be read: its orb's place says so. */
+  /** Kept for the page; Synth 12 does not draw the run-based count. */
+  peopleThisWeek?: number | null;
   peopleError?: PanelFailure;
-  runs: ActivityLoad<ActivityRuns>;
-  /** G4: the two aside reads, for PageState's failed and retrying states. */
+  /** Kept for the page; Synth 12 does not draw the runs chart. */
+  runs?: ActivityLoad<ActivityRuns>;
   peopleRead?: ReadLike;
   runsRead?: ReadLike;
   /** G9: every region failed, these being its reads: the page shows one failed state under its title. */
@@ -115,7 +102,7 @@ export interface ActivityViewProps {
   /**
    * A mark-read the server refused. The row and the count have already gone back to
    * unread (the page re-reads them), and the list says so in its own place with a way
-   * to ask again — an optimistic action that fails rolls back with a line, not silence.
+   * to ask again: an optimistic action that fails rolls back with a line, not silence.
    */
   writeError?: PanelFailure;
   /** A row was followed: it marks itself read. */
@@ -125,117 +112,84 @@ export interface ActivityViewProps {
 
 /* ── the kinds ── */
 
-const TONE: Record<ActivityKind, string> = {
-  reproduced: t.evidence,
-  rebuilt: t.catAgents,
-  published: t.litInk,
-  comment: t.text2,
-  reply: t.text2,
-  like: t.text2,
-  follow: t.text2,
+/** Each kind's square, as a token that holds both themes' colours. */
+export const SQUARE: Record<ActivitySquare, string> = {
+  rebuilt: t.kindRebuilt,
+  comment: t.kindComment,
+  reply: t.kindComment,
+  like: t.kindLike,
+  follow: t.kindFollow,
+  published: t.kindPublished,
+  topic: t.kindTopic,
 };
+
+const squareOf = (row: ActivityRow): ActivitySquare | null => row.square ?? (row.kind && row.kind !== "reproduced" ? row.kind : null);
 
 const NONE: ReadonlySet<ActivityKind> = new Set();
 
+/** The page's container. */
+const CONTAINER = 980;
+
 /* ── type ── */
 
-const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+const text = (px: 13 | 15 | 20, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
-  lineHeight: "normal",
+  lineHeight: px === 20 ? "24px" : px === 15 ? "20px" : "16px",
   color,
   ...extra,
 });
 
 const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
 
-/** A part of the aside: its rows, and a hairline under it when another follows. */
-const asidePart = (gap: number, last: boolean): CSSProperties => ({
-  display: "flex",
-  flexDirection: "column",
-  gap,
-  minWidth: 0,
-  ...(last ? null : { paddingBottom: 24, borderBottom: `1px solid ${t.hairline}` }),
-});
+const panel: CSSProperties = { background: t.surface, borderRadius: 12, padding: "16px 0", boxSizing: "border-box", minWidth: 0 };
+const PAD = 16;
 
 /* ── small shared pieces ── */
 
 /** A mark-read that did not save: the rows are unread again, and this says so where they are. */
 function WriteFailed({ failure }: { failure: PanelFailure }) {
+  return <MovedWriteFailed line={SAVE_FAILED} panel="Activity" onRetry={failure.onRetry} error={failure.error} data-testid="activity-write-error" />;
+}
+
+/** A kind's square: 10, radius 2, ringed in the Panel shade where it sits on an avatar. */
+function Square({ square, ring = false, style }: { square: ActivitySquare; ring?: boolean; style?: CSSProperties }) {
   return (
-    <MovedWriteFailed
-      line={SAVE_FAILED}
-      panel="Activity"
-      onRetry={failure.onRetry}
-      error={failure.error}
-      data-testid="activity-write-error"
+    <span
+      aria-hidden="true"
+      style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: SQUARE[square], flexShrink: 0, ...(ring ? { boxShadow: `0 0 0 2px ${t.surface}` } : null), ...style }}
     />
   );
 }
 
-/** The actor, with the kind's square on their shoulder. Hidden from assistive tech: the row's words name both. */
+/** The actor, with the kind's square on their top right shoulder. Hidden from assistive tech: the row's words name both. */
 function Who({ row }: { row: ActivityRow }) {
+  const square = squareOf(row);
   return (
-    <span aria-hidden="true" style={{ position: "relative", display: "inline-flex" }}>
-      <Avatar size={28} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
-      {row.kind ? (
-        <span
-          data-testid="activity-badge"
-          data-kind={row.kind}
-          style={{
-            position: "absolute",
-            right: -2,
-            bottom: -2,
-            width: 8,
-            height: 8,
-            borderRadius: 2,
-            background: TONE[row.kind],
-            boxShadow: `0 0 0 2px ${t.surface}`,
-          }}
-        />
+    <span aria-hidden="true" style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+      <Avatar size={40} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
+      {square ? (
+        <span data-testid="activity-badge" data-kind={row.kind ?? square} style={{ position: "absolute", right: -1, top: -1, display: "inline-flex" }}>
+          <Square square={square} ring />
+        </span>
       ) : null}
     </span>
   );
 }
 
-/** The build's thumbnail, framed: its signed cover, or the fallback sketch; an empty track when there is no build. */
-function Thumb({ row }: { row: ActivityRow }) {
-  if (!row.cover) return <span />;
-  return (
-    <FramedWork width={48} height={32}>
-      {row.cover.src ? (
-        <img
-          src={row.cover.src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ) : (
-        <CoverFallback seed={row.cover.seed} radius={2} sky={row.cover.sky} />
-      )}
-    </FramedWork>
-  );
-}
-
-function When({ row, now, style }: { row: ActivityRow; now: number; style?: CSSProperties }) {
-  return (
-    <time dateTime={row.at} style={text(12, 400, t.label, { ...tnum, ...style })}>
-      {shortAgo(row.at, now)}
-    </time>
-  );
-}
-
-/** Who did what, then the build's title as the board draws its link. */
+/** Who did what, then the build's name, set as the line's other strong word. */
 function Line({ row }: { row: ActivityRow }) {
+  const lead = row.actorLabel && row.who.startsWith(row.actorLabel) ? row.actorLabel : null;
+  const words = lead ? row.who.slice(lead.length) : row.who;
   return (
-    <span style={text(13, 400, row.unread ? t.text : t.text2, { overflowWrap: "anywhere" })}>
-      {row.who}
+    <span style={text(15, 400, row.unread ? t.text : t.text2, { overflowWrap: "anywhere" })}>
+      {lead ? <span style={{ fontWeight: 600, color: t.text }}>{lead}</span> : null}
+      {words}
       {row.title ? (
         <>
           {" "}
-          <span style={{ fontWeight: 500, color: t.text }}>{row.title}</span>
+          <span style={{ fontWeight: 600, color: t.text }}>{row.title}</span>
         </>
       ) : null}
     </span>
@@ -243,23 +197,13 @@ function Line({ row }: { row: ActivityRow }) {
 }
 
 /** A row that leads somewhere is one link to it, and following it reads it; a row that leads nowhere is still. */
-function RowFrame({
-  row,
-  onOpen,
-  style,
-  children,
-}: {
-  row: ActivityRow;
-  onOpen: (row: ActivityRow) => void;
-  style: CSSProperties;
-  children: ReactNode;
-}) {
+function RowFrame({ row, onOpen, style, children }: { row: ActivityRow; onOpen: (row: ActivityRow) => void; style: CSSProperties; children: ReactNode }) {
   const marks = {
     "data-testid": "activity-row",
     "data-kind": row.kind ?? "other",
     "data-unread": row.unread ? "true" : undefined,
   };
-  const paint: CSSProperties = { ...style, color: "inherit" };
+  const paint: CSSProperties = { ...style, color: "inherit", textDecoration: "none" };
   if (!row.href) {
     return (
       <div {...marks} style={paint}>
@@ -276,112 +220,61 @@ function RowFrame({
 
 /* ── the list ── */
 
-const DESKTOP_COLUMNS = "8px 28px minmax(0, 1fr) 48px 32px";
-
-const desktopRow: CSSProperties = {
+const rowStyle: CSSProperties = {
+  position: "relative",
   display: "grid",
-  gridTemplateColumns: DESKTOP_COLUMNS,
-  alignItems: "center",
+  gridTemplateColumns: "40px minmax(0, 1fr)",
+  alignItems: "start",
   gap: 12,
-  minHeight: 56,
+  minHeight: 64,
+  padding: `12px ${PAD}px`,
   boxSizing: "border-box",
-  borderBottom: `1px solid ${t.hairline}`,
 };
 
-const phoneRow: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "28px minmax(0, 1fr) auto",
-  alignItems: "center",
-  gap: 12,
-  minHeight: 56,
-  padding: "12px 0",
-  boxSizing: "border-box",
-  borderBottom: `1px solid ${t.hairline}`,
-};
-
-function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
+function Row({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
   return (
-    <RowFrame row={row} onOpen={onOpen} style={desktopRow}>
-      {row.unread ? <LampBar /> : <span style={{ width: 8 }} />}
+    <RowFrame row={row} onOpen={onOpen} style={rowStyle}>
+      {row.unread ? <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} /> : null}
       <Who row={row} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, padding: "8px 0" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Line row={row} />
-        {row.detail ? <span style={text(12, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
-      </div>
-      <Thumb row={row} />
-      <When row={row} now={now} style={{ textAlign: "right" }} />
-    </RowFrame>
-  );
-}
-
-function PhoneRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
-  return (
-    <RowFrame row={row} onOpen={onOpen} style={phoneRow}>
-      <Who row={row} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <Line row={row} />
-        {row.detail ? <span style={text(12, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-        <When row={row} now={now} />
-        {row.unread ? <LampBar /> : null}
+        {row.detail ? <span style={text(13, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
+        <time dateTime={row.at} style={text(13, 400, t.label, tnum)}>
+          {shortAgo(row.at, now)}
+        </time>
       </div>
     </RowFrame>
   );
 }
 
-/** A day's eyebrow over a hairline, as the heading of its rows. */
+/** A day's heading, 13/500 Text 3. */
 function DayHeading({ day }: { day: ReactNode }) {
-  return (
-    <Eyebrow as="h2" style={{ margin: 0, paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-      {day}
-    </Eyebrow>
-  );
+  return <h2 style={text(13, 500, t.label, { margin: 0, padding: `8px ${PAD}px 4px` })}>{day}</h2>;
 }
 
-function RowSkeleton({ phone }: { phone: boolean }) {
-  if (phone) {
-    return (
-      <div style={phoneRow}>
-        <Skeleton width={28} height={28} radius="50%" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <Skeleton width="66%" height={13} />
-          <Skeleton width="40%" height={11} />
-        </div>
-        <Skeleton width={20} height={10} />
-      </div>
-    );
-  }
+function RowSkeleton() {
   return (
-    <div style={desktopRow}>
-      <span />
-      <Skeleton width={28} height={28} radius="50%" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <Skeleton width="62%" height={13} />
-        <Skeleton width="38%" height={11} />
+    <div style={rowStyle}>
+      <Skeleton width={40} height={40} radius="50%" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <Skeleton width="66%" height={14} />
+        <Skeleton width={36} height={12} />
       </div>
-      <Skeleton width={48} height={32} radius={4} />
-      <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
     </div>
   );
 }
 
-/** Today's three rows and yesterday's four, as the board draws them; the phone shows the first three. */
+/** Today's three rows and yesterday's four while the list loads. */
 const LOADING_DAYS = [3, 4] as const;
-const PHONE_LOADING_ROWS = 3;
 
 function NoneOfThese({ hasMore }: { hasMore: boolean }) {
-  return (
-    <p style={text(12, 400, t.text2, { margin: 0 })}>
-      None of these among the latest.{hasMore ? " Show more to look further back." : ""}
-    </p>
-  );
+  return <p style={text(15, 400, t.text2, { margin: 0, padding: `0 ${PAD}px` })}>None of these among the latest.{hasMore ? " Show more to look further back." : ""}</p>;
 }
 
 function MoreButton({ list, phone }: { list: ActivityListProps; phone: boolean }) {
   if (!list.hasMore) return null;
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div style={{ display: "flex", justifyContent: "center", padding: `0 ${PAD}px` }}>
       <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} disabled={list.loadingMore} onClick={list.onMore}>
         {list.loadingMore ? "Loading…" : "Show more"}
       </Button>
@@ -389,42 +282,25 @@ function MoreButton({ list, phone }: { list: ActivityListProps; phone: boolean }
   );
 }
 
-function ActivityList({
-  list,
-  chosen,
-  now,
-  phone,
-  onOpen,
-  live,
-}: {
-  list: ActivityListProps;
-  /** G26: the live connection is up. "All caught up." is said only then: never beside "Reconnecting". */
-  live: boolean;
-  chosen: ReadonlySet<ActivityKind>;
-  now: number;
-  phone: boolean;
-  onOpen: (row: ActivityRow) => void;
-}) {
-  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: phone ? 24 : 32, minWidth: 0 };
+function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: ActivityListProps; live: boolean; chosen: ReadonlySet<ActivityKind>; now: number; phone: boolean; onOpen: (row: ActivityRow) => void }) {
+  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16, minWidth: 0 };
   const day: CSSProperties = { display: "flex", flexDirection: "column" };
 
-  const days = phone ? [PHONE_LOADING_ROWS] : LOADING_DAYS;
   const skeleton = (
     <LoadingRegion what="your activity" data-testid="activity-loading" style={column}>
-      {days.map((rows, index) => (
+      {(phone ? [3] : LOADING_DAYS).map((rows, index) => (
         <div key={index} style={day}>
-          <div style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-            <Skeleton width={72} height={11} />
+          <div style={{ padding: `8px ${PAD}px 4px` }}>
+            <Skeleton width={72} height={12} />
           </div>
           {Array.from({ length: rows }, (_, i) => (
-            <RowSkeleton key={i} phone={phone} />
+            <RowSkeleton key={i} />
           ))}
         </div>
       ))}
     </LoadingRegion>
   );
 
-  const Row = phone ? PhoneRow : DesktopRow;
   const groups = filterGroups(list.groups, chosen);
   return (
     <PageState
@@ -434,387 +310,198 @@ function ActivityList({
       skeleton={skeleton}
       empty={{ when: () => list.groups.length === 0 && live, line: "All caught up.", testId: "activity-empty" }}
     >
-      {() => list.groups.length === 0 ? null : (
-    <div data-testid="activity-list" style={column}>
-      {groups.map((group) => (
-        <section key={group.day} data-testid="activity-day" style={day}>
-          <DayHeading day={group.day} />
-          <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {group.rows.map((row) => (
-              <li key={row.id}>
-                <Row row={row} now={now} onOpen={onOpen} />
-              </li>
+      {() =>
+        list.groups.length === 0 ? null : (
+          <div data-testid="activity-list" style={column}>
+            {groups.map((group) => (
+              <section key={group.day} data-testid="activity-day" style={day}>
+                <DayHeading day={group.day} />
+                <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                  {group.rows.map((row) => (
+                    <li key={row.id}>
+                      <Row row={row} now={now} onOpen={onOpen} />
+                    </li>
+                  ))}
+                </ol>
+              </section>
             ))}
-          </ol>
-        </section>
-      ))}
-      {groups.length === 0 ? <NoneOfThese hasMore={list.hasMore} /> : null}
-      <MoreButton list={list} phone={phone} />
-    </div>
-        )}
+            {groups.length === 0 ? <NoneOfThese hasMore={list.hasMore} /> : null}
+            <MoreButton list={list} phone={phone} />
+          </div>
+        )
+      }
     </PageState>
   );
 }
 
-/* ── the aside ── */
+/* ── the head ── */
 
-function People({ peopleThisWeek, peopleError, peopleRead, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; peopleRead?: ReadLike; live: boolean }) {
-  const grid: CSSProperties = { ...asidePart(0, false), display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 };
-  const people =
-    peopleThisWeek !== null ? (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-        <span style={text(12, 400, t.text2)}>This week</span>
-        <Figure value={peopleThisWeek.toLocaleString("en-GB")} />
-        <span style={text(12, 400, t.text2)}>{peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}</span>
-      </div>
-    ) : peopleError ? (
-      <PageState read={peopleRead ?? readOf("error", undefined, peopleError.onRetry, peopleError.error)} thing="your activity" region="People this week" skeleton={null}>
-        {() => null}
-      </PageState>
-    ) : (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <Skeleton width="60%" height={12} />
-        <Skeleton width={40} height={26} />
-        <Skeleton width="90%" height={12} />
-      </div>
-    );
-  const listening = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <span style={text(12, 400, t.text2, { display: "inline-flex", alignItems: "center", gap: 8 })}>
-        {live ? <LampBar /> : null}
-        {live ? "Listening" : "Reconnecting"}
-      </span>
-      <span style={text(13, 500, t.text)}>{live ? "live" : "offline"}</span>
-    </div>
-  );
-  const content = (
-    <>
-      {people}
-      {listening}
-    </>
-  );
-  return peopleThisWeek === null && !peopleError ? (
-    <LoadingRegion what="the people who ran your builds" data-testid="activity-orbs" style={grid}>
-      {content}
-    </LoadingRegion>
-  ) : (
-    <section aria-label="People this week" data-testid="activity-orbs" style={grid}>
-      {content}
-    </section>
+function LiveState({ live }: { live: boolean }) {
+  return (
+    <span data-testid="activity-live" style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: live ? t.brandAccent : t.warn, whiteSpace: "nowrap" }}>
+      {live ? "● live" : "Reconnecting"}
+    </span>
   );
 }
 
-/** The chart's drawing box; it stretches to the aside's width, the strokes keep their weight. */
-const CHART_W = 300;
-const CHART_H = 120;
-const GRID_YS = [24, 60, 96] as const;
-const LINE_TOP = 12;
-const LINE_BOTTOM = 12;
-
-const f = (n: number) => Math.round(n * 10) / 10;
-
-/** Runs per day as the board draws them: the line in `--evidence` over a flat area, the rebuild as a dashed `--lit-ink` line with a ringed dot. */
-function RunsLine({ runs }: { runs: ActivityRuns }) {
-  const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
-  const { values, markerIndex, label } = runs;
-  const n = values.length;
-  const x = (i: number) => (n > 1 ? (i * CHART_W) / (n - 1) : 0);
-  const y = (v: number) => CHART_H - LINE_BOTTOM - Math.min(Math.max(v, 0), 1) * (CHART_H - LINE_TOP - LINE_BOTTOM);
-  const points = values.map((v, i) => `${f(x(i))},${f(y(v))}`).join(" ");
-  const marked = markerIndex !== null && Number.isFinite(markerIndex) && n > 0;
-  const marker = marked ? Math.min(Math.max(Math.round(markerIndex), 0), n - 1) : 0;
-  const mx = x(marker);
-  const my = n > 0 ? y(values[marker]) : 0;
-
+function Head({ unread, live, onMarkAllRead, phone, onShowMe }: { unread: number | null; live: boolean; onMarkAllRead: () => void; phone: boolean; onShowMe?: () => void }) {
   return (
-    <div style={{ position: "relative" }}>
-      <svg
-        data-ui="chart-line"
-        role="img"
-        aria-label={label}
-        width="100%"
-        height={CHART_H}
-        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        preserveAspectRatio="none"
-        style={{ display: "block", overflow: "visible" }}
-      >
-        {GRID_YS.map((gy) => (
-          <line key={gy} x1={0} x2={CHART_W} y1={gy} y2={gy} stroke={t.hairline} strokeWidth={1} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
-        ))}
-        {n > 0 ? (
-          <>
-            <polygon points={`${points} ${CHART_W},${CHART_H} 0,${CHART_H}`} fill={t.evidence} fillOpacity={areaAlpha} />
-            <polyline points={points} fill="none" stroke={t.evidence} strokeWidth={1.4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          </>
-        ) : null}
-        {marked ? (
-          <line
-            data-testid="activity-runs-marker"
-            x1={f(mx)}
-            x2={f(mx)}
-            y1={0}
-            y2={CHART_H}
-            stroke={t.litInk}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-            vectorEffect="non-scaling-stroke"
-          />
-        ) : null}
-      </svg>
-      {marked ? (
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: `calc(${f((mx / CHART_W) * 100)}% - 4px)`,
-            top: f(my - 4),
-            width: 8,
-            height: 8,
-            boxSizing: "border-box",
-            borderRadius: "50%",
-            background: t.surface,
-            border: `1.5px solid ${t.litInk}`,
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function RunsChart({ runs, runsRead }: { runs: ActivityLoad<ActivityRuns>; runsRead?: ReadLike }) {
-  const marker = runs.status === "ready" ? runs.data.markerIndex : null;
-  return (
-    <section style={asidePart(16, false)}>
-      <CardHead title="Runs of your builds" subtitle={chartSubtitle(marker)} headingLevel={2} />
-      <div data-testid="activity-runs">
-        {runs.status === "loading" ? (
-          <LoadingRegion what="the runs chart" data-testid="activity-runs-loading">
-            <Skeleton width="100%" height={CHART_H} />
-          </LoadingRegion>
-        ) : runs.status === "error" ? (
-          <PageState read={runsRead ?? readOf("error", undefined, runs.onRetry, runs.error)} thing="your runs" region="Runs of your builds" skeleton={null}>
-            {() => null}
-          </PageState>
-        ) : (
-          <RunsLine runs={runs.data} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `0 ${PAD}px 8px`, minHeight: 40, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+        {/* Prompt 19: on a phone the top bar names the page, so the heading is for screen readers only. */}
+        <h1 className={phone ? "sr-only" : undefined} style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
+        <LiveState live={live} />
+        {/* The unread count, for screen readers: the bars on the rows say it to the eye. */}
+        {unread === null ? null : (
+          <span className="sr-only" data-testid="activity-unread">
+            {unreadLine(unread, live)}
+          </span>
         )}
       </div>
-    </section>
-  );
-}
-
-function KindToggle({
-  kind,
-  count,
-  on,
-  onToggle,
-}: {
-  kind: ActivityKind;
-  /** Of the loaded rows. Null while the list loads (a bone says it, not a zero), undefined when it could not be read (nothing does). */
-  count: number | null | undefined;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-pressed={on}
-      data-testid="activity-kind"
-      data-kind={kind}
-      onClick={onToggle}
-      {...handlers}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        height: 32,
-        boxSizing: "border-box",
-        margin: "0 -8px",
-        padding: "0 8px",
-        borderRadius: 6,
-        border: "1px solid transparent",
-        background: "transparent",
-        ...(state.hovered ? CONTROL_HOVER : null),
-        ...(on ? SELECTED : null),
-        ...text(12, on ? 500 : 400, on ? t.text : t.text2),
-        cursor: "pointer",
-        textAlign: "left",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: TONE[kind], flexShrink: 0 }} />
-      <span style={{ flexGrow: 1 }}>{kind}</span>
-      {count === null ? (
-        <Skeleton width={16} height={11} />
-      ) : count === undefined ? null : (
-        <span style={text(12, 400, t.label, tnum)}>{count.toLocaleString("en-GB")}</span>
-      )}
-    </button>
-  );
-}
-
-function ShowMe({
-  kindCounts,
-  listStatus,
-  chosen,
-  onToggle,
-}: {
-  kindCounts: KindCounts;
-  listStatus: ActivityListProps["status"];
-  chosen: ReadonlySet<ActivityKind>;
-  onToggle: (kind: ActivityKind) => void;
-}) {
-  return (
-    <section style={asidePart(8, true)}>
-      <CardHead title="Show me" headingLevel={2} />
-      <div role="group" aria-label="Show me" style={{ display: "flex", flexDirection: "column" }}>
-        {ACTIVITY_KINDS.map((kind) => (
-          <KindToggle
-            key={kind}
-            kind={kind}
-            count={listStatus === "ready" ? kindCounts[kind] : listStatus === "loading" ? null : undefined}
-            on={chosen.has(kind)}
-            onToggle={() => onToggle(kind)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ── the two layouts ── */
-
-function DesktopActivity(props: ActivityViewProps) {
-  const { now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
-  const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
-  const stacked = !useMinWidth(BETWEEN.stack);
-
-  return (
-    <div data-testid="activity-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      {/* The page head spans both tracks, so Mark all read ends at the content edge. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <PageHeader
-          title="Activity"
-          actions={
-            <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
-              Mark all read
-            </Button>
-          }
-        />
-        <p style={text(12, 400, t.text2, { margin: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 15 })}>
-          {unread === null ? null : (
-            <>
-              {unreadLine(unread, live)}
-              {live ? <LampBar /> : null}
-            </>
-          )}
-        </p>
-        <NotificationSettingsLink />
-      </div>
-    {/* The page grid's main and side template (9 / 3) on a wide window; stacked below it. */}
-    <div style={stacked ? trackRow(stacked, 48) : pageColumns("mainSide")}>
-      <section aria-label="Activity" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
-        {writeError ? <WriteFailed failure={writeError} /> : null}
-        <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} live={live} />
-      </section>
-
-      <aside
-        style={asideStyle(stacked, {
-          flex: "1 0 300px",
-          maxWidth: 340,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          /* The hairline in the middle of the gutter, the text on the column's edge. */
-          marginLeft: stacked ? undefined : -PAGE_GUTTER / 2,
-          paddingLeft: PAGE_GUTTER / 2,
-          borderLeft: `1px solid ${t.hairline}`,
-        })}
-      >
-        <People peopleThisWeek={peopleThisWeek} peopleError={peopleError} peopleRead={props.peopleRead} live={live} />
-        <RunsChart runs={runs} runsRead={props.runsRead} />
-        <ShowMe
-          kindCounts={kindCounts}
-          listStatus={list.status}
-          chosen={chosen}
-          onToggle={(kind) => setChosen((current) => toggleKind(current, kind))}
-        />
-      </aside>
-    </div>
-    </div>
-  );
-}
-
-function PhoneActivity(props: ActivityViewProps) {
-  const { now, list, unread, live, kindCounts, writeError, onOpen, onMarkAllRead } = props;
-  const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
-
-  return (
-    <div
-      data-testid="activity-view"
-      data-viewport="mobile"
-      style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <Eyebrow>Activity</Eyebrow>
-          <h1 style={PAGE_TITLE}>
-            {unread === null ? "Activity" : unreadHeading(unread)}
-          </h1>
-          <NotificationSettingsLink />
-        </div>
-        {unread ? (
-          <Button variant="secondary" size={44} fontSize={13} data-testid="activity-mark-all" onClick={onMarkAllRead}>
-            Mark all read
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {onShowMe ? (
+          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onShowMe}>
+            Show me
           </Button>
         ) : null}
+        {/* On a phone "Mark all read" is the top bar's right slot (the page registers it). */}
+        {phone ? null : (
+          <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+            Mark all read
+          </Button>
+        )}
       </div>
-
-      <ScrollRow gap={6} label="Show">
-        <FilterChip label="All" on={chosen.size === 0} onClick={() => setChosen(NONE)} />
-        {PHONE_CHIPS.map(({ kind, label }) => (
-          <FilterChip
-            key={kind}
-            label={label}
-            count={list.status === "ready" ? kindCounts[kind].toLocaleString("en-GB") : undefined}
-            on={chosen.has(kind)}
-            onClick={() => setChosen((current) => toggleKind(current, kind))}
-          />
-        ))}
-      </ScrollRow>
-
-      {writeError ? <WriteFailed failure={writeError} /> : null}
-      <ActivityList list={list} chosen={chosen} now={now} phone onOpen={onOpen} live={live} />
     </div>
+  );
+}
+
+/* ── the side ── */
+
+/** The people in this week's rows, newest first, each once. */
+export function peopleThisWeekOf(groups: readonly ActivityGroup[]): ActivityRow["actor"][] {
+  const seen = new Map<string, ActivityRow["actor"]>();
+  for (const group of groups) {
+    if (group.day !== "Today" && group.day !== "Yesterday" && group.day !== "This week") continue;
+    for (const row of group.rows) if (row.kind !== "reproduced" && !seen.has(row.actor.id)) seen.set(row.actor.id, row.actor);
+  }
+  return [...seen.values()];
+}
+
+function People({ groups }: { groups: readonly ActivityGroup[] }) {
+  const people = peopleThisWeekOf(groups);
+  if (people.length === 0) return null;
+  const heading = `${people.length.toLocaleString("en-GB")} ${people.length === 1 ? "person" : "people"} this week`;
+  return (
+    <section aria-label={heading} data-testid="activity-people" style={{ padding: `0 ${PAD}px`, display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 style={text(20, 600, t.text, { margin: 0 })}>{heading}</h2>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {people.slice(0, 12).map((actor) => (
+          <li key={actor.id}>
+            <Avatar size={36} userId={actor.id} name={actor.name} hue={actor.hue} src={actor.avatarUrl} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function KindSwitch({ kind, count, on, onToggle }: { kind: ActivityKind; count: number | null | undefined; on: boolean; onToggle: () => void }) {
+  const id = useId();
+  const square = kind === "reproduced" ? null : kind;
+  return (
+    <div data-testid="activity-kind" data-kind={kind} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 40 }}>
+      {square ? <Square square={square} /> : null}
+      <label htmlFor={id} style={text(15, 400, t.text, { flexGrow: 1, cursor: "pointer" })}>
+        {KIND_LABEL[kind]}
+      </label>
+      {count === null ? <Skeleton width={16} height={12} /> : count === undefined ? null : <span style={text(13, 400, t.label, tnum)}>{count.toLocaleString("en-GB")}</span>}
+      <Switch id={id} checked={on} onCheckedChange={onToggle} />
+    </div>
+  );
+}
+
+function ShowMe({ kindCounts, listStatus, chosen, onToggle, titled = true }: { kindCounts: KindCounts; listStatus: ActivityListProps["status"]; chosen: ReadonlySet<ActivityKind>; onToggle: (kind: ActivityKind) => void; titled?: boolean }) {
+  return (
+    <section aria-label={titled ? "Show me" : undefined} style={{ padding: `0 ${PAD}px`, display: "flex", flexDirection: "column", gap: 4 }}>
+      {titled ? <h2 style={text(20, 600, t.text, { margin: "0 0 4px" })}>Show me</h2> : null}
+      {/* In the sheet, the sheet's own group carries the name. */}
+      <div role={titled ? "group" : undefined} aria-label={titled ? "Show me" : undefined} style={{ display: "flex", flexDirection: "column" }}>
+        {ACTIVITY_KINDS.map((kind) => (
+          <KindSwitch key={kind} kind={kind} count={listStatus === "ready" ? kindCounts[kind] : listStatus === "loading" ? null : undefined} on={kindShown(kind, chosen)} onToggle={() => onToggle(kind)} />
+        ))}
+      </div>
+      <NotificationSettingsLink />
+    </section>
   );
 }
 
 /* UX-15 P2: the quiet way to Settings from here. */
 function NotificationSettingsLink() {
   return (
-    <FrameLink
-      to="/settings/notifications"
-      style={text(12, 400, t.label, { textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1, alignSelf: "flex-start" })}
-    >
+    <FrameLink to="/settings/notifications" style={text(13, 400, t.label, { marginTop: 8, textDecoration: "underline", textUnderlineOffset: 3, alignSelf: "flex-start" })}>
       Notification settings
     </FrameLink>
   );
 }
 
-export function ActivityView(props: ActivityViewProps) {
+/* ── the page ── */
+
+function Layout(props: ActivityViewProps) {
+  const { now, list, unread, live, kindCounts, writeError, onOpen, onMarkAllRead } = props;
+  useColumnPanels(true);
   const phone = useIsPhone();
+  const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
+  const [sheet, setSheet] = useState(false);
+  const toggle = (kind: ActivityKind) => setChosen((current) => switchKind(current, kind));
+
+  const main = (
+    <section aria-label="Activity" style={{ ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
+      <Head unread={unread} live={live} onMarkAllRead={onMarkAllRead} phone={phone} onShowMe={phone ? () => setSheet(true) : undefined} />
+      {writeError ? (
+        <div style={{ padding: `0 ${PAD}px` }}>
+          <WriteFailed failure={writeError} />
+        </div>
+      ) : null}
+      <ActivityList list={list} chosen={chosen} now={now} phone={phone} onOpen={onOpen} live={live} />
+    </section>
+  );
+
+  if (phone) {
+    return (
+      <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0, fontFamily: FIGTREE }}>
+        {main}
+        <BottomSheet open={sheet} onOpenChange={setSheet} title="Show me">
+          <ShowMe kindCounts={kindCounts} listStatus={list.status} chosen={chosen} onToggle={toggle} titled={false} />
+        </BottomSheet>
+      </div>
+    );
+  }
+  return (
+    <div
+      data-testid="activity-view"
+      data-viewport="desktop"
+      style={{ width: "100%", maxWidth: CONTAINER, margin: "0 auto", display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", columnGap: PANEL_GAP, alignItems: "start", fontFamily: FIGTREE }}
+    >
+      {main}
+      <aside aria-label="This week and Show me" style={{ ...panel, display: "flex", flexDirection: "column", gap: 24 }}>
+        <People groups={list.groups} />
+        <ShowMe kindCounts={kindCounts} listStatus={list.status} chosen={chosen} onToggle={toggle} />
+      </aside>
+    </div>
+  );
+}
+
+export function ActivityView(props: ActivityViewProps) {
   if (props.pageFailed) {
     /* G9: every region failed: one failed state for the page, under its title. */
     return (
-      <div data-testid="activity-view" style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-        <PageHeader title="Activity" />
+      <div data-testid="activity-view" style={{ ...panel, width: "100%", maxWidth: CONTAINER, margin: "0 auto", padding: PAD, display: "flex", flexDirection: "column", gap: 16 }}>
+        <h1 style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
         <PageFailed reads={props.pageFailed} region="Activity" />
       </div>
     );
   }
-  return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} />;
+  return <Layout {...props} />;
 }
 
 export default ActivityView;

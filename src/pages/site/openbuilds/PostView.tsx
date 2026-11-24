@@ -1,27 +1,28 @@
-/* UX-06 Part 1: the post page. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
+/* Synth 11: the topic page. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
 
-   `OpenBuildsColumns` (the page grid's main and side template, 9 / 3; below 1001 the side column follows the main one). In the main column: the
-   crumbs (12 `--label`, `OpenBuilds / Claude Code`), the post at page size (`PostCard` with its heading as the page's `h1`), then the
-   switch (`Segmented`: `Thread · 6` and, once a reply holds a build, `Wall · 3 builds`; `Oldest first` at the row's right), then the
-   Thread or the Wall. The reply box and the Wall are the container's (`replyBox`, `wall`): this view only says where they stand.
+   The header carries OpenBuilds as the current item. Two panels (`OpenBuildsColumns`: main and 340 from 1101, the side 300
+   from 761 to 1100, one column below with the side sections after the replies). In the main panel: a 13 Text 3 link to the
+   topic's space, the post at page size (`PostCard` with its lead line as the page's h1 at 20/600), then the pills
+   (`Thread 6` and, once a reply holds a build, `Wall 3 builds`; `Oldest first` 13 Text 3 at the right), then the Thread or
+   the Wall. The reply box and the Wall are the container's (`replyBox`, `wall`): this view only says where they stand.
 
-   The side column: the module box with the space, then `In this post`. */
+   The side panel: the space as a section headed by its fact (`412 members`), then the builds in the post's replies, headed
+   by their count. */
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { PageEmpty } from "@/components/pagestate/PageState";
-import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import type { CSSProperties, ReactNode } from "react";
 
-import { Segmented } from "@/components/brand/Segmented";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { FilterChip } from "@/components/brand/FilterChip";
 import { PostCard } from "@/components/post/PostCard";
 import { PostControl } from "@/components/post/postControls";
 import type { PostCardData } from "@/components/post/postCardModel";
 import type { RowEngagement } from "@/components/social/EngagementRow";
-import { PlainRow } from "@/components/vision/PlainRow";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SectionHead } from "@/components/vision/SectionHead";
 import type { StripTileData } from "@/components/vision/StepStripTiles";
 import { PageLink } from "@/lib/routing/PageLink";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -34,8 +35,10 @@ import { threadLabel, wallLabel, type PostTab, type ReplyItem } from "./postMode
 export interface PostSideSpace {
   name: string;
   to: string;
-  /** "Made by @sam · 412 members". */
-  meta: string;
+  /** The section's head: "412 members". */
+  members: string;
+  /** "Made by @sam". Null: no maker to name. */
+  madeBy: string | null;
   description: string;
   /** Null signed out of the space's reach (invite only): no control. */
   joined: boolean | null;
@@ -43,11 +46,15 @@ export interface PostSideSpace {
   onLeave: () => void;
 }
 
-export interface PostSideRow {
-  label: string;
-  value: number;
-  /** A row that opens something: `Builds in replies` opens the Wall. */
-  to?: string;
+/** A build in the post's replies, as a row of the side panel. */
+export interface PostSideBuild {
+  key: string;
+  /** The build's name, 15/600. */
+  name: string;
+  /** "@maya · Rebuilt from @sam", 13 Text 3. */
+  meta: string;
+  /** Its page; null for a build still in a draft. */
+  to: string | null;
 }
 
 export interface PostViewProps {
@@ -82,99 +89,119 @@ export interface PostViewProps {
   wall?: ReactNode;
   /** Part 6: what the Wall puts on the switch's row (Line up steps). */
   wallRow?: ReactNode;
-  side: { space: PostSideSpace | null; rows: readonly PostSideRow[] };
+  side: { space: PostSideSpace | null; builds: readonly PostSideBuild[] };
 }
 
-const label = (size: number, color: string = t.label) => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: "16px", color, margin: 0 });
+const words = (size: 13 | 15, color: string, extra: CSSProperties = {}): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: size === 15 ? "20px" : "16px", color, margin: 0, ...extra });
 
-/** A crumb: a page link in `--label`, underlined at once under a fine pointer's hover. */
-function Crumb({ to, children }: { to: string; children: string }) {
+/** "2 builds in this post". */
+const buildsHeading = (count: number): string => `${count} ${count === 1 ? "build" : "builds"} in this post`;
+
+/** The link to the topic's space above the post: 13 in Text 3, underlined at once under a fine pointer's hover. */
+function UpLink({ to, children }: { to: string; children: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <PageLink to={to} {...handlers} style={{ color: t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, ...ring(state.focusVisible) }}>
+    <PageLink to={to} {...handlers} style={{ color: t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}>
       {children}
     </PageLink>
   );
 }
 
-function SpaceName({ to, children }: { to: string; children: string }) {
+const oneLine: CSSProperties = { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+
+/** A build row in the side panel: the name 15/600 (a link when the build is published), its line 13 Text 3. */
+function BuildRow({ build }: { build: PostSideBuild }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const name: CSSProperties = { ...words(15, t.text, { fontWeight: 600 }), ...oneLine };
   return (
-    <PageLink to={to} {...handlers} style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, ...ring(state.focusVisible) }}>
-      {children}
-    </PageLink>
+    <li style={{ listStyle: "none", padding: "6px 16px", minHeight: 56, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+      {build.to ? (
+        <PageLink to={build.to} {...handlers} style={{ ...name, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}>
+          {build.name}
+        </PageLink>
+      ) : (
+        <span style={name}>{build.name}</span>
+      )}
+      <span style={{ ...words(13, t.label), ...oneLine }}>{build.meta}</span>
+    </li>
   );
 }
 
-function SideColumn({ space, rows }: PostViewProps["side"]) {
+function SideColumn({ space, builds }: PostViewProps["side"]) {
   return (
     <>
       {space ? (
-        <section aria-label="Space" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
-          <SpaceName to={space.to}>{space.name}</SpaceName>
-          <p style={{ ...label(12), marginTop: 2 }}>{space.meta}</p>
-          {space.description ? <p style={{ ...label(12, t.text2), lineHeight: "20px", marginTop: 8 }}>{space.description}</p> : null}
-          {space.joined !== null ? (
-            <div style={{ marginTop: 12 }}>
-              {space.joined ? (
-                <PostControl aria-pressed onClick={space.onLeave}>
-                  Joined
-                </PostControl>
-              ) : (
-                <PostControl onClick={space.onJoin} aria-label={`Join ${space.name}`}>Join space</PostControl>
-              )}
-            </div>
-          ) : null}
+        <section aria-label="Space" style={{ display: "flex", flexDirection: "column" }}>
+          <SectionHead title={space.members} headingLevel={2} />
+          <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {space.description ? <p style={words(15, t.text2)}>{space.description}</p> : null}
+            {space.madeBy ? <p style={words(13, t.label)}>{space.madeBy}</p> : null}
+            {space.joined !== null ? (
+              <div style={{ marginTop: 4 }}>
+                {space.joined ? (
+                  <PostControl aria-pressed onClick={space.onLeave}>
+                    Joined
+                  </PostControl>
+                ) : (
+                  <PostControl onClick={space.onJoin} aria-label={`Join ${space.name}`}>
+                    Join space
+                  </PostControl>
+                )}
+              </div>
+            ) : null}
+          </div>
         </section>
       ) : null}
-      {rows.length > 0 ? (
-        <section aria-label="In this post" style={{ marginTop: space ? 28 : 0 }}>
-          <SectionHead title="In this post" headingLevel={2} />
-          <div style={{ marginTop: 12 }}>
-            {rows.map((row, index) => (
-              <PlainRow key={row.label} label={row.to ? <SameLink to={row.to}>{row.label}</SameLink> : row.label} value={row.value} last={index === rows.length - 1} />
+      {builds.length > 0 ? (
+        <section aria-label="Builds in this post" style={{ display: "flex", flexDirection: "column" }}>
+          <SectionHead title={buildsHeading(builds.length)} headingLevel={2} />
+          <ul style={{ margin: 0, padding: 0 }}>
+            {builds.map((build) => (
+              <BuildRow key={build.key} build={build} />
             ))}
-          </div>
+          </ul>
         </section>
       ) : null}
     </>
   );
 }
 
-/** A link to this page with new parameters: no fade. */
-function SameLink({ to, children }: { to: string; children: string }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  return (
-    <Link to={to} {...handlers} style={{ color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, ...ring(state.focusVisible) }}>
-      {children}
-    </Link>
-  );
-}
-
 export function PostView(view: PostViewProps) {
   const phone = useIsPhone();
+  // Prompt 19: the top bar names the topic's space; its More sheet holds the topic's actions (Copy link and Share are the bar's own).
+  useRegisterPageBar({
+    title: view.side.space?.name,
+    more: [
+      ...(view.onMessage ? [{ label: view.onMessage.label, onSelect: view.onMessage.onSelect }] : []),
+      ...(view.onReport ? [{ label: "Report", tone: "danger" as const, onSelect: view.onReport }] : []),
+      ...(view.onBlock ? [{ label: view.onBlock.label, tone: "danger" as const, onSelect: view.onBlock.onSelect }] : []),
+    ],
+  });
   const items = [{ value: "thread" as const, label: threadLabel(view.replies) }, ...(view.builds > 0 ? [{ value: "wall" as const, label: wallLabel(view.builds) }] : [])];
   const tab: PostTab = view.builds > 0 ? view.tab : "thread";
   const box = view.replyBox && view.replyBox.at !== "foot" ? { at: view.replyBox.at, node: view.replyBox.node } : undefined;
+  // The link above the post goes up one level: to the topic's space, or to OpenBuilds when it is in none.
+  const up = view.crumbs[view.crumbs.length - 1];
 
   const main = (
     <div>
-      <nav aria-label="Where this post is" style={{ ...label(12), display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {view.crumbs.map((crumb, index) => (
-          <span key={crumb.to} style={{ display: "inline-flex", gap: 6 }}>
-            {index > 0 ? <span aria-hidden="true">/</span> : null}
-            <Crumb to={crumb.to}>{crumb.label}</Crumb>
-          </span>
-        ))}
-      </nav>
+      {up ? (
+        <nav aria-label="Where this post is" style={{ ...words(13, t.label), marginBottom: 12 }}>
+          <UpLink to={up.to}>{up.label}</UpLink>
+        </nav>
+      ) : null}
 
       <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} onBlock={view.onBlock} />
 
-      <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "space-between", gap: 12, marginTop: 8, paddingBottom: 12, borderBottom: `1px solid ${t.hairline}` }}>
-        <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 28} fontSize={13} fullWidth={phone} />
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 16, alignSelf: phone ? "flex-end" : undefined }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 16, paddingBottom: 12 }}>
+        <div role="group" aria-label="Show" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {items.map((item) => (
+            <FilterChip key={item.value} label={item.label} on={item.value === tab} onClick={() => view.onTab(item.value)} style={touchArea(phone)} />
+          ))}
+        </div>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>
           {tab === "wall" ? view.wallRow : null}
-          <span style={label(12)}>Oldest first</span>
+          <span style={words(13, t.label)}>Oldest first</span>
         </span>
       </div>
 
@@ -186,7 +213,7 @@ export function PostView(view: PostViewProps) {
         <div role="region" aria-label="Thread">
           {view.thread.filter ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
-              <span style={label(12, t.text2)}>{view.thread.filter.label}</span>
+              <span style={words(13, t.text2)}>{view.thread.filter.label}</span>
               <PostControl onClick={view.thread.filter.onShowAll}>Show all replies</PostControl>
             </div>
           ) : null}
@@ -195,7 +222,7 @@ export function PostView(view: PostViewProps) {
           ) : (
             <ReplyList items={view.thread.items} actions={view.actions} box={box} />
           )}
-          {view.replyBox?.at === "foot" ? <div style={{ paddingTop: 16, borderTop: `1px solid ${t.hairline}` }}>{view.replyBox.node}</div> : null}
+          {view.replyBox?.at === "foot" ? <div style={{ paddingTop: 16 }}>{view.replyBox.node}</div> : null}
         </div>
       )}
     </div>

@@ -8,7 +8,6 @@ import type { CSSProperties } from "react";
 
 import { Segmented } from "@/components/brand/Segmented";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PostControl } from "@/components/post/postControls";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { HARNESS_COPY, NO_HARNESS } from "@/lib/build/harnessWords";
@@ -31,7 +30,7 @@ const KINDS = [
   { value: "code", label: "Code" },
 ] as const;
 
-const fieldBox = (phone: boolean): CSSProperties => ({ boxSizing: "border-box", width: "100%", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontSize: phone ? 15 : 13, outline: "none" });
+const fieldBox: CSSProperties = { boxSizing: "border-box", width: "100%", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontSize: 15, outline: "none" };
 
 /** A chooser: its label in 12 `--label`, a control naming the choice, and a menu of the options as one radio group. */
 function Choice({ id, label, value, options, onChange }: { id: string; label: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void }) {
@@ -60,7 +59,6 @@ function Choice({ id, label, value, options, onChange }: { id: string; label: st
 }
 
 export function StepTileEditor({ tile, onChange, idPrefix }: { tile: ReplyStepTile; onChange: (tile: ReplyStepTile) => void; idPrefix: string }) {
-  const phone = useIsPhone();
   const area = useInteractive<HTMLTextAreaElement>();
   const code = tile.kind === "code";
   return (
@@ -80,7 +78,7 @@ export function StepTileEditor({ tile, onChange, idPrefix }: { tile: ReplyStepTi
           onChange={(event) => onChange({ ...tile, text: event.target.value })}
           placeholder={code ? "The lines you ran" : "What you sent"}
           {...area.handlers}
-          style={{ ...fieldBox(phone), minHeight: 88, padding: "8px 12px", fontFamily: code ? DM_MONO : FIGTREE, lineHeight: "20px", resize: "vertical", ...ring(area.state.focusVisible) }}
+          style={{ ...fieldBox, minHeight: 88, padding: "8px 12px", fontFamily: code ? DM_MONO : FIGTREE, lineHeight: "20px", resize: "vertical", ...ring(area.state.focusVisible) }}
         />
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>

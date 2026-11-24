@@ -1,3 +1,8 @@
+// Synth 12 Part D: the list is a panel (Panel fill, radius 12): "Messages" as the h1 (20/600) with a round "Compose new
+// message" button, the Primary and Requests pills, a search pill ("Search conversations"), then the threads: avatar 40,
+// name 15/600, the time 13 Text 3 at the right, the last line 15 (Text when unread, Text 2 otherwise) and an 8px Mint square
+// for unread. The open thread's row is Card-filled. What follows below is the BG-P26 history.
+//
 // BG-P26. The thread list, repainted onto the two-theme token set.
 //
 // WHAT WAS HERE. Forty-three hard-coded colours, every one of them assuming a
@@ -23,8 +28,6 @@
 
 import * as React from "react";
 import {
-  MessageSquare,
-  Inbox,
   Search,
   PenSquare,
   FileText,
@@ -33,10 +36,10 @@ import {
   Pin,
   MessageCircleOff,
 } from "lucide-react";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { t } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { categoryFill } from "@/lib/theme/category";
-import { data as dataType, label as labelType, tabular } from "@/lib/theme/type";
+import { label as labelType, tabular } from "@/lib/theme/type";
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -71,7 +74,7 @@ interface MessagesThreadListProps {
   onThreadClick: (id: string) => void;
   onCompose: () => void;
   counts: { primary: number; requests: number };
-  width?: number;
+  width?: number | string;
   /**
    * BG-P26. True while the first page of threads is still in flight.
    *
@@ -94,9 +97,9 @@ function ThreadListSkeleton() {
         <div
           key={i}
           className="flex w-full items-center gap-2"
-          style={{ height: 72, padding: "10px 14px" }}
+          style={{ height: 72, padding: "12px 16px" }}
         >
-          <Skeleton style={{ width: 32, height: 32, borderRadius: "50%" }} />
+          <Skeleton style={{ width: 40, height: 40, borderRadius: "50%" }} />
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <Skeleton
               style={{
@@ -177,7 +180,7 @@ function AvatarStack({ urls }: { urls: string[] }) {
     return (
       <div
         className="relative flex-shrink-0 overflow-hidden rounded-full"
-        style={{ width: 32, height: 32, background: t.recess }}
+        style={{ width: 40, height: 40, background: t.control }}
       >
         {displayUrls[0] && (
           <img
@@ -192,21 +195,21 @@ function AvatarStack({ urls }: { urls: string[] }) {
   }
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: 32, height: 32 }}>
+    <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
       {displayUrls.map((url, i) => (
         <div
           key={i}
           className="absolute overflow-hidden rounded-full"
           style={{
-            width: 20,
-            height: 20,
-            left: i * 6,
-            top: i * 2,
+            width: 26,
+            height: 26,
+            left: i * 7,
+            top: i * 3,
             zIndex: displayUrls.length - i,
             // The ring that separates overlapping avatars was `border-black/50`,
             // which is invisible on Dusk and a smear on Noon. The page
             // ground is the correct colour for a cut-out against the list.
-            border: `1px solid ${t.bg}`,
+            border: `1px solid ${t.surface}`,
           }}
         >
           <img
@@ -248,118 +251,55 @@ function ThreadItem({
   onClick: () => void;
 }) {
   const [isHovered, setIsHovered] = React.useState(false);
+  const unread = thread.unreadCount > 0;
 
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="flex w-full flex-col gap-1 text-left"
+      aria-current={isActive ? "true" : undefined}
+      data-testid="thread-row"
+      className="flex w-full items-start text-left"
       style={{
-        height: 72,
-        padding: "10px 14px",
-        // Rows sit on the page ground, lift to `--recess` on hover, and the
-        // active thread carries an `--action` left edge over a faint wash of the
-        // same hue. The edge stays 2px in both states so the row's content does
-        // not shift by two pixels when it becomes active.
-        background: isActive
-          ? tokenAlpha("action", 0.08)
-          : isHovered
-            ? t.recess
-            : t.bg,
-        borderLeft: `2px solid ${isActive ? t.action : "transparent"}`,
+        gap: 12,
+        minHeight: 72,
+        padding: "12px",
+        borderRadius: 12,
+        boxSizing: "border-box",
+        background: isActive || isHovered ? t.module : "transparent",
+        transition: uiTransition(),
       }}
     >
-      <div className="flex items-center gap-2" style={{ height: 24 }}>
-        <AvatarStack urls={thread.avatarUrls} />
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span
-            className="truncate"
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              color: t.text,
-            }}
-          >
+      <AvatarStack urls={thread.avatarUrls} />
+      <div className="flex min-w-0 flex-1 flex-col" style={{ gap: 2 }}>
+        <div className="flex items-center" style={{ gap: 8 }}>
+          <span className="truncate" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 600, color: t.text }}>
             {thread.title}
           </span>
           <TypePill type={thread.type} />
-          {thread.isPinned && (
-            <Pin size={10} style={{ color: t.text2, flexShrink: 0 }} />
-          )}
+          {thread.isPinned && <Pin size={12} aria-label="Pinned" style={{ color: t.label, flexShrink: 0 }} />}
+          <span className="flex-shrink-0" style={{ marginLeft: "auto", fontSize: 13, lineHeight: "16px", fontWeight: 400, color: t.label, ...tabular }}>
+            {thread.lastMessage.timestamp}
+          </span>
         </div>
-        {/* A timestamp is data, so it takes the mono face and tabular digits —
-            a column of them lines up instead of jittering. 10px is below the
-            role's own size, which is why the family is taken rather than the
-            whole role: the row's height is structural and 13px mono would not
-            fit it. */}
-        <span
-          className="flex-shrink-0"
-          style={{
-            fontFamily: dataType.fontFamily,
-            ...tabular,
-            fontSize: "10px",
-            fontWeight: 400,
-            color: t.text2,
-          }}
-        >
-          {thread.lastMessage.timestamp}
-        </span>
-      </div>
-
-      <div
-        className="flex items-center gap-2"
-        style={{ height: 24, paddingLeft: 40 }}
-      >
-        <div
-          className="min-w-0 flex-1 truncate"
-          style={{
-            fontSize: "11px",
-            fontWeight: 400,
-            color: t.text2,
-          }}
-        >
-          {thread.lastMessage.kind === "content-share" ? (
-            <ContentSharePreview
-              contentType={thread.lastMessage.contentType}
-              preview={thread.lastMessage.preview}
-            />
-          ) : (
-            <span>
-              {thread.lastMessage.isFromCurrentUser ? "You: " : ""}
-              {thread.lastMessage.preview}
-            </span>
-          )}
-        </div>
-        {thread.unreadCount > 0 && (
-          <>
-            {thread.unreadCount === 1 ? (
-              // A single unread is a dot, and a dot is a mark rather than type,
-              // so solid `--action` is legal here at the 3.0:1 UI floor.
-              <span
-                className="flex-shrink-0 rounded-full"
-                style={{ width: 6, height: 6, background: t.action }}
-              />
+        <div className="flex items-center" style={{ gap: 8 }}>
+          <div className="min-w-0 flex-1 truncate" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 400, color: unread ? t.text : t.text2 }}>
+            {thread.lastMessage.kind === "content-share" ? (
+              <ContentSharePreview contentType={thread.lastMessage.contentType} preview={thread.lastMessage.preview} />
             ) : (
-              <span
-                className="flex flex-shrink-0 items-center justify-center"
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: r["r-chip"],
-                  fontFamily: dataType.fontFamily,
-                  ...tabular,
-                  fontSize: "9px",
-                  fontWeight: 500,
-                  color: t.text,
-                  background: tokenAlpha("action", 0.14),
-                }}
-              >
-                {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+              <span>
+                {thread.lastMessage.isFromCurrentUser ? "You: " : ""}
+                {thread.lastMessage.preview}
               </span>
             )}
-          </>
-        )}
+          </div>
+          {unread ? (
+            <span data-testid="thread-unread" className="flex-shrink-0" style={{ width: 8, height: 8, borderRadius: 2, background: t.brandAccent }}>
+              <span className="sr-only">{`${thread.unreadCount} unread`}</span>
+            </span>
+          ) : null}
+        </div>
       </div>
     </button>
   );
@@ -392,125 +332,85 @@ export function MessagesThreadList({
       className="flex flex-col flex-shrink-0"
       style={{
         width,
+        maxWidth: "100%",
         height: "100%",
-        background: t.bg,
-        borderRight: `0.5px solid ${t.line}`,
+        background: t.surface,
+        borderRadius: 12,
+        overflow: "hidden",
+        fontFamily: labelType.fontFamily,
       }}
     >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between"
-        style={{
-          height: 52,
-          padding: "12px 14px",
-          borderBottom: `0.5px solid ${t.line}`,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: labelType.fontFamily,
-            fontSize: "18px",
-            fontWeight: 700,
-            color: t.text,
-          }}
-        >
-          Messages
-        </span>
+      {/* Head: the page's h1 and the round compose button. */}
+      <div className="flex items-center justify-between" style={{ minHeight: 56, padding: "16px 16px 8px" }}>
+        <h1 style={{ margin: 0, fontSize: 20, lineHeight: "24px", fontWeight: 600, color: t.text }}>Messages</h1>
         <button
           onClick={onCompose}
           className="flex items-center justify-center"
+          aria-label="Compose new message"
+          title="Compose new message"
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: r["r-control"],
-            color: t.text2,
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: t.control,
+            color: t.text,
             transition: uiTransition(),
           }}
-          title="Compose new message"
         >
-          <PenSquare size={14} />
+          <PenSquare size={16} />
         </button>
       </div>
 
       {/* Tabs */}
-      <div
-        className="flex"
-        style={{
-          height: 40,
-          borderBottom: `0.5px solid ${t.line}`,
-        }}
-      >
-        <button
-          onClick={() => onTabChange("primary")}
-          className="flex flex-1 items-center justify-center gap-1.5"
-          style={{
-            fontFamily: labelType.fontFamily,
-            fontSize: "12px",
-            fontWeight: 500,
-            color: activeTab === "primary" ? t.text : t.text2,
-            borderBottom: `2px solid ${activeTab === "primary" ? t.action : "transparent"}`,
-          }}
-        >
-          <MessageSquare size={14} />
-          Primary
-        </button>
-        <button
-          onClick={() => onTabChange("requests")}
-          className="flex flex-1 items-center justify-center gap-1.5"
-          style={{
-            fontFamily: labelType.fontFamily,
-            fontSize: "12px",
-            fontWeight: 500,
-            color: activeTab === "requests" ? t.text : t.text2,
-            borderBottom: `2px solid ${activeTab === "requests" ? t.action : "transparent"}`,
-          }}
-        >
-          <Inbox size={14} />
-          Requests
-          {counts.requests > 0 && (
-            <span
+      <div className="flex" style={{ gap: 8, padding: "0 16px 8px" }}>
+        {(["primary", "requests"] as const).map((tab) => {
+          const on = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => onTabChange(tab)}
+              aria-pressed={on}
               className="flex items-center justify-center"
               style={{
-                minWidth: 16,
-                height: 16,
-                padding: "0 4px",
-                borderRadius: r["r-chip"],
-                fontFamily: dataType.fontFamily,
-                ...tabular,
-                fontSize: "9px",
-                fontWeight: 500,
-                color: t.text,
-                background: tokenAlpha("action", 0.14),
+                gap: 6,
+                height: 32,
+                padding: "0 14px",
+                borderRadius: 16,
+                fontSize: 13,
+                fontWeight: on ? 600 : 500,
+                color: on ? t.onInverse : t.text,
+                background: on ? t.inverse : t.module,
               }}
             >
-              {counts.requests > 99 ? "99+" : counts.requests}
-            </span>
-          )}
-        </button>
+              {tab === "primary" ? "Primary" : "Requests"}
+              {tab === "requests" && counts.requests > 0 ? <span style={{ ...tabular, fontWeight: 400 }}>{counts.requests > 99 ? "99+" : counts.requests}</span> : null}
+            </button>
+          );
+        })}
       </div>
 
       {/* Search */}
-      <div style={{ padding: "6px 14px" }}>
+      <div style={{ padding: "0 16px 8px" }}>
         <div
           className="flex items-center gap-2"
           style={{
-            height: 28,
-            padding: "0 10px",
-            background: t.recess,
-            border: `0.5px solid ${t.line}`,
-            borderRadius: r["r-control"],
+            height: 40,
+            padding: "0 14px",
+            background: t.module,
+            borderRadius: 20,
           }}
         >
-          <Search size={12} style={{ color: t.text2 }} />
+          <Search size={16} style={{ color: t.label }} />
           <input
             type="text"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search conversations..."
-            className="flex-1 bg-transparent outline-none placeholder:text-[var(--text2)]"
+            placeholder="Search conversations"
+            aria-label="Search conversations"
+            className="flex-1 bg-transparent outline-none placeholder:text-[var(--label)]"
             style={{
               fontFamily: labelType.fontFamily,
-              fontSize: "12px",
+              fontSize: 15,
               fontWeight: 400,
               color: t.text,
             }}
@@ -519,19 +419,19 @@ export function MessagesThreadList({
       </div>
 
       {/* Thread list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ padding: "0 4px 8px" }}>
         {loading && sortedThreads.length === 0 ? (
           <ThreadListSkeleton />
         ) : sortedThreads.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             {threads.length === 0 && !query ? (
               <>
-                <MessageCircleOff size={64} style={{ color: t.line }} />
+                <MessageCircleOff size={48} style={{ color: t.label }} />
                 <span
                   style={{
                     fontFamily: labelType.fontFamily,
-                    fontSize: "13px",
-                    fontWeight: 500,
+                    fontSize: 15,
+                    fontWeight: 600,
                     color: t.text,
                   }}
                 >
@@ -540,7 +440,7 @@ export function MessagesThreadList({
                 <span
                   style={{
                     fontFamily: labelType.fontFamily,
-                    fontSize: "12px",
+                    fontSize: 15,
                     fontWeight: 400,
                     color: t.text2,
                   }}
@@ -552,7 +452,7 @@ export function MessagesThreadList({
               <span
                 style={{
                   fontFamily: labelType.fontFamily,
-                  fontSize: "12px",
+                  fontSize: 15,
                   fontWeight: 400,
                   color: t.text2,
                 }}

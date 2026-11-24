@@ -47,13 +47,13 @@ function view(width: number, over: Partial<SandboxViewProps> = {}) {
 afterEach(cleanup);
 
 describe("a window from 768 to where Details fits", () => {
-  it("opens a 300 panel on a selection, with the foot Tap to edit on a tablet and Click to edit with a mouse in a wider window (CA-27)", () => {
-    view(1100);
+  it("opens a 340 panel on a selection, with the foot Tap to edit on a tablet and Click to edit with a mouse in a wider window (CA-27)", () => {
+    view(1000);
     const panel = screen.getByTestId("details-overlay");
-    expect(panel.style.width).toBe("300px");
+    expect(panel.style.width).toBe("340px");
     expect(within(panel).getByTestId("details-foot").textContent).toBe("Tap to edit");
     cleanup();
-    view(1200);
+    view(1100);
     expect(within(screen.getByTestId("details-overlay")).getByTestId("details-foot").textContent).toBe("Click to edit");
   });
 

@@ -70,15 +70,14 @@ const draw = (extra: Partial<OpenBuildsFeedViewProps> = {}) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("OpenBuildsFeedView", () => {
-  it("opens with PageHeader: the shared title style and no breadcrumb (page shell)", () => {
+  it("names the page with an h1 for screen readers only: the header's current item already names it", () => {
     const { container } = draw();
     const h1 = screen.getByRole("heading", { level: 1, name: "OpenBuilds" });
-    expect(h1.style.fontSize).toBe("20px");
-    expect(h1.style.lineHeight).toBe("24px");
+    expect(h1).toHaveClass("sr-only");
     expect(container.querySelector('[data-slot="page-breadcrumb"]')).toBeNull();
   });
 
-  it("heads the page with OpenBuilds, its line and the one primary, Post", () => {
+  it("opens the centre panel with its one line at 15 in Text 2 and the one primary, Post", () => {
     atWidth(1440);
     const view = props();
     render(
@@ -87,19 +86,27 @@ describe("OpenBuildsFeedView", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "OpenBuilds" })).toBeInTheDocument();
-    expect(screen.getByText("Post anything, reply with anything. Spaces are made and run by the people in them.")).toBeInTheDocument();
+    const line = screen.getByText("Post anything, reply with anything. Spaces are made and run by the people in them.");
+    expect(line.style.fontSize).toBe("15px");
+    expect(line.closest("section")).toHaveAttribute("aria-label", "Feed");
+    expect(within(screen.getByRole("region", { name: "Feed" })).getByText("Post")).toBeInTheDocument();
     const primary = document.querySelectorAll('[data-visual-slot="btn-primary"]');
     expect(primary).toHaveLength(1);
     fireEvent.click(primary[0] as HTMLElement);
     expect(view.onPost).toHaveBeenCalled();
   });
 
-  it("lists Your spaces: All your spaces first, each space with n new at the right, hidden at zero", () => {
+  it("heads the reader's spaces by their count, each space with n new at the right, hidden at zero", () => {
     atWidth(1440);
     draw();
     const column = screen.getByRole("region", { name: "Your spaces" });
+    expect(within(column).getByRole("heading", { level: 2, name: "2 spaces" })).toBeInTheDocument();
     const links = within(column).getAllByRole("link");
-    expect(links.map((link) => link.textContent)).toEqual(["All your spaces", "Claude Code3 new", "Hiring tools"]);
+    // Synth 11: the "All your spaces" row is gone; the Your spaces tab does that job.
+    expect(links.map((link) => link.textContent)).toEqual(["Claude Code3 new", "Hiring tools"]);
+    expect(within(column).getByText("Claude Code").style.fontSize).toBe("15px");
+    expect(within(column).getByText("Claude Code").style.fontWeight).toBe("600");
+    expect(within(column).getByText("3 new").style.fontSize).toBe("13px");
     expect(within(column).getByRole("button", { name: "Make a space" })).toBeInTheDocument();
     expect(within(column).getByRole("link", { name: "Hiring tools" })).toHaveAttribute("href", "/openbuilds/spaces/hiring-tools");
   });
@@ -112,7 +119,7 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.queryByRole("tablist")).toBeNull();
   });
 
-  it("has two tabs and a Segmented of All and Still open, and moves them through the callbacks", () => {
+  it("has two tabs and the pills All and Still open, and moves them through the callbacks", () => {
     atWidth(1440);
     const view = props();
     render(
@@ -125,16 +132,20 @@ describe("OpenBuildsFeedView", () => {
     fireEvent.click(tabs[1]);
     expect(view.onScope).toHaveBeenCalledWith("everyone");
     const group = screen.getByRole("group", { name: "Show" });
+    expect(within(group).getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(within(group).getByRole("button", { name: "Still open" }));
     expect(view.onOpen).toHaveBeenCalledWith(true);
     expect(screen.getByText("Newest first")).toBeInTheDocument();
   });
 
-  it("draws one card per post and Show more when there is another page", () => {
+  it("draws one card per post, 8 apart, and Show more when there is another page", () => {
     atWidth(1440);
     const onMore = vi.fn();
     draw({ posts: { read: readOf("ready"), items: [{ card: card("p1") }, { card: card("p2") }], more: { loading: false, onMore } } });
-    expect(screen.getAllByRole("article")).toHaveLength(2);
+    const articles = screen.getAllByRole("article");
+    expect(articles).toHaveLength(2);
+    const list = articles[0].parentElement?.parentElement as HTMLElement;
+    expect(list.style.gap).toBe("8px");
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
     expect(onMore).toHaveBeenCalled();
   });
@@ -182,25 +193,41 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.getAllByRole("alert")).toHaveLength(1);
   });
 
-  it("Busy this week: no subtitle, a Join control, hidden when empty", () => {
+  it("Most new posts this week: the heading states it, the meta in Text 3, a small Join, hidden when empty", () => {
     atWidth(1440);
     const { unmount } = draw();
-    const column = screen.getByRole("region", { name: "Busy this week" });
-    // Synth 06: a section head has no subtitle under it.
-    expect(within(column).queryByText("Spaces with the most new posts")).toBeNull();
+    const column = screen.getByRole("region", { name: "Most new posts this week" });
+    expect(within(column).getByRole("heading", { level: 2, name: "Most new posts this week" })).toBeInTheDocument();
     expect(within(column).getByText("Made by @sam · 412 members")).toBeInTheDocument();
-    expect(within(column).getByRole("button", { name: "Join Evals" })).toBeInTheDocument();
+    const join = within(column).getByRole("button", { name: "Join Evals" });
+    expect(join).toHaveTextContent("Join");
     unmount();
     draw({ busy: [] });
-    expect(screen.queryByRole("region", { name: "Busy this week" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Most new posts this week" })).toBeNull();
   });
 
-  it("on a phone: one column, All your spaces as a menu under the tabs, and no Busy this week", () => {
-    atWidth(390);
+  it("from 761 to 1100: the left panel goes, All your spaces is a menu above the feed", () => {
+    atWidth(1024);
     draw();
-    expect(screen.queryByRole("region", { name: "Busy this week" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Your spaces" })).toBeNull();
     expect(screen.getByRole("button", { name: "All your spaces" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Most new posts this week" })).toBeInTheDocument();
+  });
+
+  it("on a phone: one column, All your spaces as a menu, and Most new posts this week after the feed", () => {
+    atWidth(390);
+    draw();
+    expect(screen.queryByRole("region", { name: "Your spaces" })).toBeNull();
+    expect(screen.getByRole("button", { name: "All your spaces" })).toBeInTheDocument();
+    const busy = screen.getByRole("region", { name: "Most new posts this week" });
+    expect(screen.getByRole("region", { name: "Feed" }).compareDocumentPosition(busy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws the Make a space control with a plus and its label as its name", () => {
+    atWidth(1440);
+    draw();
+    const make = within(screen.getByRole("region", { name: "Your spaces" })).getByRole("button", { name: "Make a space" });
+    expect(make.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("uses no em dash in any copy", () => {

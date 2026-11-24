@@ -37,11 +37,13 @@ describe("the lists of counts", () => {
 });
 
 describe("Undo and Redo", () => {
-  it("sit just left of Classification, with Build options, and are greyed with their reason while there is nothing to do", async () => {
+  it("lead the title row's tools, Build options ends it (Synth 09), and are greyed with their reason while there is nothing to do", async () => {
     await mountCa20(seedCa20);
     const row = screen.getByTestId("sandbox-tabrow");
     const buttons = within(row).getAllByRole("button").map((button) => button.getAttribute("data-testid") || button.getAttribute("aria-label"));
-    expect(buttons.slice(buttons.indexOf("title-undo"), buttons.indexOf("title-undo") + 4)).toEqual(["title-undo", "title-redo", "build-options", "Classification"]);
+    expect(buttons.slice(buttons.indexOf("title-undo"), buttons.indexOf("title-undo") + 2)).toEqual(["title-undo", "title-redo"]);
+    expect(buttons.indexOf("title-redo")).toBeLessThan(buttons.indexOf("Classification"));
+    expect(buttons.indexOf("build-options")).toBeGreaterThan(buttons.indexOf("Classification"));
     expect((undoButton() as HTMLButtonElement).disabled).toBe(true);
     expect(undoButton().getAttribute("title")).toBe("Nothing to undo");
     expect(describedBy(undoButton())).toBe("Nothing to undo");

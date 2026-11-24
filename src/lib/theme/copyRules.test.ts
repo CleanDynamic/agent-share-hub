@@ -245,6 +245,11 @@ export const RULES: Rule[] = [
  * in that file for that rule.
  */
 export const ALLOW: Record<string, Record<string, string>> = {
+  // Synth 11 gives this word: the small Join on each row of "Most new posts this week", beside the space's name. Its
+  // accessible name is "Join <space>", so to a screen reader it is never bare.
+  "bare-join": {
+    "src/pages/site/openbuilds/OpenBuildsFeedView.tsx|Join": "the row's small Join beside the space's name (Synth 11); named \"Join <space>\" for screen readers",
+  },
   "empty-stop": {
     "src/pages/site/profile/profileModel.ts|No streak yet": "a value in the streak stat line, beside \"12-day streak · best 31\"; not an empty state",
     "src/pages/site/settings/AppsView.tsx|No access listed": "a value in an app's hint, beside \"Can access: …\"; not an empty state",
@@ -273,8 +278,6 @@ export const ALLOW: Record<string, Record<string, string>> = {
   workflow: {
     "src/pages/site/compose/detailsModel.ts|The command or workflow": "a tool's command or CI workflow file; not a build",
     "src/pages/site/compose/toolPickerModel.ts|Add its workflow with Add › File": "a tool's workflow file; not a build",
-    "src/pages/site/signin/SignInDialogFrame.tsx|Publish, reproduce and rebuild AI-assisted workflows.": "the tagline, decided by the owner (prompt 9)",
-    "src/pages/site/signin/SignInDialogFrame.tsx|AI-assisted workflows.": "the tagline's third line on a phone",
   },
 };
 

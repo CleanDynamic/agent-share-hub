@@ -57,7 +57,7 @@ describe("the window", () => {
     expect(radios.map((radio) => radio.tabIndex)).toEqual([0, -1, -1, -1]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
     expect(within(radios[0]).getByText("Edited since saved")).toBeInTheDocument();
-    expect(within(radios[3]).getByText("Stale")).toBeInTheDocument();
+    expect(within(radios[3]).getByText("Out of date")).toBeInTheDocument();
   });
 
   it("shows the version switch on the selected item only", () => {

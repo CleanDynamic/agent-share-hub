@@ -33,8 +33,8 @@ describe("normaliseHex", () => {
 });
 
 describe("borderFor and outlineFor", () => {
-  it("draws a tile's 1px border in its colour, with the colour at 35% inside it", () => {
-    expect(borderFor("#7FA7D9")).toEqual({ borderColor: "#7FA7D9", boxShadow: "inset 0 0 0 1px rgba(127,167,217,0.35)" });
+  it("draws a tile's border in its colour (1px dark, 1.5px light: --maker-edge), with the colour at 35% inside it", () => {
+    expect(borderFor("#7FA7D9")).toEqual({ borderColor: "#7FA7D9", borderWidth: "var(--maker-edge)", boxShadow: "inset 0 0 0 1px rgba(127,167,217,0.35)" });
   });
 
   it("draws a session's 1.5px line in its maker colour, radius 12 (Synth 16)", () => {

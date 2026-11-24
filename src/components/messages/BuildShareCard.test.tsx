@@ -59,13 +59,12 @@ function renderCard(value: GalleryBuild, srcByPath: MediaSrcMap = new Map()) {
 }
 
 describe("BuildShareCard", () => {
-  it("is one link to the build's page, titled, with the card's plaque", () => {
+  it("is one link to the build's page, titled, with no plaque and no reproduction count (Synth 12)", () => {
     const card = renderCard(build());
     expect(card.getAttribute("href")).toBe("/b2/invoice-reader");
     expect(screen.getByTestId("message-build-title").textContent).toBe("Invoice reader");
-    const plaque = card.querySelector('[data-visual-slot="plaque"]');
-    expect(plaque?.getAttribute("data-plaque-size")).toBe("card");
-    expect(screen.getByTestId("reproduction-count").textContent).toContain("12");
+    expect(card.querySelector('[data-visual-slot="plaque"]')).toBeNull();
+    expect(screen.queryByTestId("reproduction-count")).toBeNull();
   });
 
   it("draws no picture before the cover is signed", () => {

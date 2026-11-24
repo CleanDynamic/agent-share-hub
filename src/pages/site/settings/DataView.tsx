@@ -128,7 +128,7 @@ export function DataView(props: DataViewProps) {
           label="Delete account"
           hint="Removes your account and what you made. This can't be undone."
           control={
-            <Button variant="secondary" size={32} fontSize={13} onClick={() => setAsking(true)}>
+            <Button variant="secondary" size={32} fontSize={13} style={{ color: t.dangerText }} onClick={() => setAsking(true)}>
               Delete account
             </Button>
           }

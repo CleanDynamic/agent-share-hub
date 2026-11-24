@@ -1,32 +1,13 @@
-/* UI-P31 — the family of a build, as a tree or as an indented list.
+/* Synth 14: the family of a build, as a tree or as an indented list.
 
-   TREE (design/reference/desktop/{noon,dusk}/rebuild.html): a canvas 13px under
-   the head, 460 tall on the board and taller when the generations need it,
-   scrolling sideways inside the panel when the family is wider than it. Each
-   generation is a row at y = 18 + 150·g; each node is 140 wide — padding 4,
-   radius 12, `--glass` on a `--glass-border` hairline (the viewer's draft: 1.5px
-   dashed `--action`), `--shadow-card` — with its lamp above it, a 41px cover,
-   its title, and a row of who made it and how many reproduced it. One SVG
-   behind the nodes draws every connector, parent's bottom centre to child's top
-   centre, in `--line` at 1.5. Each node links to its build.
+   TREE: generations in rows; each node a 150-wide Card button (radius 12, 10px 12px): the name 13/600 and "@maker" 13 Text
+   3. Lines from parent to child in 1.5px `--tree-line`. The reader's draft is a dashed node (1px `--field-edge`, no fill),
+   "Your rebuild", under its source, joined by a dashed line. On the lineage page the chosen node is Raised with a 2px Mint
+   ring. No lamps and no reproduced counts. The tree scrolls sideways inside its panel when the family is wider than it.
 
-   LIST (design/reference/mobile/…/rebuild.html): the same family indented 16px
-   a generation, an elbow into each child, a 33px cover, the title, the maker and
-   the count, and the lamp at the end of the row. The default above twelve
-   builds, and the only reading on a phone, where a row keeps the 44px touch
-   target (the board's is 43).
+   LIST: the same family indented 16px a generation, each row the name and the maker.
 
-   UI-P58 (density): the sizes above are the tightened ones. Positions are not
-   part of the pass: the generations still stand 150 apart, the connectors
-   still leave 110 under a node's top, and the elbow keeps its offset, as the
-   board draws them.
-
-   THE LAMP IS DATA (RULES §5): lit, dimmed to 45% when stale, absent when nobody
-   has reproduced the build; the viewer's draft has no lamp yet, only a dashed
-   outline where one will hang.
-
-   ON THE LINEAGE PAGE a node is a choice rather than a way out: `onSelect` turns
-   every node into a button that says which build's changes to show.
+   ON THE LINEAGE PAGE a node is a choice rather than a way out: `onSelect` turns every node into a button.
 
    PURE. */
 
@@ -35,11 +16,8 @@ import { readOf } from "@/components/pagestate/pageStateModel";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { CoverFallback } from "@/components/brand/CoverFallback";
 import type { PanelFailure } from "@/components/pagestate/PageState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { LampDot } from "@/components/brand/LampDot";
-import { Panel, PanelHead } from "@/components/brand/Panel";
 import { Segmented, type SegmentedItem } from "@/components/brand/Segmented";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { ring } from "@/lib/theme/controls";
@@ -52,9 +30,9 @@ import {
   CANVAS_HEIGHT,
   NODE_WIDTH,
   TREE_MAX_NODES,
+  familyFact,
   familyRows,
   familyStats,
-  familySubtitle,
   layoutFamily,
   type FamilyNodeView,
 } from "./rebuildModel";
@@ -66,27 +44,24 @@ const READINGS: readonly SegmentedItem<FamilyReading>[] = [
   { value: "list", label: "List" },
 ];
 
-/** The title on a node: a card title, 16 / 500. */
+/** The name on a node: 13 / 600. */
 const nodeTitle: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 15,
-  fontWeight: 500,
-  letterSpacing: "-0.01em",
-  lineHeight: 1.05,
-  textWrap: "nowrap",
+  fontSize: 13,
+  fontWeight: 600,
+  lineHeight: "16px",
   color: t.text,
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
 };
 
-const countLabel = (n: number) => (n > 0 ? n.toLocaleString("en-GB") : "—");
+/** What a node is called: the reader's draft is "Your rebuild". */
+const nodeName = (node: FamilyNodeView) => (node.draft ? "Your rebuild" : node.title);
 
-/** G7: the name follows what the node draws, in its order (the title, the maker, the count), then what it adds. */
-function nodeLabel(node: FamilyNodeView, list = false): string {
-  const count = node.reproduced.toLocaleString("en-GB");
-  // The phone's list draws "<maker> · <count> reproduced" on one line; the tree draws the maker and the count apart.
-  return `${node.title}, ${node.maker}${node.reproduced > 0 ? `${list ? " · " : ", "}${count} reproduced` : ""}`;
+/** G7: the name follows what the node draws, in its order: the name, then the maker. */
+function nodeLabel(node: FamilyNodeView): string {
+  return `${nodeName(node)}, ${node.maker}`;
 }
 
 /* ── one node, as a link or as a choice ── */
@@ -96,14 +71,13 @@ function NodeTarget({
   style,
   onSelect,
   selected,
-  list = false,
   children,
 }: {
   node: FamilyNodeView;
   style: CSSProperties;
   onSelect?: (id: string) => void;
   selected?: boolean;
-  /** The phone's list row, whose words run in another order than the tree's node. */
+  /** Kept for callers. */
   list?: boolean;
   children: ReactNode;
 }) {
@@ -112,8 +86,7 @@ function NodeTarget({
     "data-testid": "family-node",
     "data-node-id": node.id,
     "data-draft": node.draft ? "" : undefined,
-    "data-lamp": node.lamp,
-    "aria-label": nodeLabel(node, list),
+    "aria-label": nodeLabel(node),
     "aria-current": node.current ? ("page" as const) : undefined,
     ...handlers,
   };
@@ -137,12 +110,11 @@ function NodeTarget({
   );
 }
 
-/** The edge a node stands in: the viewer's draft is dashed `--action`; a chosen node or the page's own build is solid `--action`. */
-function edge(node: FamilyNodeView, selected: boolean, width: number): CSSProperties {
-  /* Selected: the 1px selected edge, never a fill, a ring or a colour. The viewer's draft keeps its dash. */
-  if (node.draft) return { borderWidth: 1, borderStyle: "dashed", borderColor: t.selectedEdge };
-  if (selected || node.current) return { borderWidth: 1, borderStyle: "solid", borderColor: t.selectedEdge };
-  return { borderWidth: width, borderStyle: "solid", borderColor: t.moduleBorder };
+/** How a node is painted: the draft dashed with no fill; the chosen node Raised with a 2px Mint ring; the rest Card. */
+function paint(node: FamilyNodeView, selected: boolean): CSSProperties {
+  if (node.draft) return { background: "transparent", border: `1px dashed ${t.fieldEdge}` };
+  if (selected) return { background: t.control, border: "1px solid transparent", boxShadow: `0 0 0 2px ${t.brandAccent}` };
+  return { background: t.treeNode, border: "1px solid transparent" };
 }
 
 /* ── the tree ── */
@@ -170,43 +142,16 @@ function TreeNode({
         left: x,
         top: y,
         width: NODE_WIDTH,
-        padding: 4,
-        borderRadius: r.control,
-        background: t.module,
-        ...edge(node, selected, 1),
-        ...((selected || node.current) ? null : { boxShadow: t.moduleShadow }),
+        padding: "10px 12px",
+        borderRadius: 12,
+        ...paint(node, selected),
         boxSizing: "border-box",
         display: "block",
       }}
     >
-      {node.lamp === "healthy" || node.lamp === "stale" ? (
-        <span style={{ position: "absolute", top: -10, left: "50%", marginLeft: -12, display: "flex" }}>
-          <LampDot width={24} height={7} dim={node.lamp === "stale"} />
-        </span>
-      ) : null}
-      <span style={{ display: "block", height: 41, borderRadius: r.chip, overflow: "hidden" }}>
-        <CoverFallback seed={node.seed} sky={node.sky} radius={0} />
-      </span>
-      <span style={{ ...nodeTitle, display: "block", marginTop: 5 }}>{node.title}</span>
-      {/* G7: the spaces between the pieces are not drawn (block and flex boxes); they keep the words apart in the text a
-          voice-control user matches the name against. */}
-      {" "}
-      <span
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 4,
-          marginTop: 2,
-          fontFamily: FIGTREE,
-          fontSize: 13,
-          lineHeight: "normal",
-          color: t.text2,
-        }}
-      >
-        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.maker}</span>
-        {" "}
-        {node.reproduced > 0 && <span>{countLabel(node.reproduced)}</span>}
-      </span>
+      <span style={{ ...nodeTitle, display: "block" }}>{nodeName(node)}</span>
+      {/* G7: the space keeps the words apart in the text a voice-control user matches the name against. */}{" "}
+      <span style={{ display: "block", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{node.maker}</span>
     </NodeTarget>
   );
 }
@@ -223,18 +168,19 @@ export function FamilyTree({
   onSelect?: (id: string) => void;
 }) {
   const layout = layoutFamily(root);
+  const drafts = new Set(familyRows(root).filter((row) => row.node.draft).map((row) => row.node.id));
   const height = fit === "board" ? CANVAS_HEIGHT : Math.max(CANVAS_HEIGHT, layout.height);
   return (
     <div
       data-testid="family-tree"
       role="group"
       aria-label="The family, as a tree"
-      style={{ position: "relative", height, marginTop: 13, overflowX: "auto", overflowY: "hidden" }}
+      style={{ position: "relative", height, marginTop: 16, overflowX: "auto", overflowY: "hidden", padding: "4px 0" }}
     >
       <div style={{ position: "relative", width: layout.width, height, margin: "0 auto" }}>
         <svg width={layout.width} height={height} viewBox={`0 0 ${layout.width} ${height}`} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
           {layout.links.map((link) => (
-            <path key={link.key} d={link.d} fill="none" stroke={t.line} strokeWidth={1.5} />
+            <path key={link.key} d={link.d} fill="none" stroke={t.treeLine} strokeWidth={1.5} strokeDasharray={drafts.has(link.key.split(">")[1]) ? "4 4" : undefined} />
           ))}
         </svg>
         {layout.nodes.map(({ node, x, y }) => (
@@ -259,77 +205,30 @@ export function FamilyList({
   onSelect?: (id: string) => void;
 }) {
   return (
-    <ol data-testid="family-list" aria-label="The family, oldest first" style={{ listStyle: "none", margin: phone ? "6px 0 0" : "9px 0 0", padding: 0 }}>
+    <ol data-testid="family-list" aria-label="The family, oldest first" style={{ listStyle: "none", margin: phone ? "8px 0 0" : "12px 0 0", padding: 0 }}>
       {familyRows(root).map(({ node, depth }) => {
         const selected = node.id === selectedId;
         return (
-          <li key={node.id} data-depth={depth} style={{ position: "relative", ...{ borderBottom: `1px solid ${t.hairline}` } }}>
-            {depth > 0 ? (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  left: 22 * depth - 12,
-                  top: 0,
-                  width: 10,
-                  height: 21,
-                  borderLeft: `1.5px solid ${t.line}`,
-                  borderBottom: `1.5px solid ${t.line}`,
-                  borderRadius: `0 0 0 ${r.chip}`,
-                  boxSizing: "border-box",
-                }}
-              />
-            ) : null}
+          <li key={node.id} data-depth={depth} style={{ position: "relative" }}>
             <NodeTarget
               node={node}
               onSelect={onSelect}
               selected={selected}
-              list
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 7,
-                /* A two-line row: a 48 minimum (the control-heights pass), over the phone's 44 touch floor. */
+                flexDirection: "column",
+                justifyContent: "center",
                 minHeight: 48,
                 width: "100%",
-                paddingLeft: 16 * depth,
-                paddingRight: 0,
-                border: `1px solid ${selected ? t.selectedEdge : "transparent"}`,
-                borderRadius: r.control,
-                background: "transparent",
+                margin: "2px 0",
+                padding: `6px 12px 6px ${12 + 16 * depth}px`,
+                borderRadius: 12,
+                ...paint(node, selected),
                 boxSizing: "border-box",
               }}
             >
-              <span
-                style={{
-                  width: 33,
-                  height: 33,
-                  borderRadius: 9,
-                  overflow: "hidden",
-                  flexShrink: 0,
-                  boxSizing: "border-box",
-                  ...(node.draft ? { borderWidth: 1, borderStyle: "dashed", borderColor: t.selectedEdge } : {}),
-                }}
-              >
-                <CoverFallback seed={node.seed} sky={node.sky} radius={0} />
-              </span>
-              <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-                <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
-                {" "}
-                <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
-                  {node.maker}{node.reproduced > 0 ? ` · ${countLabel(node.reproduced)} reproduced` : ""}
-                </span>
-              </span>
-              {node.lamp === "draft" ? (
-                <span
-                  aria-hidden="true"
-                  style={{ width: 18, height: 6, borderRadius: "50%", borderWidth: 1.5, borderStyle: "dashed", borderColor: t.action, boxSizing: "border-box", flexShrink: 0 }}
-                />
-              ) : node.lamp === "unreproduced" ? (
-                <span aria-hidden="true" style={{ width: 18, flexShrink: 0 }} />
-              ) : (
-                <LampDot width={18} height={6} dim={node.lamp === "stale"} />
-              )}
+              <span style={{ ...nodeTitle, display: "block" }}>{nodeName(node)}</span>{" "}
+              <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{node.maker}</span>
             </NodeTarget>
           </li>
         );
@@ -347,74 +246,70 @@ export interface FamilyPanelProps {
   /** The lineage page: a node is a choice. */
   selectedId?: string | null;
   onSelect?: (id: string) => void;
-  /** Fill the track (desktop). */
+  /** Kept for callers. */
   fill?: boolean;
   /** The family is on its way: the head stays, the tree's canvas (or the list's rows) is bones. */
   loading?: boolean;
   /** The family could not be read: said in the panel, with a retry. */
   failure?: PanelFailure;
+  /** The page's h1 is this panel's fact (rebuild, lineage); 2 where something else is the page's heading. */
+  headingLevel?: 1 | 2;
+  /** A quiet line above the heading (the lineage page's link back to its build). */
+  above?: ReactNode;
+  /** Force a reading: the lineage page on a phone reads the family as a list. */
+  reading?: FamilyReading;
 }
 
-/** The family before it has arrived: the canvas's own box on desktop, a few rows of the list on a phone. */
+/** The family before it has arrived. */
 function FamilySkeleton({ phone }: { phone: boolean }) {
   return (
-    <LoadingRegion what="the family" data-testid="family-loading" style={{ marginTop: phone ? 6 : 13 }}>
+    <LoadingRegion what="the family" data-testid="family-loading" style={{ marginTop: 16 }}>
       {phone ? (
-        Array.from({ length: 6 }, (_, i) => <Skeleton key={i} height={44} radius={r.control} />)
+        Array.from({ length: 6 }, (_, i) => <Skeleton key={i} height={44} radius={12} style={{ marginBottom: 4 }} />)
       ) : (
-        <Skeleton height={CANVAS_HEIGHT} radius={r.control} />
+        <Skeleton height={CANVAS_HEIGHT} radius={12} />
       )}
     </LoadingRegion>
   );
 }
 
-export function FamilyPanel({ root, fit = "content", phone = false, selectedId = null, onSelect, fill = false, loading = false, failure }: FamilyPanelProps) {
+const heading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text };
+
+export function FamilyPanel({ root, fit = "content", phone = false, selectedId = null, onSelect, loading = false, failure, headingLevel = 2, above, reading: forced }: FamilyPanelProps) {
   const { builds } = familyStats(root);
-  const [reading, setReading] = useState<FamilyReading>(builds > TREE_MAX_NODES ? "list" : "tree");
-  const title = `Family of ${root?.title ?? "this build"}`;
+  const [chosen, setReading] = useState<FamilyReading>(builds > TREE_MAX_NODES ? "list" : "tree");
+  const reading = forced ?? chosen;
+  const Heading = headingLevel === 1 ? "h1" : "h2";
+  /* G25: the count only once the family has loaded. */
+  const title = root && !loading && !failure ? familyFact(root) : "The family";
   /* A build nobody has rebuilt is a family of one: nothing to draw, and a line saying so. */
   const lone = Boolean(root) && builds <= 1;
 
-  if (phone) {
-    return (
-      <Panel padding="14px 16px">
-        <div data-testid="family-panel">
-          <PanelHead headingLevel={2} title={title} subtitle="Lamps show which still work" />
-          {failure ? <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this family" region="The family" skeleton={null} style={{ paddingTop: 9 }}>{() => null}</PageState> : loading ? <FamilySkeleton phone /> : root && lone ? <PageEmpty line="This build has no rebuilds yet." testId="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
-        </div>
-      </Panel>
-    );
-  }
-
   return (
-    <Panel padding="16px 18px" style={fill ? { height: "100%" } : undefined}>
-      <div data-testid="family-panel">
-        <PanelHead
-          headingLevel={2}
-          title={title}
-          /* G25: the counts only once the family has loaded; never "0 builds · 0 generations" while it loads or after it failed. */
-          subtitle={root && !loading && !failure ? familySubtitle(root) : "Lamps show which still work"}
-          right={
-            lone || loading || failure ? undefined : (
-              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={13} label="Read the family as" />
-            )
-          }
-        />
-        {failure ? (
-          <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this family" region="The family" skeleton={null} style={{ paddingTop: 9 }}>{() => null}</PageState>
-        ) : loading ? (
-          <FamilySkeleton phone={false} />
-        ) : root && lone ? (
-          <PageEmpty line="This build has no rebuilds yet." testId="family-empty" />
-        ) : root ? (
-          reading === "tree" ? (
-            <FamilyTree root={root} fit={fit} selectedId={selectedId} onSelect={onSelect} />
-          ) : (
-            <FamilyList root={root} selectedId={selectedId} onSelect={onSelect} />
-          )
-        ) : null}
+    <div data-testid="family-panel">
+      {above}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32 }}>
+        <Heading style={heading}>{title}</Heading>
+        {lone || loading || failure || phone || forced ? null : (
+          <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={32} fontSize={13} label="Read the family as" />
+        )}
       </div>
-    </Panel>
+      {failure ? (
+        <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this family" region="The family" skeleton={null} style={{ paddingTop: 9 }}>
+          {() => null}
+        </PageState>
+      ) : loading ? (
+        <FamilySkeleton phone={phone} />
+      ) : root && lone ? (
+        <PageEmpty line="This build has no rebuilds yet." testId="family-empty" />
+      ) : root ? (
+        reading === "tree" ? (
+          <FamilyTree root={root} fit={fit} selectedId={selectedId} onSelect={onSelect} />
+        ) : (
+          <FamilyList root={root} phone={phone} selectedId={selectedId} onSelect={onSelect} />
+        )
+      ) : null}
+    </div>
   );
 }
 

@@ -21,6 +21,8 @@ import {
   ROW_STEP,
   ROW_TOP,
   changeGroups,
+  familyFact,
+  publishReason,
   changesEyebrow,
   familyRows,
   familyStats,
@@ -82,7 +84,8 @@ describe("the family", () => {
   it("counts builds and generations, and lists them root first, each child and its family", () => {
     const family = familyView(root, { clocks, now: NOW, draft: { id: "d", slug: "d", title: "D", parentId: "late" } });
     expect(familyStats(family)).toEqual({ builds: 4, generations: 3 });
-    expect(familySubtitle(family)).toBe("4 builds · 3 generations · lamps show which still work");
+    expect(familySubtitle(family)).toBe("4 builds · 3 generations");
+    expect(familyFact(family)).toBe("4 builds in this family");
     expect(familyRows(family).map((row) => [row.node.id, row.depth])).toEqual([
       ["root", 0],
       ["early", 1],
@@ -208,22 +211,28 @@ describe("what changed", () => {
 });
 
 describe("readiness", () => {
+  it("says why Publish waits, in a sentence under it (Synth 14)", () => {
+    expect(publishReason("Step 4 has no text yet.")).toBe("Publish once Step 4 has text.");
+    expect(publishReason(null)).toBeNull();
+    expect(publishReason("Add one piece of evidence.")).toBe("Publish once this is done: add one piece of evidence.");
+  });
+
   it("is the share of the gate met, the count of what is left, and the first thing missing", () => {
     const changes = changeSet(source, draft);
     const ready = readinessView(rebuildReadiness(source, draft, changes), changes);
     // Evidence went with the result: one of the three base requirements is open, the rebuild changed things.
-    expect(ready).toEqual({ pct: 75, headline: "One thing before it can hang", next: expect.stringMatching(/^Add one piece of evidence/), ready: false });
+    expect(ready).toEqual({ pct: 75, headline: "One thing before it can be published", next: expect.stringMatching(/^Add one piece of evidence/), ready: false });
 
     const untouched = changeSet(source, source);
     const same = readinessView(rebuildReadiness(source, source, untouched), untouched);
-    expect(same).toEqual({ pct: 75, headline: "One thing before it can hang", next: NO_CHANGES_REASON, ready: false });
+    expect(same).toEqual({ pct: 75, headline: "One thing before it can be published", next: NO_CHANGES_REASON, ready: false });
 
     const empty = record("e", "Empty", "", []);
     const none = changeSet(empty, empty);
-    expect(readinessView(rebuildReadiness(empty, empty, none), none)).toMatchObject({ pct: 0, headline: "4 things before it can hang" });
+    expect(readinessView(rebuildReadiness(empty, empty, none), none)).toMatchObject({ pct: 0, headline: "4 things before it can be published" });
   });
 
-  it("says it is ready to hang only when the gate is open", () => {
+  it("says it is ready to publish only when the gate is open", () => {
     const withEvidence = record("dr2", "Multi-currency triage", "Routes invoices.", [
       ...draft.tree,
       n("d5", "result", "Run log", { summary: "120 invoices." }),
@@ -231,7 +240,7 @@ describe("readiness", () => {
     const changes = changeSet(source, withEvidence);
     expect(readinessView(rebuildReadiness(source, withEvidence, changes), changes)).toEqual({
       pct: 100,
-      headline: "Ready to hang",
+      headline: "Ready to publish",
       next: null,
       ready: true,
     });

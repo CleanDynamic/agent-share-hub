@@ -82,7 +82,7 @@ describe("PostCard", () => {
     expect(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/topics/p1")).toHaveLength(1);
   });
 
-  it("draws a build with its harness, step count, and the still open step as a dashed slot", () => {
+  it("draws attached work as a Card: Build, the name 15/600, its sessions and steps, and the still open step as a dashed slot", () => {
     draw({
       attachments: [
         {
@@ -91,6 +91,7 @@ describe("PostCard", () => {
           title: "Resume screener",
           harness: "Claude Code",
           steps: 6,
+          sessions: 3,
           plaque: null,
           to: null,
           tiles: [
@@ -100,8 +101,13 @@ describe("PostCard", () => {
         },
       ],
     });
-    expect(screen.getByText("Resume screener")).toBeInTheDocument();
-    expect(screen.getByText("Claude Code · 6 steps")).toBeInTheDocument();
+    const work = screen.getByTestId("post-card-build");
+    expect(within(work).getByText("Build")).toBeInTheDocument();
+    expect(screen.getByText("Resume screener").style.fontSize).toBe("15px");
+    expect(screen.getByText("Resume screener").style.fontWeight).toBe("600");
+    // Synth 11: no harness beside the work; its facts are plain text joined by " · ".
+    expect(screen.getByText("3 sessions · 6 steps")).toBeInTheDocument();
+    expect(work.textContent).not.toContain("Claude Code");
     const open = document.querySelector('[data-ui="dashed-slot"]') as HTMLElement;
     expect(open.textContent).toContain("Step 4 · Prompt");
     expect(open.textContent).toContain("Still open");
@@ -136,13 +142,24 @@ describe("PostCard", () => {
     expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute("href", "https://example.test/scores.csv");
   });
 
-  it("sets the topic's heading and the author at 15/600 (Synth 06: the X-style author row)", () => {
+  it("sets the lead line and the author at the pack's name size, 15/600", () => {
     draw();
     const heading = screen.getByRole("heading", { name: base.heading });
     expect(heading.style.fontSize).toBe("15px");
     expect(heading.style.fontWeight).toBe("600");
     expect(screen.getByText("Sam Ellis").style.fontSize).toBe("15px");
     expect(screen.getByText("Sam Ellis").style.fontWeight).toBe("600");
+  });
+
+  it("on the topic's own page, the lead line is the h1 at 20/600", () => {
+    render(
+      <MemoryRouter>
+        <PostCard card={{ ...base }} page />
+      </MemoryRouter>,
+    );
+    const h1 = screen.getByRole("heading", { level: 1, name: base.heading });
+    expect(h1.style.fontSize).toBe("20px");
+    expect(h1.style.fontWeight).toBe("600");
   });
 
   it("draws the properties: Still open, tags, and the closing date", () => {
@@ -152,9 +169,10 @@ describe("PostCard", () => {
     expect(screen.getByText("Closes 20 Nov")).toBeInTheDocument();
   });
 
-  it("shows Pinned at the right, and a moderator's greyed card for a hidden post", () => {
+  it("shows Pinned above the author line in Text 2, and a moderator's greyed card for a hidden post", () => {
     const { unmount } = draw({ pinned: true });
-    expect(screen.getByText("Pinned")).toBeInTheDocument();
+    const pinned = screen.getByText("Pinned");
+    expect(pinned.compareDocumentPosition(screen.getByText("Sam Ellis")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     unmount();
     draw({ hidden: { by: "@ola", reason: null } });
     expect(screen.getByText("Hidden by @ola · only moderators see this")).toBeInTheDocument();

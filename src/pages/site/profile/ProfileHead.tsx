@@ -1,14 +1,14 @@
-/* UX-10 P5: the profile's head. PURE: typed props, no fetching, no data module; `ProfilePage` feeds it.
+/* UX-10 P5, restyled by Synth 12 Part A: the profile's head. PURE: typed props, no fetching, no data module; `ProfilePage` feeds it.
 
-   One `surface` box at the page column's width. The header picture across its top at 4:1 with the box's top corners (or the
-   dot-grid cover texture build covers use when they have none, never a gradient). The profile picture, Avatar at 96 (72 on a
-   phone) with a 4px ring in the surface colour, overlapping the header by half its size, at the text's inset. Then the name
-   (body font, 20/500, `--text`, the page's h1), the meta line (`label`), Level when shown, one line about them (`text2`), up to
-   three links by host, and the record line, where only `reproduced by others` is in `--evidence`.
+   One panel across the 1280 container (Panel fill, radius 12, no edge). The header picture across its top at 4:1, capped at
+   320 tall, with the panel's top corners; with none, a Panel-coloured area with the Deep dot pattern at a 6px pitch (Leaf
+   dots on White in the light). The profile picture, 96 radius 20 (72 on a phone) with a 4px Panel ring, overlapping the
+   picture by half its size. At the right: Follow (the main button; "Following" secondary once followed), Message
+   (secondary), and More (a round icon: Copy link, Report, Block). Your own: Edit profile, and Change header and Change
+   picture on the pictures.
 
-   ACTIONS. Someone else's profile: Follow (the one primary; Following as a control once followed), Message, and `···` with Copy
-   link and Report. Your own: Edit profile, a control, the only button, and Change header and Change picture on the pictures.
-   A PRIVATE profile you don't follow: the head and one sentence, with Follow; no feed and no side column. */
+   Then the name as the page's h1 (31/36 Geist 600), the meta line (15 Text 3; the follower counts underlined links), the
+   one line (15), and the record line ("12 builds"). A PRIVATE profile you don't follow: the head and one sentence. */
 
 import type { CSSProperties, ReactNode } from "react";
 
@@ -23,6 +23,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { linkHostOf, type MetaPart, type RecordPart } from "./profileFeedModel";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 
 export interface HeadCrop {
   x: number;
@@ -82,13 +83,18 @@ export const HEAD_COPY = {
   changePicture: "Change picture",
 } as const;
 
+/** The fallback: the Panel shade with the Deep dots at a 6px pitch. */
 const DOT_GRID: CSSProperties = {
-  background: t.well,
-  backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
-  backgroundSize: "16px 16px",
+  background: t.surface,
+  backgroundImage: `radial-gradient(${t.dotDeep} 1px, transparent 1.2px)`,
+  backgroundSize: "6px 6px",
 };
 
+/** The 4:1 picture stops growing here. */
+export const HEADER_MAX_HEIGHT = 320;
+
 const LINK: CSSProperties = { color: "inherit", textDecoration: "none" };
+const COUNT_LINK: CSSProperties = { color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 };
 
 function Dotted({ parts, render }: { parts: readonly { key: string }[]; render: (index: number) => ReactNode }) {
   return (
@@ -105,7 +111,7 @@ function Dotted({ parts, render }: { parts: readonly { key: string }[]; render: 
 
 function HeaderPicture({ header }: { header: ProfileHeadProps["header"] }) {
   return (
-    <div data-testid="profile-header-picture" data-texture={header ? undefined : "dot-grid"} style={{ position: "relative", width: "100%", aspectRatio: "4 / 1", overflow: "hidden", ...(header ? { background: t.well } : DOT_GRID) }}>
+    <div data-testid="profile-header-picture" data-texture={header ? undefined : "dot-grid"} style={{ position: "relative", width: "100%", aspectRatio: "4 / 1", maxHeight: HEADER_MAX_HEIGHT, overflow: "hidden", borderRadius: "12px 12px 0 0", ...(header ? { background: t.module } : DOT_GRID) }}>
       {header ? (
         <img
           src={header.url}
@@ -127,6 +133,20 @@ export function ProfileHead(props: ProfileHeadProps) {
   const inset = phone ? 16 : 24;
   const { isOwn, following } = props;
 
+  // Prompt 19: the phone's More sheet holds the profile's actions (Copy link and Share are the bar's own).
+  const blockedByMe = props.blocked === "by_me";
+  const hidePair = props.blocked === "by_them" || Boolean(props.privateLine && !following && !isOwn);
+  useRegisterPageBar({
+    more: isOwn
+      ? [{ label: HEAD_COPY.edit, onSelect: props.onEdit }]
+      : [
+          ...(props.blocked || hidePair ? [] : [{ label: following ? HEAD_COPY.following : HEAD_COPY.follow, onSelect: following ? props.onUnfollow : props.onFollow }, { label: HEAD_COPY.message, onSelect: props.onMessage }]),
+          ...(blockedByMe && props.onUnblock ? [{ label: HEAD_COPY.unblock, onSelect: props.onUnblock }] : []),
+          ...(props.onReport ? [{ label: HEAD_COPY.report, tone: "danger" as const, onSelect: props.onReport }] : []),
+          ...(props.onBlock && !props.blocked ? [{ label: `${HEAD_COPY.block} @${props.handle}`, tone: "danger" as const, onSelect: props.onBlock }] : []),
+        ],
+  });
+
   const actions = isOwn ? (
     <PostControl onClick={props.onEdit}>{HEAD_COPY.edit}</PostControl>
   ) : props.blocked === "by_them" ? null : props.blocked === "by_me" ? (
@@ -134,7 +154,7 @@ export function ProfileHead(props: ProfileHeadProps) {
       <PostControl onClick={props.onUnblock}>{HEAD_COPY.unblock}</PostControl>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <PostControl aria-label={HEAD_COPY.more}>···</PostControl>
+          <PostControl round aria-label={HEAD_COPY.more}>···</PostControl>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={props.onCopyLink}>{HEAD_COPY.copyLink}</DropdownMenuItem>
@@ -156,7 +176,7 @@ export function ProfileHead(props: ProfileHeadProps) {
       {props.privateLine ? null : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <PostControl aria-label={HEAD_COPY.more}>···</PostControl>
+            <PostControl round aria-label={HEAD_COPY.more}>···</PostControl>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={props.onCopyLink}>{HEAD_COPY.copyLink}</DropdownMenuItem>
@@ -175,9 +195,7 @@ export function ProfileHead(props: ProfileHeadProps) {
         boxSizing: "border-box",
         width: "100%",
         background: t.surface,
-        border: `1px solid ${t.surfaceBorder}`,
-        borderRadius: 10,
-        boxShadow: t.surfaceShadow,
+        borderRadius: 12,
         overflow: "hidden",
         fontFamily: FIGTREE,
       }}
@@ -195,7 +213,7 @@ export function ProfileHead(props: ProfileHeadProps) {
       <div style={{ padding: `0 ${inset}px ${inset}px` }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 12, marginTop: -size / 2 }}>
-            <Avatar size={size} userId={props.userId} name={props.name} src={props.avatarUrl} alt={props.avatarAlt ?? ""} style={{ boxShadow: `0 0 0 4px ${t.surface}` }} />
+            <Avatar size={size} userId={props.userId} name={props.name} src={props.avatarUrl} alt={props.avatarAlt ?? ""} style={{ borderRadius: phone ? 16 : 20, boxShadow: `0 0 0 4px ${t.surface}` }} />
             {isOwn && props.onChangePicture ? (
               <PostControl onClick={(event) => props.onChangePicture?.(event.currentTarget)}>
                 {props.uploading?.which === "avatar" ? `Uploading ${props.uploading.percent}%` : HEAD_COPY.changePicture}
@@ -208,16 +226,16 @@ export function ProfileHead(props: ProfileHeadProps) {
         </div>
 
         {/* Page shell exception: the name stays beside its avatar rather than in a PageHeader at 64 / 88, in the shared title style, the page's one h1. */}
-        <h1 style={{ ...PAGE_TITLE, margin: "12px 0 0", overflowWrap: "anywhere" }}>{props.name}</h1>
+        <h1 style={{ ...PAGE_TITLE, margin: "12px 0 0", fontFamily: FIGTREE, fontSize: 31, lineHeight: "36px", fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>{props.name}</h1>
 
         {props.meta.length > 0 ? (
-          <div data-testid="profile-meta" style={{ marginTop: 4, fontSize: 13, lineHeight: 1.4, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+          <div data-testid="profile-meta" style={{ marginTop: 4, fontSize: 15, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" }}>
             <Dotted
               parts={props.meta}
               render={(index) => {
                 const part = props.meta[index];
                 return part.to ? (
-                  <Link to={part.to} style={LINK}>
+                  <Link to={part.to} style={COUNT_LINK}>
                     {part.text}
                   </Link>
                 ) : (
@@ -229,24 +247,24 @@ export function ProfileHead(props: ProfileHeadProps) {
         ) : null}
 
         {props.level !== null ? (
-          <div data-testid="profile-level" style={{ marginTop: 2, fontSize: 13, lineHeight: 1.4, color: t.label }}>
+          <div data-testid="profile-level" style={{ marginTop: 2, fontSize: 15, lineHeight: "20px", color: t.label }}>
             {`Level ${props.level}`}
           </div>
         ) : null}
 
         {props.privateLine ? (
-          <p data-testid="profile-private" style={{ margin: "12px 0 0", fontSize: 13, lineHeight: "20px", color: t.text2 }}>
+          <p data-testid="profile-private" style={{ margin: "12px 0 0", fontSize: 15, lineHeight: "20px", color: t.text2 }}>
             {props.privateLine}
           </p>
         ) : (
           <>
             {props.oneLine || props.links.length > 0 ? (
-              <p data-testid="profile-one-line" style={{ margin: "8px 0 0", fontSize: 13, lineHeight: "20px", color: t.text2, overflowWrap: "anywhere" }}>
+              <p data-testid="profile-one-line" style={{ margin: "8px 0 0", fontSize: 15, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>
                 {props.oneLine}
                 {props.links.map((link, index) => (
                   <span key={link}>
                     {props.oneLine || index > 0 ? " " : null}
-                    <a href={link} rel="me noopener" target="_blank" style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+                    <a href={link} rel="me noopener" target="_blank" style={{ color: t.text, textDecoration: "underline", textUnderlineOffset: 3 }}>
                       {linkHostOf(link)}
                     </a>
                   </span>
@@ -255,13 +273,13 @@ export function ProfileHead(props: ProfileHeadProps) {
             ) : null}
 
             {props.record.length > 0 ? (
-              <div data-testid="profile-record" style={{ marginTop: 8, fontSize: 13, lineHeight: "20px", color: t.text2, fontVariantNumeric: "tabular-nums" }}>
+              <div data-testid="profile-record" style={{ marginTop: 8, fontSize: 15, lineHeight: "20px", color: t.text2, fontVariantNumeric: "tabular-nums" }}>
                 <Dotted
                   parts={props.record}
                   render={(index) => {
                     const part = props.record[index];
                     return (
-                      <Link to={part.to} data-tone={part.evidence ? "evidence" : undefined} style={{ ...LINK, color: part.evidence ? t.evidence : t.text2 }}>
+                      <Link to={part.to} style={{ ...LINK, color: t.text2 }}>
                         {part.text}
                       </Link>
                     );

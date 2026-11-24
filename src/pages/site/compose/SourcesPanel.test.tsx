@@ -166,14 +166,15 @@ describe("the refined look (UI-P93)", () => {
     expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(3);
   });
 
-  it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and no dashed drop zone (UX-02 P8)", () => {
+  it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and the drop zone as a dashed 12-radius area over dots (Synth 09)", () => {
     panel();
     const add = screen.getAllByRole("button", { name: "Add session" })[0];
     expect(add.getAttribute("style")).toMatch(/width:\s*32px/); // S6
     const html = markup();
     expect(html).toContain("width:6px;height:6px;box-sizing:border-box;border-radius:1px;background:transparent;border:1px solid var(--text2)");
-    expect(html).not.toContain("dashed");
-    expect(html).toContain("Or drop files anywhere on the build.");
+    expect(html).toContain("border-radius:var(--r-panel);border:1px dashed var(--field-edge)");
+    expect(screen.getByTestId("drop-dots")).toBeTruthy();
+    expect(html).toContain("Drop sessions or files");
   });
 });
 

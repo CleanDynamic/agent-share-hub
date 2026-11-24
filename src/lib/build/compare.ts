@@ -87,9 +87,9 @@ export function totalsRows(a: SideTotals, b: SideTotals): TotalsRow[] {
     return said.length ? said.join(" · ") : dash;
   };
   return [
-    { label: "To build · time", a: buildCell(a, (t) => (t.ms > 0 ? duration(t.ms) : null)), b: buildCell(b, (t) => (t.ms > 0 ? duration(t.ms) : null)) },
-    { label: "To build · tokens", a: buildCell(a, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)), b: buildCell(b, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)) },
-    { label: "To build · cost", a: a.money ? buildCell(a, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash, b: b.money ? buildCell(b, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash },
+    { label: "Time to build", a: buildCell(a, (t) => (t.ms > 0 ? duration(t.ms) : null)), b: buildCell(b, (t) => (t.ms > 0 ? duration(t.ms) : null)) },
+    { label: "Tokens to build", a: buildCell(a, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)), b: buildCell(b, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)) },
+    { label: "Cost to build", a: a.money ? buildCell(a, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash, b: b.money ? buildCell(b, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash },
     { label: "To run", a: runCell(a), b: runCell(b) },
     // SV-27 P9: each in its own row, never added to To build or To run.
     { label: "To set up", a: a.money && a.setup !== null ? money(a.setup, a.currency) : dash, b: b.money && b.setup !== null ? money(b.setup, b.currency) : dash },

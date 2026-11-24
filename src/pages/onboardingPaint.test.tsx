@@ -41,27 +41,27 @@ vi.mock("react-router-dom", () => ({ useNavigate: () => () => {} }));
 const { default: Onboarding } = await import("./Onboarding");
 const { default: OnboardingProfile } = await import("./OnboardingProfile");
 
-/** The panel is the one element carrying the glass hairline. */
+/** Synth 13: the panel is the one element on the Panel shade, 560 wide at most. */
 const panel = (doc: Document) =>
   [...doc.querySelectorAll("div")].find((div) =>
-    styleOf(div).includes("var(--glass-border)"),
+    styleOf(div).includes("max-width:560px"),
   );
 
 describe("Onboarding", () => {
   const doc = () => staticDoc(<Onboarding />);
 
-  it("takes the auth card's panel rather than shadcn's bg-card", () => {
+  it("is one panel on the Panel shade, 560 wide, 28 padding (Synth 13), rather than shadcn's bg-card", () => {
     const style = styleOf(panel(doc()));
-    expect(style).toContain("background:var(--glass)");
-    expect(style).toContain("border-color:var(--glass-border)");
+    expect(style).toContain("background:var(--surface)");
     expect(style).toContain("border-radius:var(--r-panel)");
-    expect(style).toContain("box-shadow:var(--elev-raised)");
+    expect(style).toContain("padding:28px");
     expect(doc().body.innerHTML).not.toContain("bg-card");
   });
 
   it("says where the reader is in words, not in a coloured bar", () => {
     const html = doc().body.innerHTML;
-    expect(html).toContain("Step 1 of 3");
+    expect(html).toContain("1 of 3");
+    expect(html).toContain("What do you want your AI to do?");
     /* The bar was three `h-1.5 flex-1 rounded-full` segments, filled
        `bg-primary` and `bg-accent`. `bg-primary` alone is not the assertion to
        make — it is still in `ui/button.tsx`'s class list, where the kit's inline
@@ -77,9 +77,9 @@ describe("Onboarding", () => {
       button.textContent?.includes("Research"),
     );
     const style = styleOf(tile);
-    expect(style).toContain("background:var(--recess)");
-    expect(style).toContain("border-color:var(--line)");
-    expect(style).toContain("border-radius:var(--r-control)");
+    // Synth 13: small pills, on Card until chosen (Inverse when chosen).
+    expect(style).toContain("background:var(--module)");
+    expect(style).toContain("border-radius:16px");
     // The theme forbids `all`; here it was animating padding and border-width
     // alongside the colour.
     expect(html).not.toContain("transition-all");
@@ -92,7 +92,7 @@ describe("OnboardingProfile", () => {
 
   it("takes the same panel, so the two steps are one room", () => {
     const style = styleOf(panel(doc()));
-    expect(style).toContain("background:var(--glass)");
+    expect(style).toContain("background:var(--surface)");
     expect(style).toContain("border-radius:var(--r-panel)");
     expect(doc().body.innerHTML).not.toContain("bg-card");
   });

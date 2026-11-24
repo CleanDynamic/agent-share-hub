@@ -213,6 +213,8 @@ export interface Step {
   inside?: { id: string; label: string };
   /** CA-06 P4: the maker's colour for this tile (`payload.colour`, "#RRGGBB"). Absent when it has none; never its parent's. */
   colour?: string;
+  /** Synth 09: the tile's titled text boxes (`payload.box_titles`), in the order they were saved. Absent when none has a title. */
+  boxTitles?: BoxTitle[];
   /** CA-12 P7, a tool tile only: how it was connected and what it did. Its app is `tool`. */
   app?: ToolTileFacts;
   /** CA-12 P8, a file tile only: what kind of file it is, its size and a short preview. */
@@ -1061,6 +1063,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(canRunWhen(kind) && runsWhenOf(payload.runs_when) ? { runsWhen: runsWhenOf(payload.runs_when) as RunsWhen } : null),
     // CA-06 P4: the maker's colour, when it reads as one.
     ...(normaliseHex(payload.colour) ? { colour: normaliseHex(payload.colour) as string } : null),
+    // Synth 09: the text boxes the maker gave a title.
+    ...(boxTitlesOf(payload).length > 0 ? { boxTitles: boxTitlesOf(payload) } : null),
   };
 }
 
@@ -3376,6 +3380,48 @@ export async function setNodeFields(node: BuildNode, fields: Record<string, stri
     }
   }
   return upsertNode(withPayload(node, payload));
+}
+
+/* ── Synth 09: titled text boxes ──
+   A text box in a tile's window has an optional title. The titles are kept on the node as `payload.box_titles`, an object
+   from the box's name (the field's label, as the window names it: "Instructions") to its title. A box with no title is not
+   kept; the tile shows the titled ones as rows that open the box in the notepad. */
+
+/** One titled text box: the field it is, and the title the maker gave it. */
+export interface BoxTitle {
+  field: string;
+  title: string;
+}
+
+/** The longest a box's title is kept. */
+export const BOX_TITLE_MAX = 120;
+
+/** The titled boxes a payload holds, each title trimmed; untitled and malformed entries are left out. */
+export function boxTitlesOf(payload: Record<string, unknown>): BoxTitle[] {
+  const raw = payload.box_titles;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+  return Object.entries(raw as Record<string, unknown>).flatMap(([field, title]) =>
+    typeof title === "string" && title.trim() && field.trim() ? [{ field, title: title.trim().slice(0, BOX_TITLE_MAX) }] : [],
+  );
+}
+
+/** The payload with these titles merged over the ones it had: a blank title takes its box off; other keys are kept as read. */
+export function withBoxTitles(payload: Record<string, unknown>, titles: Record<string, string>): Record<string, unknown> {
+  const next: Record<string, string> = Object.fromEntries(boxTitlesOf(payload).map((box) => [box.field, box.title]));
+  for (const [field, title] of Object.entries(titles)) {
+    const trimmed = title.trim().slice(0, BOX_TITLE_MAX);
+    if (trimmed) next[field] = trimmed;
+    else delete next[field];
+  }
+  const out = { ...payload };
+  if (Object.keys(next).length > 0) out.box_titles = next;
+  else delete out.box_titles;
+  return out;
+}
+
+/** Synth 09: write a tile's box titles (merged over what it had). Only `payload.box_titles` changes. */
+export async function setNodeBoxTitles(node: BuildNode, titles: Record<string, string>): Promise<BuildNode> {
+  return upsertNode(withPayload(node, withBoxTitles(payloadOf(node), titles) as Payload));
 }
 
 /**

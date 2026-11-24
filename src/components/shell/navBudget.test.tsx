@@ -93,7 +93,10 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
         <DockView current="home" unread={0} />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
+    // Prompt 19: New is a button that opens the New sheet, so the five are four links and one button.
+    const dock = within(screen.getByRole("navigation", { name: "Primary" }));
+    expect([...dock.getAllByRole("link"), ...dock.getAllByRole("button")]).toHaveLength(5);
+    expect(Array.from(screen.getByRole("navigation", { name: "Primary" }).children).map((el) => el.getAttribute("aria-label"))).toEqual([
       "Home",
       "Builds",
       "New",
@@ -109,7 +112,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expect(screen.getByRole("combobox", { name: "Search builds" })).toBeInTheDocument();
   });
 
-  it("the phone's menu lists the nav, then Profile, Drafts and Settings, then Sign out", async () => {
+  it("the phone's account drawer lists the account's pages in the prompt's order, then the theme switch and Sign out", async () => {
     authState.isLoggedIn = true;
     authState.profile = { display_name: "Ada Lovelace", username: "ada", avatar_url: null };
     authState.user = { id: "u1", email: "ada@example.com" };
@@ -120,19 +123,13 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-    // SV-26 P2: the sheet's code loads on first open (LazyBottomSheet).
-    const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    // Synth 05: the nav moved into the menu, then the account's pages.
-    expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Profile", "Drafts", "Settings"]);
-    expect(within(sheet).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
-      "/",
-      "/builds",
-      "/openbuilds",
-      "/library",
-      "/profile/ada",
-      "/drafts",
-      "/settings",
-    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace, account menu" }));
+    // The drawer is a dialog: focus is trapped in it, Escape closes it.
+    const drawer = await screen.findByRole("dialog", { name: "Account" });
+    expect(within(drawer).getAllByRole("link").map((a) => a.textContent)).toEqual(["Your profile", "Your library", "Drafts", "Messages", "Settings", "API docs"]);
+    expect(within(drawer).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/profile/ada", "/library", "/drafts", "/messages", "/settings", "/api-docs"]);
+    expect(within(drawer).getByRole("switch", { name: "Dark theme" })).toBeTruthy();
+    expect(within(drawer).getByRole("button", { name: "Sign out" })).toBeTruthy();
+    expect(within(drawer).getByText("@ada")).toBeTruthy();
   });
 });

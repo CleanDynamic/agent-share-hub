@@ -18,8 +18,11 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 /** Between two blocks inside one post. */
 export const BLOCK_GAP = 12;
-/** Between two posts when a thread is open. */
-export const POST_GAP = 24;
+/**
+ * Between two posts of one build when a thread is open: the distance between two builds in the feed, from the bottom of
+ * one post's actions row to the top of the next post's author row (the item's 4 below, the list's 8, the next item's 4).
+ */
+export const THREAD_GAP = 16;
 /** A list's left indent, and the space between its items. */
 export const LIST_INDENT = 20;
 export const LIST_ITEM_GAP = 4;

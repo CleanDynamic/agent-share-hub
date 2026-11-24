@@ -43,7 +43,7 @@ import { ModalShell } from "./ModalFrame";
 import { OptionalRow, OptionalRows, type OptionalRowProps } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
 import { LIVE_NEEDS_TITLE, refusesLiveTitle } from "@/lib/build/publish";
-import { Alert, BlockHead, Block, FOOT_NOTE, FieldRequiredLine, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
+import { Alert, BlockHead, Block, FOOT_NOTE, MODAL_WIDTH, FieldRequiredLine, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
@@ -517,7 +517,7 @@ export function SandboxCard(props: SandboxCardProps) {
   }, [props.open]);
   const guard: CloseGuard = { dirty, asking, keep: () => setAsking(false) };
   return (
-    <ModalShell open={props.open} onOpenChange={request} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={560} testId="sandbox-card">
+    <ModalShell open={props.open} onOpenChange={request} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={MODAL_WIDTH.standard} testId="sandbox-card">
       {/* SV-05 P7: the same 20 inset as every other window's body, as ModalForm gives it (none on a phone). */}
       <ModalInset.Provider value={props.phone ? 0 : MODAL_PAD}>
         <CardBody {...props} guard={guard} />

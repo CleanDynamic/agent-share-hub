@@ -73,14 +73,16 @@ describe("accessibility", () => {
 });
 
 describe("on a phone", () => {
-  it("the avatar is 72 overlapping by 36, the actions in one row, About folded, the feed full width", () => {
+  it("the avatar is 72 overlapping by 36, the actions in one row, the side's sections after the feed (Synth 12), the feed full width", () => {
     phone();
     render(wrap(<ProfileView {...profileFixture("populated", false)} />));
     const avatar = screen.getByTestId("profile-head").querySelector('[data-ui="avatar"]') as HTMLElement;
     expect(avatar.style.width).toBe("72px");
     expect((avatar.parentElement as HTMLElement).style.marginTop).toBe("-36px");
     expect(within(screen.getByTestId("profile-actions")).getAllByRole("button").map((button) => button.textContent)).toEqual(["Follow", "Message", "···"]);
-    expect(screen.getByRole("button", { name: /About/ }).getAttribute("aria-expanded")).toBe("false");
+    const feed = screen.getByTestId("profile-feed");
+    const side = screen.getByTestId("profile-side");
+    expect(feed.compareDocumentPosition(side) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("profile-feed").parentElement?.style.maxWidth).toBe("");
   });
 });

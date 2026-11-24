@@ -45,12 +45,11 @@ import { ReactionRow } from "./ReactionRow";
 import { REPLY_BOX_ID, ReplyBox } from "./ReplyBox";
 import { topicSeo } from "./openBuildsSeo";
 import type { ReplyDraft } from "./sendReply";
-import { PostView, type PostSideRow } from "./PostView";
+import { PostView, type PostSideBuild } from "./PostView";
 import { PostWall } from "./PostWall";
 import { LineUpTable, LineUpToggle } from "./LineUpSteps";
 import {
   buildReplies,
-  peopleReplying,
   postBuildOf,
   postExtrasKey,
   postPageKey,
@@ -313,13 +312,14 @@ export default function PostPage() {
   }
 
   const builds = shown ? buildReplies(shown).length : 0;
-  const sideRows: PostSideRow[] = shown
-    ? [
-        { label: "People replying", value: peopleReplying(shown) },
-        ...(builds > 0 ? [{ label: "Builds in replies", value: builds, to: `?${postSearch(params, { tab: "wall" }, defaultView).toString()}` }] : []),
-        ...postBuild.steps.flatMap((step) => (byStep.get(step.id) ? [{ label: `Replies on Step ${step.number}`, value: byStep.get(step.id) ?? 0 }] : [])),
-      ]
-    : [];
+  // Synth 11: the side panel lists the builds in the replies, as the Wall draws them.
+  const wall = shown ? wallCards(shown, data, now) : [];
+  const sideBuilds: PostSideBuild[] = wall.map((entry) => ({
+    key: entry.replyId,
+    name: entry.title,
+    meta: [entry.author.handle ? `@${entry.author.handle}` : entry.author.name, entry.line].join(" · "),
+    to: entry.kind === "published" ? entry.to : null,
+  }));
 
   // A step of the post's build, to copy: read again from a published build, or taken from the copy a draft's build carries.
   const copiedBuild = shown?.attachments.find((attachment) => attachment.kind === "build" && attachment.snapshot)?.snapshot ?? null;
@@ -375,7 +375,8 @@ export default function PostPage() {
     ? {
         name: crowd.space.name,
         to: `/openbuilds/spaces/${crowd.space.slug}`,
-        meta: [crowd.creator.handle ? `Made by @${crowd.creator.handle}` : null, `${crowd.members} ${crowd.members === 1 ? "member" : "members"}`].filter(Boolean).join(" · "),
+        members: `${crowd.members} ${crowd.members === 1 ? "member" : "members"}`,
+        madeBy: crowd.creator.handle ? `Made by @${crowd.creator.handle}` : null,
         description: crowd.space.description,
         joined: crowd.role !== "none" ? true : crowd.space.whoCanPost === "invite" ? null : false,
         onJoin: () => void join(true),
@@ -412,7 +413,7 @@ export default function PostPage() {
               wall={
                 <PostWall
                   lineUp={lineUpShown && address.lineUp ? <LineUpTable lineUp={lineUpOf(shown, postBuild.buildId, data)} /> : undefined}
-                  cards={wallCards(shown, data, now)}
+                  cards={wall}
                   onReply={(replyId) => {
                     setReplyAt(replyId);
                     setAbout(null);
@@ -447,7 +448,7 @@ export default function PostPage() {
                 blockedAuthors,
                 branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
               }}
-              side={{ space, rows: sideRows }}
+              side={{ space, builds: sideBuilds }}
             />
           </>
         )}

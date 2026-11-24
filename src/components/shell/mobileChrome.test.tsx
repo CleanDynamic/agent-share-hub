@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { BottomSheet } from "./BottomSheet";
 import { DockView } from "./Dock";
-import { MobileHeaderView } from "./MobileHeader";
 import { ScrollRow } from "./ScrollRow";
 import { useState } from "react";
 
@@ -23,58 +22,42 @@ describe("DockView", () => {
       </MemoryRouter>,
     );
 
-  it("five tiles in order, hrefs from the nav", () => {
+  /* Prompt 19: New opens the New sheet, so it is a button; the other four are links to the same routes as before. */
+  it("five slots in order: four links to the nav's routes and New between Builds and OpenBuilds", () => {
     dock({ current: "home", unread: 0 });
-    const tiles = screen.getAllByRole("link");
-    expect(tiles.map((a) => a.getAttribute("data-testid"))).toEqual([
+    const slots = Array.from(screen.getByRole("navigation", { name: "Primary" }).children);
+    expect(slots.map((el) => el.getAttribute("data-testid"))).toEqual([
       "dock-tile-home",
       "dock-tile-gallery",
       "dock-tile-new",
       "dock-tile-openbuilds",
       "dock-tile-activity",
     ]);
-    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/compose/new", "/openbuilds", "/notifications"]);
-    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Builds", "New", "OpenBuilds", "Activity"]);
+    const tiles = screen.getAllByRole("link");
+    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/openbuilds", "/notifications"]);
+    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Builds", "OpenBuilds", "Activity"]);
+    expect(screen.getByRole("button", { name: "New" })).toBe(screen.getByTestId("dock-tile-new"));
   });
 
-  it("marks only the current tile and never New", () => {
+  it("marks only the current slot and never New", () => {
     dock({ current: "activity", unread: 0 });
     expect(screen.getAllByRole("link", { current: "page" }).map((a) => a.getAttribute("data-testid"))).toEqual(["dock-tile-activity"]);
+    expect(screen.getByTestId("dock-tile-new").getAttribute("aria-current")).toBeNull();
   });
 
-  it("names Activity with the unread count and caps the badge", () => {
+  it("names Activity with the unread count and draws a Mint square, not a number", () => {
     dock({ current: null, unread: 14 });
     const tile = screen.getByTestId("dock-tile-activity");
     expect(tile.getAttribute("aria-label")).toBe("Activity, 14 unread");
-    expect(tile.textContent).toContain("9+");
-  });
-});
-
-describe("MobileHeaderView", () => {
-  const header = (v: typeof viewer | null, handlers = { onSearchOpen: vi.fn(), onAccountOpen: vi.fn(), onSignIn: vi.fn() }) => {
-    render(
-      <MemoryRouter>
-        <MobileHeaderView viewer={v} {...handlers} />
-      </MemoryRouter>,
-    );
-    return handlers;
-  };
-
-  it("signed in: the beaver, then Search, Activity and Menu", () => {
-    const h = header(viewer);
-    expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-    expect(screen.getByRole("link", { name: "Activity" }).getAttribute("href")).toBe("/notifications");
-    expect(h.onSearchOpen).toHaveBeenCalled();
-    expect(h.onAccountOpen).toHaveBeenCalled();
+    expect(tile.textContent).toBe("Activity");
+    expect(screen.getByTestId("dock-unread")).toBeTruthy();
   });
 
-  it("signed out: Sign in instead of Activity", () => {
-    const h = header(null);
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(h.onSignIn).toHaveBeenCalled();
-    expect(screen.queryByRole("link", { name: /Activity/ })).toBeNull();
+  it("New calls onNew", () => {
+    const onNew = vi.fn();
+    dock({ current: null, unread: 0, onNew });
+    fireEvent.click(screen.getByRole("button", { name: "New" }));
+    expect(onNew).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -138,46 +121,34 @@ describe("BottomSheet", () => {
   });
 });
 
-/* UI-P87 — the refined phone chrome: header on --frame, the dock with no glass, sheets on the window recipe. */
+/* UI-P87, then prompt 19 — the phone chrome: the dock on Page with no glass, sheets on the window recipe. */
 describe("phone chrome under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
   const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
 
-  it("the header is --frame, 64 high, no edge and no blur, with the beaver at 40 and three 44px icon buttons, names kept", () => {
-    render(inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />));
-    expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Menu" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Activity" })).toBeTruthy();
-    expect(document.querySelector("[data-testid=mobile-header] img")?.getAttribute("width")).toBe("40");
-    const html = renderToStaticMarkup(
-      inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />),
-    );
-    const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
-    expect(head).toContain("height:64px");
-    expect(head).toContain("background:var(--frame)");
-    expect(head).not.toMatch(/[;"]border(-bottom)?:/);
-    expect(head).not.toContain("backdrop-filter");
-  });
-
-  it("the dock is a --surface bar of Raised tiles, no glass, the current one with the tab bar, names kept", () => {
+  it("the dock is the Page shade with no glass, no line, no lamp and no glow, 5 equal slots, New a 44 by 32 Mint pill", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
-    expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
-      "Home",
-      "Builds",
-      "New",
-      "OpenBuilds",
-      "Activity, 4 unread",
-    ]);
     expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
-    expect(html).toContain("background:var(--surface)");
-    expect(html).toContain("background:var(--control-on)");
-    // Synth 16: the current tile's bar is the header tab's: Mint (Terminal Green on light) with the 1px Ink line.
-    expect(html).toContain("background:var(--tab-bar);box-shadow:0 1px 0 var(--tab-bar-edge)");
-    expect(html).not.toContain("nav-lamp-glow");
+    const nav = html.slice(html.indexOf("<nav"), html.indexOf(">", html.indexOf("<nav")));
+    expect(nav).toContain("background:var(--bg)");
+    expect(nav).toContain("grid-template-columns:repeat(5, 1fr)");
+    expect(nav).toContain("padding-bottom:env(safe-area-inset-bottom)");
+    expect(nav).not.toMatch(/[;"]border(-top)?:/);
     expect(html).not.toContain("backdrop-filter");
     expect(html).not.toContain("var(--dock)");
+    expect(html).not.toContain("nav-lamp");
+    expect(html).not.toContain('data-ui="nav-mark"');
+    expect(html).toContain("width:44px;height:32px;border-radius:16px;background:var(--brand-accent);color:var(--on-brand-accent)");
+    expect(html).toContain("width:9px;height:9px;border-radius:3px;background:var(--brand-accent);box-shadow:0 0 0 2px var(--bg)");
+  });
+
+  it("the current slot is the filled icon with its label 600 in Text; the others are Text 3 at 500", () => {
+    render(inRefined(<DockView current="gallery" unread={0} />));
+    expect(screen.getByTestId("dock-tile-gallery").querySelector('[data-icon="buildsf"]')).toBeTruthy();
+    expect(screen.getByTestId("dock-tile-home").querySelector('[data-icon="home"]')).toBeTruthy();
+    expect(screen.getByTestId("dock-tile-gallery").getAttribute("style")).toContain("font-weight: 600");
+    expect(screen.getByTestId("dock-tile-home").getAttribute("style")).toContain("font-weight: 500");
   });
 
   it("a sheet takes the window recipe over --scrim, and keeps its name and Close", () => {

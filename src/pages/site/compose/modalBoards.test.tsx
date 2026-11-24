@@ -74,16 +74,13 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddToolDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     header("Add a tool", "External app the model used");
     expect(screen.getByRole("button", { name: /(^|, )App$/ }).textContent).toBe("Select an app");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "6 optional details"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "2 optional details"])).toEqual([]);
+    // Synth 09: Connection method, Actions performed, Permissions and Required plan are rows of their own.
     expect(optionalRows()).toEqual([
-      ["Connection method", "MCP server, native integration, custom code and 6 more"],
-      ["Actions performed", ""],
-      ["Permissions", "Read only, read and write, or acts as the maker"],
-      ["Required plan", "Free or plan name"],
       ["Setup steps", ""],
       ["Alternatives", "Apps that do the same job"],
     ]);
-    footer("Required: App");
+    footer("Required: an application");
   });
 
   it("Add a check", () => {

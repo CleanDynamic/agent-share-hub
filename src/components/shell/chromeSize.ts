@@ -1,6 +1,6 @@
 /* The shell's fixed bars, measured once, so a menu or a scroll that must stay clear of them reads these instead of typing
    the numbers again. Synth draft: the desktop header is 88 tall and sits on the page shade with no line and no fill; the
-   phone header is 64. The phone's dock is its 44 tiles inside 6 of padding above and below, plus the safe-area inset,
+   phone top bar is 52. The phone's dock is its 44 tiles inside 6 of padding above and below, plus the safe-area inset,
    which CSS adds where it is used. */
 
 /** The desktop site header's height. */
@@ -13,8 +13,8 @@ export const HEADER_COMPACT_HEIGHT = 56;
 export const LOGO_WIDTH = 96;
 export const LOGO_COMPACT_WIDTH = HEADER_COMPACT_HEIGHT;
 
-/** The phone header's height, and its beaver's width. */
-export const PHONE_HEADER_HEIGHT = 64;
+/** The phone top bar's height (prompt 19: 52, under the top safe-area inset), and the old header's beaver width. */
+export const PHONE_HEADER_HEIGHT = 52;
 export const PHONE_LOGO_WIDTH = 40;
 
 /** The footer's beaver, the sign-in dialog's, and the one above a standalone card. */
@@ -50,3 +50,13 @@ export const DOCK_TILE_HEIGHT = 44;
 export const DOCK_PAD = 6;
 /** The phone dock's height without the safe-area inset: 6 + 44 + 6. It has no edge: it is a shade. */
 export const DOCK_HEIGHT = DOCK_PAD * 2 + DOCK_TILE_HEIGHT;
+
+/* The phone version's measurements (Synth mobile pack, prompt 17). The dock's and the sheets' safe-area inset is added in CSS. */
+export const PHONE_TOPBAR = 52;
+export const PHONE_TAB = 49;
+export const PHONE_PILL = 32;
+export const PHONE_ROW = 56;
+export const PHONE_DOCK = 56;
+export const PHONE_FAB = 56;
+export const PHONE_SHEET_RADIUS = 16;
+export const PHONE_MARGIN = 16;

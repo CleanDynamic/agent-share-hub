@@ -1,4 +1,7 @@
-/* UX-10 P6: the profile's feed. PURE: typed props, no fetching; `ProfilePage` maps the rows to entries.
+/* Synth 12 Part A: the feed sits in its own panel; the filter is the pills All, Builds, Topics, Replies (an empty one hidden).
+   Reproduction notes are no longer drawn: the Notes filter is gone and a note in the list is skipped.
+
+   UX-10 P6: the profile's feed. PURE: typed props, no fetching; `ProfilePage` maps the rows to entries.
 
    A `Segmented` filter above it (All, Builds, Topics, Replies, Notes; an option with nothing in it is hidden, All never is), then
    the person's things newest first, the pins leading with a `Pinned` line. Each is the card the site already draws:
@@ -29,7 +32,6 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { MapCard, type MapCardView } from "@/pages/site/builds/BuildsMapsView";
-import { NoteItem } from "@/pages/site/home/HomeView";
 import type { HomeReproNote } from "@/pages/site/home/homeModel";
 
 import type { EmptyFeed } from "./profileFeedModel";
@@ -115,7 +117,7 @@ function ItemMenu({ entry, canPin, onPin, onUnpin, onDisplay }: { entry: FeedEnt
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <PostControl aria-label={FEED_COPY.menu(entry.heading)}>···</PostControl>
+        <PostControl round aria-label={FEED_COPY.menu(entry.heading)}>···</PostControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {entry.pinned ? <DropdownMenuItem onSelect={onUnpin}>{FEED_COPY.unpin}</DropdownMenuItem> : canPin ? <DropdownMenuItem onSelect={onPin}>{FEED_COPY.pin}</DropdownMenuItem> : null}
@@ -170,23 +172,13 @@ function Card({ entry, now }: { entry: FeedEntry; now: number }) {
       // G12: the feed sits right under the profile's h1, so a post's heading is an h2.
       return <PostCard card={entry.card} headingLevel={2} />;
     case "repro_note":
-      return (
-        <NoteItem
-          item={entry.note}
-          now={now}
-          heading={
-            <>
-              <span style={{ color: t.text }}>{entry.lead}</span>
-              {entry.note.worked ? <span style={{ color: t.evidence }}>it worked</span> : <span style={{ color: t.catBreakage }}>it didn&rsquo;t work</span>}
-            </>
-          }
-        />
-      );
+      return null;
   }
 }
 
 export function ProfileFeed(props: ProfileFeedProps) {
-  const { entries, isOwn } = props;
+  const { isOwn } = props;
+  const entries = props.entries.filter((entry) => entry.kind !== "repro_note");
   return (
     <section aria-label="Feed" data-testid="profile-feed" style={{ fontFamily: FIGTREE, minWidth: 0 }}>
       {props.options.length > 1 ? (

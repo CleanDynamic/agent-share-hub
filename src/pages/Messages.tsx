@@ -1,3 +1,4 @@
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ShellHeader } from "@/components/shell/ShellHeader";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -148,6 +150,8 @@ export default function MessagesPage() {
   const [rawQuery, setRawQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
+  const phone = useIsPhone();
+  const listWidth = useMinWidth(1101) ? 340 : 300;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Debounce search query (200ms)
@@ -215,6 +219,8 @@ export default function MessagesPage() {
   // pinned content lookup. Powers ConversationHeader.
   const activeThreadId = routeThreadId ?? null;
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Prompt 19: in an open conversation the phone's top bar draws a gear that opens its settings.
+  useRegisterPageBar(activeThreadId ? { settings: () => setSettingsOpen(true) } : null);
   /* UX-15 P5: Block in a direct thread's menu. */
   const [blocking, setBlocking] = useState<BlockTarget | null>(null);
   const [searchInThreadOpen, setSearchInThreadOpen] = useState(false);
@@ -428,13 +434,15 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description={`Your conversations on ${SITE_NAME}.`} path="/messages" />
-      {/* G8: the page's h1, for assistive technology; the visible title is ShellHeader's, which other pages share. */}
-      <h1 style={VISUALLY_HIDDEN}>Messages</h1>
+      {/* G8: the page's h1 is the list panel's "Messages"; while the list cannot be drawn it is here, for assistive technology. */}
+      {threadsFailed || (phone && activeThreadId) ? <h1 style={VISUALLY_HIDDEN}>Messages</h1> : null}
       <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
         <ShellHeader
           onBack={() => navigate(-1)}
           title={activeThreadInfo?.headerThread.title || "Messages"}
         />
+        {/* Synth 12 Part D: two panels, the list (340 from 1101, 300 from 761) and the conversation, 8 apart. At 760 and
+            below the list and the conversation are separate views; the conversation's head has the back button. */}
         <div
           className="flex"
           style={{
@@ -444,11 +452,12 @@ export default function MessagesPage() {
             position: "relative",
             overflow: "hidden",
             background: "transparent",
+            gap: 8,
           }}
         >
 
-        {threadsFailed ? (
-          <div style={{ width: 220, flexShrink: 0, padding: 16 }}>
+        {phone && activeThreadId ? null : threadsFailed ? (
+          <div style={{ width: phone ? "100%" : listWidth, flexShrink: 0, padding: 16, background: tok.surface, borderRadius: 12 }}>
             <PageState read={threadsRead} thing="your messages" region="Conversations" skeleton={null}>
               {() => null}
             </PageState>
@@ -464,12 +473,13 @@ export default function MessagesPage() {
           onThreadClick={(id) => navigate(`/messages/${id}`)}
           onCompose={() => setComposeOpen(true)}
           counts={counts}
-          width={220}
+          width={phone ? "100%" : listWidth}
           loading={isLoading && !tabData}
         />
         )}
 
-        <div className="flex-1 min-w-0 h-full flex flex-col">
+        {phone && !activeThreadId ? null : (
+        <div className="flex-1 min-w-0 h-full flex flex-col" style={{ background: tok.surface, borderRadius: 12, overflow: "hidden" }}>
           {activeThreadId && activeThreadInfo ? (
             <>
               <ConversationHeader
@@ -555,27 +565,28 @@ export default function MessagesPage() {
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center px-6">
               <div
                 className="flex items-center justify-center rounded-full"
-                style={{ width: 72, height: 72, background: tok.recess }}
+                style={{ width: 56, height: 56, background: tok.control }}
               >
-                <MessageSquare size={28} style={{ color: tok.text2 }} />
+                <MessageSquare size={24} style={{ color: tok.text2 }} />
               </div>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: tok.text }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 17, lineHeight: "24px", fontWeight: 600, color: tok.text, margin: 0 }}>
                 Select a conversation
               </p>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: tok.text2, maxWidth: 280 }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 15, lineHeight: "20px", color: tok.text2, maxWidth: 280, margin: 0 }}>
                 Pick a thread from the list, or start a new one.
               </p>
               <button
                 onClick={() => setComposeOpen(true)}
-                className="mt-2 px-3 py-1.5 text-xs font-medium"
+                className="mt-2"
                 style={{
-                  // The one primary on an otherwise empty surface: an `--action`
-                  // wash with `--text` on it. The hue itself is not legal as ink
-                  // on its own wash, so the ink is `--text` here as everywhere.
-                  color: tok.text,
-                  background: tokenAlpha("action", 0.14),
-                  border: `0.5px solid ${tokenAlpha("action", 0.3)}`,
-                  borderRadius: r["r-control"],
+                  height: 32,
+                  padding: "0 14px",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: tok.onAction,
+                  background: tok.action,
+                  borderRadius: 16,
                   transition: uiTransition(),
                 }}
               >
@@ -587,6 +598,7 @@ export default function MessagesPage() {
             <div className="absolute inset-0 pointer-events-none" />
           )}
         </div>
+        )}
         </div>
       </div>
 

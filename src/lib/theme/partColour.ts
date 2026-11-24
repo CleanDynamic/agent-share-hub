@@ -28,9 +28,9 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${Math.round(alpha * 100) / 100})`;
 }
 
-/** A coloured tile: a 1px border in its colour, and the same colour at 35% inside it. */
+/** A coloured tile: a border in its colour (1px dark, 1.5px light: `--maker-edge`), and the same colour at 35% inside it. */
 export function borderFor(hex: string): CSSProperties {
-  return { borderColor: hex, boxShadow: `inset 0 0 0 1px ${withAlpha(hex, 0.35)}` };
+  return { borderColor: hex, borderWidth: "var(--maker-edge)", boxShadow: `inset 0 0 0 1px ${withAlpha(hex, 0.35)}` };
 }
 
 /** The maker colour's edge width on the Synth pack: 1.5px. */

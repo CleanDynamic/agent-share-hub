@@ -18,6 +18,7 @@ import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { ProfilePlaceholder } from "@/lib/routing/placeholders";
 import { usePageReady } from "@/lib/routing/pageReady";
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { FollowListView, followTitle } from "./FollowListView";
 import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED } from "@/lib/copy/copy";
 
@@ -78,12 +79,16 @@ export function FollowListPage({ which }: { which: FollowList }) {
     }
   };
 
+  // Prompt 19: the top bar names the person, not the list.
+  useRegisterPageBar({ title: profile ? (profile.displayName ?? `@${handle}`) : undefined });
+
   return (
     /* G32: the page is drawn once the session is known; while the reads are out the list's own skeleton stands in its place. */
     <PageArrival loading={authLoading} placeholder={<ProfilePlaceholder />}>
       <SeoHead title={followTitle(which, handle)} description={followTitle(which, handle)} path={`/profile/${handle}/${which}`} noIndex />
       <FollowListView
         handle={handle}
+        owner={profile ? { id: profile.id, name: profile.displayName ?? `@${handle}`, avatarUrl: profile.avatarUrl ?? null, otherCount: which === "followers" ? profile.counts.following : profile.counts.followers } : null}
         which={which}
         total={profile ? (which === "followers" ? profile.counts.followers : profile.counts.following) : null}
         /* G33: an absent or private profile decides the page by itself; the list is not what failed or is missing then. */

@@ -88,6 +88,13 @@ test.describe("UX-02 P1 · a dropped file becomes a step tile", () => {
     await dropFile(page, page.getByTestId("build-list"), "middle", { name: "conversations.json", body: JSON.stringify([{ mapping: {} }]), type: "application/json" });
     await expect(page).toHaveURL(/\/compose\/start/, { timeout: 15_000 });
   });
+
+  test("Synth 09: a chat export dropped on Sources' drop zone is taken in as sessions (the intake)", async ({ page }) => {
+    await open(page);
+    await expect(page.getByTestId("sources-add-files")).toContainText("Drop sessions or files");
+    await dropFile(page, page.getByTestId("sources-add-files"), "middle", { name: "conversations.json", body: JSON.stringify([{ mapping: {} }]), type: "application/json" });
+    await expect(page).toHaveURL(/\/compose\/start/, { timeout: 15_000 });
+  });
 });
 
 test.describe("UX-02 P2 · a source file has a way into a session", () => {

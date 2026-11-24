@@ -32,9 +32,11 @@ for (const width of WIDTHS) {
     await page.goto(URL("loading"));
     await page.getByTestId("compose-skeleton").waitFor();
     const blocks = {
-      sources: await spot(page, '[data-testid="skeleton-sources"] [data-testid="loading-blocks"]'),
+      // Synth 09: Sources and Details are panels, measured panel to panel; Build's first block stands where its post does,
+      // both inside the Build panel's padding.
+      sources: await spot(page, '[data-testid="skeleton-sources"]'),
       build: await spot(page, '[data-testid="skeleton-build"] [data-testid="loading-blocks"]'),
-      details: await spot(page, '[data-testid="skeleton-details"] [data-testid="loading-blocks"]'),
+      details: await spot(page, '[data-testid="skeleton-details"]'),
     };
 
     await page.goto(URL("populated"));

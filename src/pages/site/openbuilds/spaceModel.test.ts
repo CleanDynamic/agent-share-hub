@@ -31,9 +31,10 @@ const crowd: SpaceCrowd = {
 };
 
 describe("a space's words", () => {
-  it("says who made it, who moderates it, how many are in it and who can post", () => {
-    expect(spaceMeta(crowd)).toBe("Made by @sam · moderated by @sam, @ola · 412 members · members can post");
-    expect(spaceMeta({ ...crowd, members: 1, space: { ...space, whoCanPost: "invite" } })).toContain("1 member · invite only");
+  it("says who made it and how many are in it", () => {
+    expect(spaceMeta(crowd)).toBe("Made by @sam · 412 members");
+    expect(spaceMeta({ ...crowd, members: 1 })).toBe("Made by @sam · 1 member");
+    expect(spaceMeta({ ...crowd, creator: { ...crowd.creator, handle: null } })).toBe("Made by someone · 412 members");
   });
   it("says the order and who set it", () => {
     expect(orderLine("newest", "sam")).toBe("Newest first · set by @sam");

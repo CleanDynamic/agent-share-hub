@@ -1,15 +1,14 @@
-/* The sign-in dialog's frame (Reference A): one window over whatever page the person is on.
+/* Synth 13 Part B: the sign-in dialog's frame. One card at every width: 420 wide (the width less 32 on a phone), centred,
+   the Overlay fill, radius 16, 16px 20px 20px padding, 14 between its parts, the Overlay edge and shadow.
 
-   840 by 540, centred, radius 16, `--window` with the control-edge border and the overlay shadow. On the left a 360
-   column: the beaver picture 360 by 300 flush to the top, then 24 in, the lockup, 16, the tagline (the dialog's title),
-   and "openbuilds.ai" pinned to the bottom. On the right a 480 column padded 24, so every control is 432 wide: row 1
-   (the switch or "Back to sign in" on the left, Close on the right), 16, then the view.
+   Top row: the pills Sign in and Sign up (other views: "Back to sign in" as a ghost button), and a 32 round Close at the
+   right. Then the beaver at 104 wide, centred, and a visually hidden h2 that names the view (the dialog's title). Then the
+   view.
+
+   Behind it there is no dim scrim: the overlay is clear, and the host draws the dot water over it (`SignInWaterLayer`).
 
    The frame is Radix's dialog, the site's one primitive: focus trap, Escape, scroll lock, `role="dialog"` and
-   `aria-modal`, and the title wired up as the label. Below 840 wide the picture column is dropped and the form column
-   stands alone; a phone gets the full-screen layout (`phone`), which its own module draws.
-
-   PURE: the view, the row-1 control and the handlers come in as props. */
+   `aria-modal`, and the title wired up as the label. PURE: the view, the row-1 control and the handlers come in as props. */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -18,18 +17,15 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { IconButton } from "@/components/brand/IconButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { FrameLink } from "@/components/shell/FrameLink";
-import { Lockup } from "@/components/brand/Lockup";
-import { Mark } from "@/components/brand/Mark";
-import { Panel } from "@/components/brand/Panel";
-import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useRoom } from "@/components/brand/useRoom";
-import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { BeaverLogo } from "@/components/shell/BeaverLogo";
+import { DIALOG_LOGO_WIDTH } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { DIALOG } from "./authSizes";
-import { SIGNIN_COLOURS } from "./signinColours";
 import {
   DIALOG_FADE_EASING,
   DIALOG_FADE_MS,
@@ -42,12 +38,13 @@ import {
 } from "./signinMotion";
 import { SITE_NAME } from "@/lib/site";
 
-export const TAGLINE = "Publish, reproduce and rebuild AI-assisted workflows.";
-
-const PICTURE = {
-  dusk: "/brand/beaver-dark.png",
-  noon: "/brand/beaver-light.png",
-} as const;
+/** The visually hidden h2 that names each view. */
+export const VIEW_TITLE: Record<string, string> = {
+  login: "Sign in",
+  signup: "Sign up",
+  verify: "Verify your email",
+  reset: "Reset password",
+};
 
 /** Row 1 for Sign in and Join free: the switch. Choosing the other side pushes its view's address, one step deeper. */
 export function AccountSwitch({
@@ -61,9 +58,8 @@ export function AccountSwitch({
   return (
     <Segmented
       label="Sign in or join"
-      /* A phone keeps today's 38 / 13 switch. */
-      size={phone ? 38 : 28}
-      fontSize={phone ? 13 : undefined}
+      size={phone ? 38 : 32}
+      fontSize={13}
       value={value}
       onChange={onChange}
       items={[
@@ -74,25 +70,27 @@ export function AccountSwitch({
   );
 }
 
-/** Row 1 for every other view: a text link, 24 high, 12px, underlined, centred in the 32 row. */
+/** Row 1 for every other view: "Back to sign in", a ghost button. */
 export function BackToSignIn({ to, state }: { to: string; state?: unknown }) {
-  const room = useRoom();
   return (
     <FrameLink
       to={to}
       state={state}
       data-testid="signin-back"
+      data-ui="button"
+      data-variant="ghost"
       style={{
-        height: DIALOG.row,
+        height: DIALOG.control,
         display: "inline-flex",
         alignItems: "center",
+        padding: "0 14px",
+        margin: "0 -14px",
+        borderRadius: 16,
         fontFamily: FIGTREE,
-        fontSize: 12,
-        fontWeight: 500,
-        color: SIGNIN_COLOURS[room].link,
-        textDecoration: "underline",
-        textUnderlineOffset: 4,
-        textDecorationThickness: 1,
+        fontSize: 13,
+        fontWeight: 600,
+        color: t.text2,
+        textDecoration: "none",
       }}
     >
       Back to sign in
@@ -111,196 +109,9 @@ export interface SignInDialogFrameProps {
   children: ReactNode;
 }
 
-function PictureColumn() {
-  const room = useRoom();
-  return (
-    <div
-      data-testid="signin-picture-column"
-      style={{
-        width: DIALOG.left,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-        background: SIGNIN_COLOURS[room].column,
-      }}
-    >
-      <img
-        src={PICTURE[room]}
-        alt=""
-        width={DIALOG.left}
-        height={DIALOG.picture}
-        style={{
-          display: "block",
-          width: DIALOG.left,
-          height: DIALOG.picture,
-          objectFit: "cover",
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{
-          flex: "1 1 auto",
-          minHeight: 0,
-          padding: DIALOG.pad,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Lockup size={14} markSize={18} />
-        <Dialog.Title
-          data-testid="signin-tagline"
-          style={{
-            margin: "16px 0 0",
-            fontFamily: FIGTREE,
-            fontSize: 22,
-            fontWeight: 500,
-            lineHeight: "28px",
-            color: t.text,
-          }}
-        >
-          {TAGLINE}
-        </Dialog.Title>
-        <span
-          style={{
-            marginTop: "auto",
-            fontFamily: DM_MONO,
-            fontSize: 11,
-            lineHeight: "16px",
-            color: t.text2,
-          }}
-        >
-          {SITE_NAME}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /** What focus lands on in a view that has just arrived: its first field or control, or the view itself. */
 const FOCUSABLE =
   'input:not([type="checkbox"]):not([disabled]), button:not([disabled]), a[href]';
-
-/* ── a phone: today's sign-in layout, full screen ── */
-
-/** The one tagline (TAGLINE), set in today's three phone lines: the mark still sits after the second. */
-const PHONE_TAGLINE = ["Publish, reproduce", "and rebuild", "AI-assisted workflows."] as const;
-
-/** The tagline on a phone, as one heading: the dialog's title on a phone. */
-function PhoneTagline() {
-  return (
-    <Dialog.Title
-      data-ui="tagline"
-      style={{
-        margin: 0,
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: FIGTREE,
-        fontSize: 32,
-        fontWeight: 500,
-        letterSpacing: "-0.04em",
-        lineHeight: 1.04,
-        color: t.text,
-      }}
-    >
-      <VisuallyHidden>{TAGLINE}</VisuallyHidden>
-      <span aria-hidden="true">{PHONE_TAGLINE[0]}</span>
-      <span
-        aria-hidden="true"
-        style={{
-          paddingLeft: 48,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        {PHONE_TAGLINE[1]}
-        <Mark size={Math.round(32 * 0.68)} />
-      </span>
-      <span aria-hidden="true" style={{ paddingLeft: 24 }}>
-        {PHONE_TAGLINE[2]}
-      </span>
-    </Dialog.Title>
-  );
-}
-
-/** The phone dialog: the whole screen, the page's ground, today's lockup and tagline, then the form in its panel with the
-    switch (or the way back) at the top of it. No halftone and no code style here: nothing surrounds it. */
-function PhoneFrame({
-  rowStart,
-  view,
-  children,
-  onCloseAutoFocus,
-  contentRef,
-}: Omit<SignInDialogFrameProps, "open" | "onOpenChange"> & {
-  onCloseAutoFocus: (event: Event) => void;
-  contentRef: (el: HTMLDivElement | null) => void;
-}) {
-  return (
-    <Dialog.Content
-      ref={contentRef}
-      forceMount
-      data-testid="signin-dialog"
-      data-view={view}
-      data-viewport="mobile"
-      aria-describedby={undefined}
-      aria-modal="true"
-      onCloseAutoFocus={onCloseAutoFocus}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        overflowY: "auto",
-        overflowX: "hidden",
-        background: t.frame,
-        outline: "none",
-      }}
-    >
-      <div
-        style={{
-          boxSizing: "border-box",
-          minHeight: "100dvh",
-          padding: "16px 10px 22px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 13,
-              padding: "7px 0 4px",
-            }}
-          >
-            <Lockup size={34} />
-            <PhoneTagline />
-          </div>
-          <Dialog.Close asChild>
-            <IconButton icon={X} label="Close" size={32} />
-          </Dialog.Close>
-        </div>
-        <Panel surface="glass" padding="16px">
-          <div
-            data-testid="signin-card"
-            data-ui="signin-card"
-            style={{ display: "flex", flexDirection: "column", gap: 7 }}
-          >
-            {rowStart}
-            {children}
-          </div>
-        </Panel>
-      </div>
-    </Dialog.Content>
-  );
-}
 
 export function SignInDialogFrame({
   open,
@@ -311,7 +122,6 @@ export function SignInDialogFrame({
 }: SignInDialogFrameProps) {
   const room = useRoom();
   const phone = useIsPhone();
-  const twoColumns = useMinWidth(DIALOG.twoColumnsFrom);
   const body = useRef<HTMLDivElement>(null);
   /* G5: focus goes back to the control that opened the dialog. The dialog has no Radix Trigger (the address opens it), so
      the element that had focus when it mounted is kept here and focused on close, however it closes. */
@@ -369,129 +179,73 @@ export function SignInDialogFrame({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal forceMount>
+        {/* No dim scrim: the overlay is clear, and the water layer (z 51) is drawn over it. */}
         <Dialog.Overlay
           ref={scrim}
           forceMount
           data-testid="signin-scrim"
-          /* A click on the scrim closes (G5); a press held on it is code style (G21), so it is the click, not the press. */
           onClick={() => onOpenChange(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 50, background: "transparent" }}
+        />
+        <Dialog.Content
+          ref={content}
+          forceMount
+          data-testid="signin-dialog"
+          data-view={view}
+          data-viewport={phone ? "mobile" : "desktop"}
+          aria-describedby={undefined}
+          onCloseAutoFocus={returnFocus}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          /* Radix hides the rest of the page from assistive technology; the attribute says so to the dialog's own role too (G14). */
+          aria-modal="true"
           style={{
             position: "fixed",
-            inset: 0,
-            zIndex: 50,
-            background: SIGNIN_COLOURS[room].scrim,
+            left: "50%",
+            top: "50%",
+            translate: "-50% -50%",
+            /* Above the water (51), which is above the overlay (50). */
+            zIndex: 52,
+            boxSizing: "border-box",
+            width: phone ? "calc(100vw - 32px)" : DIALOG.width,
+            maxHeight: "calc(100dvh - 32px)",
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+            padding: "16px 20px 20px",
+            borderRadius: DIALOG.radius,
+            background: t.window,
+            boxShadow: `0 0 0 1px ${t.windowBorder}, ${t.windowShadow}`,
+            outline: "none",
+            fontFamily: FIGTREE,
           }}
-        />
-        {phone ? (
-          <PhoneFrame
-            rowStart={rowStart}
-            view={view}
-            onCloseAutoFocus={returnFocus}
-            contentRef={content}
+        >
+          <div
+            data-testid="signin-row-one"
+            style={{ height: DIALOG.control, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}
           >
-            {children}
-          </PhoneFrame>
-        ) : (
-          <Dialog.Content
-            ref={content}
-            forceMount
-            data-testid="signin-dialog"
-            data-view={view}
-            aria-describedby={undefined}
-            onCloseAutoFocus={returnFocus}
-            onPointerDownOutside={(event) => event.preventDefault()}
-            /* Radix hides the rest of the page from assistive technology; the attribute says so to the dialog's own role too (G14). */
-            aria-modal="true"
-            style={{
-              position: "fixed",
-              inset: 0,
-              margin: "auto",
-              /* Above the halftone layer (51), which is above the scrim (50). */
-              zIndex: 52,
-              boxSizing: "border-box",
-              width: twoColumns ? DIALOG.width : DIALOG.right,
-              maxWidth: "100vw",
-              height: DIALOG.height,
-              display: "flex",
-              overflow: "hidden",
-              borderRadius: DIALOG.radius,
-              background: t.window,
-              boxShadow: t.windowShadow,
-              outline: "none",
-            }}
+            {rowStart}
+            <Dialog.Close asChild>
+              <IconButton icon={X} label="Close" size={32} />
+            </Dialog.Close>
+          </div>
+          <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", flexShrink: 0 }}>
+            <BeaverLogo theme={room} size={DIALOG_LOGO_WIDTH} />
+          </div>
+          <Dialog.Title className="sr-only" style={{ margin: 0 }}>
+            {VIEW_TITLE[view] ?? VIEW_TITLE.login}
+          </Dialog.Title>
+          <div
+            ref={body}
+            tabIndex={-1}
+            data-testid="signin-view-body"
+            style={{ outline: "none", display: "flex", flexDirection: "column" }}
           >
-            {twoColumns ? (
-              <PictureColumn />
-            ) : (
-              <Dialog.Title
-                style={{
-                  position: "absolute",
-                  width: 1,
-                  height: 1,
-                  overflow: "hidden",
-                  clipPath: "inset(50%)",
-                  margin: 0,
-                }}
-              >
-                {TAGLINE}
-              </Dialog.Title>
-            )}
-            <div
-              data-testid="signin-form-column"
-              style={{
-                width: DIALOG.right,
-                flexShrink: 0,
-                boxSizing: "border-box",
-                padding: DIALOG.pad,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                data-testid="signin-row-one"
-                style={{
-                  height: DIALOG.control,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                {rowStart}
-                <Dialog.Close asChild>
-                  <IconButton icon={X} label="Close" size={32} />
-                </Dialog.Close>
-              </div>
-              <div
-                ref={body}
-                tabIndex={-1}
-                data-testid="signin-view-body"
-                style={{
-                  outline: "none",
-                  flex: "1 1 auto",
-                  minHeight: 0,
-                  marginTop: 16,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                {children}
-              </div>
+            <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {children}
             </div>
-            {/* The control-edge border, drawn over the columns rather than inside the box, so the columns stay 360 and 480 and
-              the picture stays flush to the dialog's edge. */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius: DIALOG.radius,
-                border: `1px solid ${t.windowBorder}`,
-                pointerEvents: "none",
-              }}
-            />
-          </Dialog.Content>
-        )}
+          </div>
+        </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   );

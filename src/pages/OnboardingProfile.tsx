@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,10 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Check, X } from "lucide-react";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { fieldMessageStyle } from "@/lib/theme/controls";
-import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { cardTitle, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
@@ -134,6 +134,9 @@ export default function OnboardingProfile() {
     navigate("/onboarding", { replace: true });
   };
 
+  // Prompt 19: the phone's top bar offers Skip, which moves on to the next step as saving does, saving nothing.
+  useRegisterPageBar({ skip: () => navigate("/onboarding", { replace: true }) });
+
   if (loading) return null;
 
   /* Checking is `--text2`, available is `--evidence`, taken is
@@ -153,32 +156,33 @@ export default function OnboardingProfile() {
   /* The same surface as the auth card: the reader arrives here straight off it
      and the OAuth path makes this the FIRST buildgallery page some people see
      with content on it. */
+  /* Synth 13 Part C: one panel, 560 wide, 40 from the top, 28 padding, the Panel shade. */
   const panelStyle = {
-    background: t.glass,
-    borderWidth: 1,
-    borderStyle: "solid" as const,
-    borderColor: t.glassBorder,
+    background: t.surface,
     borderRadius: r.panel,
-    ...elevation.raised,
+    width: "100%",
+    maxWidth: 560,
+    padding: 28,
+    boxSizing: "border-box" as const,
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4">
+    <div className="flex min-h-[80vh] justify-center px-4" style={{ paddingTop: 40, alignItems: "flex-start" }}>
       <SeoHead
         title="Complete your profile"
         description={`Finish setting up your ${SITE_NAME} account.`}
         path="/onboarding/profile"
         noIndex
       />
-      <div className="w-full max-w-md p-6 sm:p-8" style={panelStyle}>
-        <h1 style={{ ...cardTitle, color: t.text }}>Finish your profile</h1>
+      <div style={panelStyle}>
+        <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 31, lineHeight: "36px", fontWeight: 600, color: t.text }}>Finish your profile</h1>
         <p
-          className="mt-1"
           style={{
+            margin: "8px 0 0",
             fontFamily: FIGTREE,
-            fontSize: "13px",
+            fontSize: "15px",
             fontWeight: 400,
-            lineHeight: 1.55,
+            lineHeight: "20px",
             color: t.text2,
           }}
         >
@@ -241,6 +245,7 @@ export default function OnboardingProfile() {
             onClick={handleSave}
             disabled={saving || usernameStatus === "checking"}
             className="w-full"
+            style={{ height: 40, borderRadius: 20, background: t.action, color: t.onAction, fontSize: 15, fontWeight: 600 }}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Continue

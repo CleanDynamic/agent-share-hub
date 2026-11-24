@@ -37,7 +37,7 @@ function mount() {
 describe("Appearance", () => {
   it("is one row, named Theme, with Light, Dark and System", () => {
     const { here } = mount();
-    expect(screen.getByRole("heading", { level: 2, name: "Appearance" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Appearance" })).toBeTruthy();
     expect(within(here).getAllByRole("button").map((b) => b.textContent)).toEqual(["Light", "Dark", "System"]);
     expect(document.querySelectorAll('[data-ui="setting-row"]')).toHaveLength(1);
   });
@@ -61,10 +61,10 @@ describe("Appearance", () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
   });
 
-  it("is the control the phone's account sheet and the sign-in page already draw, not a second one", () => {
-    // The sign-in page's theme control went with the page: the sign-in dialog has none.
-    for (const file of ["src/components/shell/MobileHeader.tsx", "src/pages/site/settings/AppearanceView.tsx"]) {
-      expect(readFileSync(file, "utf8"), file).toContain("ThemeSegmented");
-    }
+  it("is the control the sign-in page drew; the phone's account drawer has its own Dark theme switch on the same context", () => {
+    // Prompt 19: the drawer's theme row is a switch (Dark theme, on or off) that sets the same theme the segmented control does.
+    expect(readFileSync("src/pages/site/settings/AppearanceView.tsx", "utf8")).toContain("ThemeSegmented");
+    expect(readFileSync("src/components/shell/AccountDrawer.tsx", "utf8")).toContain('role="switch"');
+    expect(readFileSync("src/components/shell/MobileHeader.tsx", "utf8")).toContain("setTheme");
   });
 });

@@ -5,45 +5,57 @@
    the widths, whether Details sits beside the build, and for Details its width, its columns, which section sits in which, and
    whether it scrolls.
 
-   THE RULES (editor fixes F62, S34, S35, F75; they replace CA-18b's centred Build). W is the window's width:
-   1. The composer's content sits 32 in from the surface's edges. The surface sits 8 in from the window, so the inner width is
-      the window less 80 (`innerWidthOf`).
-   2. Sources is 256 wide and Details 360 (`DETAILS_MAX`), each 32 from Build. Build takes what is left, up to 760. Once Build
-      is 760 the whole box (Sources, Build, Details) is centred in the window; below that it fills the inner width.
-   3. Where 360 does not leave Build its 560, Details gives up width down to 280 (`DETAILS_MIN`); under 280 it is not beside
-      the build (windows under 1240). Without Details, Build takes the room up to 760 and the box is centred again.
-   4. Where even Sources and a 560 Build do not fit (windows under 928), Sources folds to its 52 rail, 24 left of Build, and
-      Build takes the rest, up to 760.
-   5. (CA-18b P5) The composer is one box. Its left edge is Sources' (or the rail's); its right edge is Details' (or Build's when
-      Details is hidden). The title area sits inside it: the breadcrumb and the title start at `boxLeft`, Publish ends at
-      `boxRight`. Details' right edge never moves with the selection: it is one fixed width per window. The content fills
-      that column from the left; taller than the window, it scrolls inside.
-   6. The Map view has the same `boxLeft`, and the same right edge when Details is beside; where Details is hidden, its right
-      edge is 40 from the window's edge so the map has room (`mapRight`).
+   SYNTH 09: THE THREE PANELS. The editor is three panels on the page shade, 8 apart and 8 from the window's edges (Synth 03's
+   frame). W is the window's width:
+   1. From 1101: Sources 300, Build, Details 340. Build takes the rest, up to 760; once it is 760 the whole box is centred in
+      the window. (At 1280 Build is 608, so it is at least 600 from there up.)
+   2. 1024 to 1100: Sources narrows to 260 and Details is not beside the build: it opens as an overlay panel from the right
+      (340 wide) when a tile is chosen. Build takes the rest.
+   3. 761 to 1023: Sources is not a column either (`rail`): it is a "Sources" button in the title row that opens it as a left
+      overlay. Build fills the width.
+   4. (CA-18b P5) The composer is one box. Its left edge is Sources' (or Build's when Sources is behind its button); its right
+      edge is Details' (or Build's when Details is not beside). The title row sits inside it.
+   5. The Map view has the same `boxLeft`, and the same right edge when Details is beside; where it is not, the map runs to
+      the window's margin (`mapRight`).
    F62 (decision D7): Details can be collapsed (`frameOf(inner, true)`). Sources and the box's right edge stay where they are;
       Build grows to the right, up to 760, and Details is not beside.
-   7. A prose section taller than the height is cut to fit, with Read all. */
+   6. A prose section taller than the height is cut to fit, with Read all. */
 
-export const COMPOSER_INSET = 32;
+/** Synth 09: the panels' own frame has no inset: each panel pads itself. */
+export const COMPOSER_INSET = 0;
 /** The page container sits this far from the window (SiteFrame). */
 export const SURFACE_MARGIN = 8;
 /** The surface has no border of its own now (Synth 03: panels have none), so the content box begins at the margin. */
 export const SURFACE_BORDER = 0;
 /** Where the surface's content box begins, from the window's left edge: its margin and its border. */
 export const ORIGIN = SURFACE_MARGIN + SURFACE_BORDER;
-export const SOURCES_WIDTH = 256;
-export const SOURCES_GAP = 32;
-export const RAIL_WIDTH = 52;
-export const RAIL_GAP = 24;
-export const BUILD_MIN = 560;
+/** Sources from 1101. */
+export const SOURCES_WIDTH = 300;
+/** Sources from 1024 to 1100. */
+export const SOURCES_NARROW = 260;
+/** Between panels (Synth 03's `PANEL_GAP`). */
+export const SOURCES_GAP = 8;
+/** Sources is behind its button: no column, no gap. */
+export const RAIL_WIDTH = 0;
+export const RAIL_GAP = 0;
+/** The least the centre is from 1280 up. */
+export const BUILD_MIN = 600;
 export const BUILD_MAX = 760;
-/** Build's left edge sits at least this far from the window's edge when Sources is folded to its rail. */
+/** Build's left edge sits at least this far from the window's edge. */
 export const EDGE_MIN = SURFACE_MARGIN + COMPOSER_INSET;
 /** Between Build and Details. */
-export const DETAILS_GAP = 32;
-export const DETAILS_MIN = 280;
-/** Details' width when the room allows (F62: 360 on a desktop, from windows of 1400 up). */
-export const DETAILS_MAX = 360;
+export const DETAILS_GAP = 8;
+/** Details' one width, beside the build or over it. */
+export const DETAILS_MIN = 340;
+export const DETAILS_MAX = 340;
+/** The window widths the panels change at. */
+export const THREE_PANELS_FROM = 1101;
+export const SOURCES_COLUMN_FROM = 1024;
+/** Details' panel pads its content this far in (its content is 340 less twice this). Every editor panel pads the same. */
+export const DETAILS_PAD = 16;
+/** The List's gutter inside the Build panel, at its left: with the panel's 16 it is the 40 a drag's rail and its place numbers
+    need (`RAIL_ROOM_ITEMS` in sortLayout), so they stand inside the Build panel and never in the gap or over Sources. */
+export const LIST_GUTTER = 40 - DETAILS_PAD;
 /** F70: the space every section takes above its heading: 24, a 1px rule, 24. */
 export const SEPARATION = 49;
 /** A section's label, its count and the 10 under them. */
@@ -72,22 +84,22 @@ export interface DetailsLayoutInput {
 }
 
 export interface DetailsLayout {
-  /** Sources is folded to its 52 rail. */
+  /** Sources is behind its button in the title row (761 to 1023). */
   rail: boolean;
-  /** Sources' width, 256 or 52. */
+  /** Sources' width: 300, 260, or 0 behind its button. */
   sources: number;
-  /** The gap between Sources (or its rail) and Build: 32 or 24. */
+  /** The gap between Sources and Build: 8, or 0 behind its button. */
   sourcesGap: number;
   build: number;
   /** Where each column starts, from the window's left edge. */
   buildLeft: number;
   sourcesLeft: number;
   detailsLeft: number;
-  /** The width left for Details with Build at its 560, Sources and both gaps taken. */
+  /** The width Build has before its 760 cap: the inner width less Sources, Details and their gaps. */
   room: number;
   /** Details sits beside the build. */
   beside: boolean;
-  /** Details' fixed width for this window: `min(room, 360)`; 0 when it is not beside. */
+  /** Details' width: 340 beside the build; 0 when it is not beside. */
   detailsWidth: number;
   /** The box the composer is: Sources' (or the rail's) left edge, and Details' right edge (Build's when Details is hidden). */
   boxLeft: number;
@@ -113,15 +125,15 @@ export const windowOf = (inner: number): number => inner + 2 * (SURFACE_MARGIN +
     maker; Build grows to the right into its room, and the box's edges stay where they were. */
 export function frameOf(inner: number, collapsed = false): Pick<DetailsLayout, "rail" | "sources" | "sourcesGap" | "build" | "buildLeft" | "sourcesLeft" | "detailsLeft" | "room" | "beside" | "detailsWidth" | "boxLeft" | "boxRight" | "mapRight"> {
   const W = windowOf(inner);
-  const rail = inner - SOURCES_WIDTH - SOURCES_GAP < BUILD_MIN;
-  const sources = rail ? RAIL_WIDTH : SOURCES_WIDTH;
+  const rail = W < SOURCES_COLUMN_FROM;
+  const fits = W >= THREE_PANELS_FROM;
+  const sources = rail ? RAIL_WIDTH : fits ? SOURCES_WIDTH : SOURCES_NARROW;
   const sourcesGap = rail ? RAIL_GAP : SOURCES_GAP;
   const left = sources + sourcesGap;
-  const room = inner - left - DETAILS_GAP - BUILD_MIN;
-  const fits = !rail && room >= DETAILS_MIN;
-  const detailsWidth = fits ? Math.min(room, DETAILS_MAX) : 0;
+  const detailsWidth = fits ? DETAILS_MAX : 0;
   const right = fits ? DETAILS_GAP + detailsWidth : 0;
-  const filled = Math.min(BUILD_MAX, inner - left - right);
+  const room = inner - left - right;
+  const filled = Math.max(0, Math.min(BUILD_MAX, room));
   // What Build does not take is shared either side of the box.
   const boxLeft = EDGE_MIN + (inner - left - filled - right) / 2;
   const sourcesLeft = boxLeft;
@@ -192,7 +204,7 @@ export function layoutDetails({ inner, height, measure }: DetailsLayoutInput): D
   };
 
   // One fixed column: the window decides its width, so its right edge (and Publish with it) never moves with the selection.
-  const width = frame.detailsWidth;
+  const width = frame.detailsWidth - 2 * DETAILS_PAD;
   const measured = at(width);
   const cut = cutsFor(measured, height);
   const fit = fill(measured, 1, height, cut);

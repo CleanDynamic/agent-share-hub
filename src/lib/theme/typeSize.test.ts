@@ -50,6 +50,7 @@ const AREA = [
 
 /** Lines allowed off the scale, by file and the text on the line, each with its reason. */
 const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
+  { file: "src/components/shell/PhoneSearchPage.tsx", has: "fontSize: 16,", why: "prompt 19: the phone search field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontSize: 17,", why: "the build editor's bar: the lockup word, a logo (and the build editor is outside the type prompt)" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontSize: 15,", why: "the build editor's bar: its title, outside the type prompt" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontWeight: 600,", why: "the build editor's bar: its title and context line, outside the type prompt" },
@@ -58,8 +59,7 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
 /** The sign-in dialog is the one design with its own greens, its own 22px tagline and its own mono labels (design/RULES.md, "The sign-in dialog"). */
 const SIGN_IN_DIALOG = new Set([
   "src/pages/site/signin/SignInDialogFrame.tsx",
-  "src/pages/site/signin/codeSprites.ts",
-  "src/pages/site/signin/halftoneField.ts",
+  "src/lib/dots/signinWater.ts",
   "src/pages/site/signin/signinColours.ts",
 ]);
 

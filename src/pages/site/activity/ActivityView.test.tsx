@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ACTIVITY_RUNS, activityFixture } from "@/dev/fixtures/activity";
+import { activityFixture } from "@/dev/fixtures/activity";
 
 import type { ActivityViewProps } from "./ActivityView";
 import { ActivityView } from "./ActivityView";
@@ -39,58 +39,48 @@ afterEach(() => {
   delete (window as { matchMedia?: unknown }).matchMedia;
 });
 
-describe("ActivityView on a desktop", () => {
-  it("has one h1, the unread line with its lamp, and Mark all read as a secondary 28 with no icon", () => {
+describe("ActivityView on a desktop (Synth 12)", () => {
+  it("has one h1, the live state beside it in mono Mint, and Mark all read as a small secondary with no icon", () => {
     mount();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
-    const line = screen.getByText("2 unread · live");
-    expect(line.querySelector('[data-ui="lamp-dot"]')).toBeTruthy();
+    expect(screen.getByTestId("activity-live").textContent).toBe("● live");
     const mark = screen.getByRole("button", { name: "Mark all read" });
     expect(mark.getAttribute("data-variant")).toBe("secondary");
     expect(mark.querySelector("svg")).toBeNull();
-    expect(markup()).toContain("height:28px");
+    const html = markup();
+    expect(html).toContain("color:var(--brand-accent)");
+    expect(html).not.toContain("What happened to your builds.");
   });
 
-  it("drops 'live' and its lamp, and says Reconnecting, while the channel is down", () => {
+  it("says Reconnecting in Warn while the channel is down", () => {
     mount({ live: false });
-    expect(screen.getByText("2 unread").querySelector('[data-ui="lamp-dot"]')).toBeNull();
-    expect(screen.getByText("Reconnecting")).toBeTruthy();
-    expect(screen.getByText("offline")).toBeTruthy();
+    expect(screen.getByTestId("activity-live").textContent).toBe("Reconnecting");
+    expect(markup({ live: false })).toContain("color:var(--warn)");
   });
 
-  it("draws each row under its day in the board's grid, the unread ones lit, each with its kind's square", () => {
+  it("draws each row under its day, no run among them, the unread ones barred in Mint, each with its kind's square", () => {
     mount();
     const days = screen.getAllByTestId("activity-day");
-    expect(days).toHaveLength(2);
     expect(within(days[0]).getByRole("heading", { level: 2, name: "Today" })).toBeTruthy();
-    expect(within(days[1]).getByRole("heading", { level: 2, name: "Yesterday" })).toBeTruthy();
-
     const rows = screen.getAllByTestId("activity-row");
-    expect(rows).toHaveLength(5);
+    expect(rows.some((row) => row.getAttribute("data-kind") === "reproduced")).toBe(false);
+    expect(screen.queryByText(/ran your build|\bran\b/)).toBeNull();
     const unread = rows.filter((item) => item.getAttribute("data-unread") === "true");
-    expect(unread).toHaveLength(2);
-    for (const row of unread) expect(row.querySelector('[data-ui="lamp-dot"]')).toBeTruthy();
-    expect(screen.getAllByTestId("activity-badge").map((badge) => badge.getAttribute("data-kind"))).toEqual([
-      "reproduced",
-      "rebuilt",
-      "comment",
-      "follow",
-      "published",
-    ]);
-    // Four of the five name a build, and hang its thumbnail in a frame.
-    expect(screen.getByTestId("activity-list").querySelectorAll('[data-ui="framed-work"]')).toHaveLength(4);
+    for (const row of unread) expect(within(row).getByTestId("activity-unread-bar")).toBeTruthy();
+    for (const row of rows.filter((item) => item.getAttribute("data-unread") !== "true")) expect(within(row).queryByTestId("activity-unread-bar")).toBeNull();
+    expect(screen.getAllByTestId("activity-badge").map((badge) => badge.getAttribute("data-kind"))).toEqual(["rebuilt", "comment", "follow", "published"]);
+    expect(screen.getByTestId("activity-list").querySelectorAll('[data-ui="framed-work"]')).toHaveLength(0);
 
     const html = markup();
-    expect(html).toContain("grid-template-columns:8px 28px minmax(0, 1fr) 48px 32px");
-    expect(html).toContain("min-height:56px");
-    expect(html).toContain("width:8px;height:8px;border-radius:2px");
-    expect(html).not.toContain("row-highlight");
+    expect(html).toContain("width:10px;height:10px;border-radius:2px;background:var(--kind-rebuilt)");
+    expect(html).toContain("width:3px");
+    expect(html).toContain("background:var(--brand-accent)");
   });
 
   it("leads a row to its target and reads it when followed; a row that leads nowhere is still", () => {
     const onOpen = vi.fn();
-    const base = activityFixture().list.groups[0].rows[0];
+    const base = activityFixture().list.groups[0].rows.find((row) => row.kind !== "reproduced")!;
     mount({
       onOpen,
       list: {
@@ -109,6 +99,15 @@ describe("ActivityView on a desktop", () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
+  it("sets the actor's handle and the build's name in 600", () => {
+    const base = activityFixture().list.groups[0].rows[0];
+    mount({ list: { ...activityFixture().list, groups: [{ day: "Today", rows: [{ ...base, kind: "rebuilt", square: "rebuilt", actorLabel: "@kit", who: "@kit rebuilt your build", title: "Bakery homepage" }] }] } });
+    const row = screen.getByTestId("activity-row");
+    expect(row.textContent).toContain("@kit rebuilt your build Bakery homepage");
+    expect(within(row).getByText("@kit").style.fontWeight).toBe("600");
+    expect(within(row).getByText("Bakery homepage").style.fontWeight).toBe("600");
+  });
+
   it("marks everything read through the callback, and is disabled when nothing is unread", () => {
     const onMarkAllRead = vi.fn();
     const { unmount } = mount({ onMarkAllRead });
@@ -120,54 +119,35 @@ describe("ActivityView on a desktop", () => {
     expect((screen.getByRole("button", { name: "Mark all read" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("keeps the aside in today's order: people and Listening, the runs chart, Show me", () => {
-    mount();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
-      "Today",
-      "Yesterday",
-      "Runs of your builds",
-      "Show me",
-    ]);
-    expect(screen.getByText("This week")).toBeTruthy();
-    expect(screen.getByText("41")).toBeTruthy();
-    expect(screen.getByText("people ran your builds")).toBeTruthy();
-    expect(screen.getByText("Listening")).toBeTruthy();
-    expect(screen.getByText("live")).toBeTruthy();
+  it("the side is the people this week and Show me; no runs chart and no run count", () => {
+    const { container } = mount();
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent ?? "");
+    expect(headings.at(-1)).toBe("Show me");
+    expect(headings.some((h) => /^\d+ (people|person) this week$/.test(h))).toBe(true);
+    expect(screen.queryByText("Runs of your builds")).toBeNull();
+    expect(screen.queryByText("people ran your builds")).toBeNull();
+    expect(container.querySelector('[data-ui="chart-line"]')).toBeNull();
   });
 
-  it("draws the runs chart with its words, the dashed lit-ink marker and its ringed dot", () => {
-    const { unmount } = mount();
-    expect(screen.getByText("Last 90 days · dashed line: your rebuild went live")).toBeTruthy();
-    const chart = screen.getByRole("img", { name: ACTIVITY_RUNS.label });
-    expect(chart.querySelectorAll('line[stroke-dasharray="2 3"]')).toHaveLength(3);
-    expect(screen.getByTestId("activity-runs-marker").getAttribute("stroke")).toBe("var(--lit-ink)");
-    expect(chart.querySelector("defs")).toBeNull();
-    unmount();
-
-    mount({ runs: { status: "ready", data: { ...ACTIVITY_RUNS, markerIndex: null } } });
-    expect(screen.getByText("Last 90 days")).toBeTruthy();
-    expect(screen.queryByTestId("activity-runs-marker")).toBeNull();
-  });
-
-  it("counts and filters by kind in Show me, the pressed rows selected", () => {
+  it("Show me is a switch per kind with its square, every one on at first; turning one off hides its rows", () => {
     mount();
     const group = screen.getByRole("group", { name: "Show me" });
-    expect(within(group).getAllByRole("button")).toHaveLength(7);
-    expect(within(group).getByRole("button", { name: "reproduced 18" })).toBeTruthy();
-    const rebuilt = within(group).getByRole("button", { name: /^rebuilt/ });
+    const switches = within(group).getAllByRole("switch");
+    expect(switches).toHaveLength(6);
+    for (const control of switches) expect(control.getAttribute("aria-checked")).toBe("true");
+    expect(within(group).queryByRole("switch", { name: /Runs/ })).toBeNull();
+    const rebuilt = within(group).getByRole("switch", { name: "Rebuilt" });
     fireEvent.click(rebuilt);
-    expect(rebuilt.getAttribute("aria-pressed")).toBe("true");
-    expect(kinds()).toEqual(["rebuilt"]);
+    expect(rebuilt.getAttribute("aria-checked")).toBe("false");
+    expect(kinds()).not.toContain("rebuilt");
     fireEvent.click(rebuilt);
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
+    expect(kinds()).toContain("rebuilt");
   });
 
   it("draws the loading, error, empty, write-failed and more states in their own places", () => {
     const base = activityFixture().list;
-    const loading = mount({ list: { ...base, status: "loading", groups: [] }, peopleThisWeek: null, runs: { status: "loading" } });
+    const loading = mount({ list: { ...base, status: "loading", groups: [] } });
     expect(screen.getByTestId("activity-loading").getAttribute("aria-busy")).toBe("true");
-    expect(screen.getByTestId("activity-orbs").getAttribute("aria-busy")).toBe("true");
-    expect(screen.getByTestId("activity-runs-loading").textContent).toContain("Loading the runs chart");
     for (const toggle of screen.getAllByTestId("activity-kind")) expect(toggle.querySelector('[data-ui="skeleton"]')).toBeTruthy();
     loading.unmount();
 
@@ -184,13 +164,7 @@ describe("ActivityView on a desktop", () => {
 
     const write = mount({ writeError: { onRetry } });
     expect(screen.getByTestId("activity-write-error").textContent).toContain("Couldn't save that. Try again.");
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
     write.unmount();
-
-    const people = mount({ peopleThisWeek: null, peopleError: { onRetry } });
-    expect(screen.getByRole("alert", { name: "People this week" })).toBeTruthy();
-    expect(screen.getByText("Listening")).toBeTruthy();
-    people.unmount();
 
     const onMore = vi.fn();
     mount({ list: { ...base, hasMore: true, onMore } });
@@ -199,33 +173,26 @@ describe("ActivityView on a desktop", () => {
   });
 });
 
-describe("ActivityView on a phone", () => {
-  it("keeps today's order: the heading, the chips, the days; no people, chart or Show me", () => {
+describe("ActivityView on a phone (Synth 12)", () => {
+  it("one panel: the head with Show me and Mark all read, then the days; Show me opens in a sheet", () => {
     phone(true);
-    const { container } = mount();
+    mount();
     expect(screen.getByTestId("activity-view").getAttribute("data-viewport")).toBe("mobile");
-    expect(screen.getByRole("heading", { level: 1, name: "2 unread" })).toBeTruthy();
-    const chips = screen.getAllByRole("button").filter((button) => button.getAttribute("data-ui") === "filter-chip");
-    expect(chips.map((chip) => chip.textContent)).toEqual(["All", "Reproduced18", "Rebuilt6", "Comments11", "Follows7"]);
-    expect(screen.getAllByTestId("activity-day")).toHaveLength(2);
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
-    expect(screen.queryByTestId("activity-orbs")).toBeNull();
-    expect(screen.queryByText("Show me")).toBeNull();
-    expect(container.querySelector('[data-ui="chart-line"]')).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Show me" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show me" }));
+    const group = screen.getByRole("group", { name: "Show me" });
+    fireEvent.click(within(group).getByRole("switch", { name: "Rebuilt" }));
+    expect(kinds()).not.toContain("rebuilt");
   });
 
-  it("filters by chip, and offers Mark all read only while something is unread", () => {
+  /* Prompt 19: on a phone "Mark all read" is the top bar's right slot (the page registers it with `useRegisterPageBar`), so the
+     list's head draws no second button and its heading is for screen readers only. */
+  it("leaves Mark all read to the top bar and hides its heading from the eye", () => {
     phone(true);
-    const { unmount } = mount();
-    fireEvent.click(screen.getByRole("button", { name: /^Rebuilt/ }));
-    expect(kinds()).toEqual(["rebuilt"]);
-    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
-    unmount();
-
     mount({ unread: 0 });
-    expect(screen.getByRole("heading", { level: 1, name: "All caught up" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Mark all read" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Activity" }).className).toBe("sr-only");
   });
 });
 
