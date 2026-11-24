@@ -66,7 +66,8 @@ const TAG: CSSProperties = {
   boxSizing: "border-box",
   flexShrink: 0,
   background: t.control,
-  border: `1px solid ${t.controlBorder}`,
+  /* Synth 16: shades, not lines; the 1px stays, clear, so the tag keeps its size. */
+  border: "1px solid transparent",
   fontFamily: FIGTREE,
   fontSize: textStep.meta,
   fontWeight: 400,

@@ -58,3 +58,7 @@ e2e/audit/critique/
 
 # SV-26: the visualizer's output is a build artefact
 design/audits/size/stats.html
+
+# Phone screenshots (e2e/phone): regenerate with the spec
+e2e/phone/shots*/
+e2e/phone/sheet-*.png

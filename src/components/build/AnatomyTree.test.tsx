@@ -181,9 +181,9 @@ describe("copy controls", () => {
     const copy = Array.from(doc.querySelectorAll("button")).find(
       (button) => button.textContent === "Copy",
     );
-    expect(styleOf(copy)).toContain("background:var(--glass)");
-    expect(styleOf(copy)).toContain("border-color:var(--line)");
-    expect(styledWith(doc, "background:var(--action)")).toHaveLength(0);
+    expect(styleOf(copy)).toContain("background:var(--control)");
+    expect(styleOf(copy)).toContain("border-color:transparent");
+    expect(styledWith(doc, "background:var(--brand-accent)")).toHaveLength(0);
   });
 });
 

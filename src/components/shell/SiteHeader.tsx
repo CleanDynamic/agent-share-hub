@@ -10,6 +10,7 @@
 // LIBRARY AND ACTIVITY ARE SIGNED-IN ONLY: both routes sit behind `ProtectedRoute`, so a signed-out header does not offer
 // them. Drafts is in the account menu.
 
+import { SITE_NAME } from "@/lib/site";
 import { Bell, Monitor, Moon, Search, Sun } from "lucide-react";
 import { lazy, memo, startTransition, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -203,7 +204,7 @@ function RefinedSiteHeaderView({
         boxSizing: "border-box",
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ flexShrink: 0, display: "block" }}>
+      <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ flexShrink: 0, display: "block" }}>
         <span style={{ display: "block", width: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH, height: Math.round((shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH) * BEAVER_RATIO) }}>
           <BeaverLogo theme={theme} size={LOGO_WIDTH} style={{ transformOrigin: "left top", transform: shrunk ? `scale(${LOGO_COMPACT_WIDTH / LOGO_WIDTH})` : "none", transition: move() }} />
         </span>

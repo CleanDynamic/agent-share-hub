@@ -53,11 +53,13 @@ export interface PhoneBottomSheetProps {
   dirty?: boolean;
   footer?: { status?: ReactNode; actions?: ReactNode };
   onCloseAutoFocus?: (event: Event) => void;
+  /** The sheet's shade: Card (the default), or the Notepad tone for the reader's notepad (prompt 22). */
+  tone?: "card" | "notepad";
   "data-testid"?: string;
   children?: ReactNode;
 }
 
-export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, children, ...rest }: PhoneBottomSheetProps) {
+export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, tone = "card", children, ...rest }: PhoneBottomSheetProps) {
   const focus = useWindowFocus(open, onCloseAutoFocus);
   const keyboard = useKeyboardInset();
   const start = useRef<{ y: number; at: number } | null>(null);
@@ -129,7 +131,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
             data-testid={rest["data-testid"] ?? "bottom-sheet"}
             data-motion="sheet"
             data-height={height}
-            data-fill="card"
+            data-fill={tone}
             aria-describedby={undefined}
             onOpenAutoFocus={focus.onOpenAutoFocus}
             onCloseAutoFocus={focus.onCloseAutoFocus}
@@ -151,7 +153,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               ...size,
               padding: footer ? "8px 0 0" : "8px 0 env(safe-area-inset-bottom)",
               borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`,
-              background: t.module,
+              background: tone === "notepad" ? t.notepad : t.module,
               color: t.text,
               fontFamily: FIGTREE,
               overscrollBehavior: "contain",

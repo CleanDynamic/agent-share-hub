@@ -96,29 +96,24 @@ export function categoryColour(category: string): string {
   return tokenVar((known ? `cat-${known}` : "cat-fallback") as TokenName);
 }
 
-/** A chip's measured background and the hue that is legal on it. */
+/** A chip's ground and the ink on it. The category's hue, for a dot or an edge, is `categoryColour`. */
 export interface CategoryFill {
-  /** The ground. Opaque, and measured against the hue below. */
+  /** The ground: the category's tint. */
   readonly background: string;
-  /** The hue. At least 4.5:1 on `background`, in both themes. */
+  /** The words: the ink (`--text`). Synth 16: the hue on its own tint fell under 4.5:1 on Noon's light grounds, so
+      the tint names the category and the words stay legible. */
   readonly color: string;
 }
 
 /**
- * The measured background/foreground pair for a chip in this category.
- *
- * `color` is the same value `categoryColour` returns, so a chip and a bare label
- * of the same category are the same hue. Unknown categories get the fallback
- * pair — `--text2` on `--recess`, 5.11:1 on Noon and 5.73:1 on Dusk.
- *
- * Use it for both halves or neither. Putting this `color` on some other ground,
- * or this `background` under some other ink, is a pairing nobody measured.
+ * The background/foreground pair for a chip in this category. Use both halves together. The hue (`categoryColour`) is for
+ * the marks beside a chip (a dot, a dashed edge), never for its words.
  */
 export function categoryFill(category: string): CategoryFill {
   const known = normaliseCategory(category);
   const stem = known ? `cat-${known}` : "cat-fallback";
   return {
     background: tokenVar(`${stem}-fill` as TokenName),
-    color: tokenVar(stem as TokenName),
+    color: "var(--text)",
   };
 }

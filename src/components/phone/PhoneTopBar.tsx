@@ -2,6 +2,7 @@
 // top safe-area inset. Left is the account avatar, Back or Close; the centre is the logo or the h1 title; right is one icon
 // button. Every target is a 44 round hit area.
 
+import { SITE_NAME } from "@/lib/site";
 import type { CSSProperties } from "react";
 
 import { initialsOf } from "@/components/brand/Avatar";
@@ -197,7 +198,7 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
         {centre === "" ? (
           <span />
         ) : centre === "logo" ? (
-          <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
+          <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
             <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH_BAR} />
           </FrameLink>
         ) : (

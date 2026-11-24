@@ -6,6 +6,7 @@
 // Privacy and Terms appear only once their text has been reviewed (`src/content/legal/reviewed.ts`); Community rules,
 // Report a problem and Contact appear together once the Terms they repeat are reviewed.
 
+import { SITE_NAME } from "@/lib/site";
 import { memo, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -71,7 +72,7 @@ export function SiteFooterView({ signedIn = false, onSignOut, onSignIn, showPriv
         gap: phone ? 12 : 20,
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+      <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <BeaverLogo theme={theme} size={FOOTER_LOGO_WIDTH} />
       </FrameLink>
       <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", flexGrow: 1 }}>

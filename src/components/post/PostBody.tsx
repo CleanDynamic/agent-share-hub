@@ -32,7 +32,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { RefLink, usePostRefs } from "./RefLinks";
-import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, postType, type PostTypeScale } from "./postType";
+import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, feedType, postType, type PostTypeScale } from "./postType";
 
 export interface PostBodyProps {
   post: Post;
@@ -51,6 +51,8 @@ export interface PostBodyProps {
   clampLines?: number;
   /** Told whether that paragraph is actually cut, on mount and whenever its width changes. */
   onCut?: (cut: boolean) => void;
+  /** Prompt 20: the phone feed's type (15/20) and pictures (X's layout, Card fill, no hairline). Phone only. */
+  feed?: boolean;
 }
 
 // The wire format is untrusted, so every read goes through these.
@@ -235,7 +237,7 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number, firstHea
       // CA-07: a post's pictures, one grid after its words. Captions stay in the saved data and are not drawn.
       return (
         <div key={key} data-post-pictures="" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} compact={props.compact} />
+          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} compact={props.compact} feed={props.feed} />
           <StepLine step={attrsOf(node).step} phone={Boolean(props.phone)} />
         </div>
       );
@@ -288,7 +290,7 @@ function StepLine({ step, phone }: { step: unknown; phone: boolean }) {
 const TEXT_BLOCKS = new Set(["paragraph", "heading"]);
 
 export function PostBody(props: PostBodyProps) {
-  const base = postType(Boolean(props.phone));
+  const base = props.feed ? feedType() : postType(Boolean(props.phone));
   const scale = props.compact ? { ...base, body: { ...base.body, fontSize: 13, lineHeight: "22px" }, small: { ...base.small, fontSize: 13, lineHeight: "20px" } } : base;
   const ctx: Ctx = { scale, props };
   // CA-07: an old post's pictures, between the lines or in rows, are read as one grid at its end. Nothing is saved.

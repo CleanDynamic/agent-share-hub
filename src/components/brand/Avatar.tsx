@@ -18,7 +18,7 @@ import type { CSSProperties } from "react";
 import { cropInCell } from "@/components/post/media/cropStyle";
 import { cropFromUrl } from "@/lib/profile/avatarCrop";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 /* Synth 06: a rounded square, size / radius 96/20, 56/12, 40/9, 32/7, 24/6; the radius follows the size at about .22. Initials in mono 13. */
 const AVATAR_RADIUS: Record<number, number> = { 96: 20, 56: 12, 40: 9, 32: 7, 24: 6 };
@@ -108,7 +108,8 @@ export function Avatar({ size, name, src, alt, style }: AvatarProps) {
         background: t.control,
         boxSizing: "border-box",
         color: t.text2,
-        fontFamily: DM_MONO,
+        /* Synth 16: initials are letters, so the UI face; mono is for numbers only. */
+        fontFamily: FIGTREE,
         fontSize: 13,
         fontWeight: 400,
         display: "inline-flex",

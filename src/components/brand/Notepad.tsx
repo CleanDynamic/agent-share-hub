@@ -10,7 +10,11 @@
    Read only (a finished build): sized to its text, `clamp(380px, 380 + chars × 0.25, 720px)` wide, as tall as its text up to
    70vh and then scrolling; the footer is the count and a "Copy" button.
 
-   Focus is trapped (Radix's dialog), Escape closes, and focus returns to the Expand button or the title row that opened it. */
+   Focus is trapped (Radix's dialog), Escape closes, and focus returns to the Expand button or the title row that opened it.
+
+   PHONE, READ ONLY (prompt 22): a bottom sheet sized to the text (at most 90% of the screen, then it scrolls) in the Notepad
+   tone: the kind and the field ("Agent · Order helper · Instructions") 13 Text 3, the box's title 17/600 when it has one, the
+   text 15/22, and a footer on Panel with the character count in mono 13 Text 3 and "Copy". */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
@@ -32,6 +36,7 @@ import { TOUCH_MIN } from "@/lib/theme/density";
 
 import { Button } from "./Button";
 import { MobileIcon } from "./MobileIcon";
+import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
 
 export const NOTEPAD_EDITOR_WIDTH = 880;
 export const NOTEPAD_EDITOR_MIN_HEIGHT = 300;
@@ -58,6 +63,8 @@ export interface NotepadProps {
   onTitleChange?: (title: string) => void;
   /** Where focus goes back to: the Expand button or the title row. */
   returnFocusTo?: RefObject<HTMLElement | null>;
+  /** Read only on a phone: what the text belongs to, before the field ("Agent · Order helper"). */
+  context?: string;
 }
 
 function CloseButton({ label, onClick }: { label: string; onClick: () => void }) {
@@ -89,7 +96,74 @@ function CloseButton({ label, onClick }: { label: string; onClick: () => void })
   );
 }
 
-export function Notepad({ open, onClose, field, value, onDone, title = "", onTitleChange, returnFocusTo }: NotepadProps) {
+/** The read-only notepad on a phone: a bottom sheet in the Notepad tone. */
+function PhoneNotepad({ open, onClose, field, value, title = "", returnFocusTo, context }: NotepadProps) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (open) setCopied(false);
+  }, [open]);
+  const chars = Array.from(value).length;
+  /* One word, one place: a field named by its own title is said once, as the title. */
+  const meta = [context, field && field !== title ? field : null].filter(Boolean).join(" · ");
+  return (
+    <PhoneBottomSheet
+      open={open}
+      onOpenChange={(next) => (next ? undefined : onClose())}
+      title={title || field}
+      hideTitle
+      tone="notepad"
+      dirty={false}
+      data-testid="notepad"
+      onCloseAutoFocus={(event) => {
+        const back = returnFocusTo?.current;
+        if (!back) return;
+        event.preventDefault();
+        back.focus();
+      }}
+      footer={{
+        status: (
+          <span data-testid="notepad-count" role="status" style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label, fontVariantNumeric: "tabular-nums" }}>
+            {countLine(chars)}
+          </span>
+        ),
+        actions: (
+          <Button
+            variant="secondary"
+            size={44}
+            style={{ background: t.notepadCopy }}
+            onClick={async () => {
+              if (await copyToClipboard(value)) setCopied(true);
+            }}
+          >
+            {copied ? NOTEPAD_COPIED : NOTEPAD_COPY}
+          </Button>
+        ),
+      }}
+    >
+      <div data-readonly="" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 16px 16px" }}>
+        {meta ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{meta}</p> : null}
+        {title ? <p data-testid="notepad-title" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</p> : null}
+        <div
+          data-notepad-text=""
+          tabIndex={0}
+          role="document"
+          aria-label={field}
+          style={{ marginTop: 4, fontFamily: FIGTREE, fontSize: 15, lineHeight: "22px", color: t.text, whiteSpace: "pre-wrap", overflowWrap: "anywhere", outline: "none" }}
+        >
+          {value}
+        </div>
+      </div>
+    </PhoneBottomSheet>
+  );
+}
+
+export function Notepad(props: NotepadProps) {
+  const phone = useIsPhone();
+  if (phone && props.onDone === undefined) return <PhoneNotepad {...props} />;
+  return <WindowNotepad {...props} />;
+}
+
+function WindowNotepad({ open, onClose, field, value, onDone, title = "", onTitleChange, returnFocusTo }: NotepadProps) {
   const readOnly = onDone === undefined;
   const phone = useIsPhone();
   const [draft, setDraft] = useState(value);
@@ -147,7 +221,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
 
   if (fullScreen) {
     return (
-      <PhoneNotepad
+      <PhoneEditNotepad
         open={open}
         field={field}
         value={value}
@@ -289,7 +363,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
 export const PHONE_NOTEPAD_BAR = 52;
 export const PHONE_NOTEPAD_COPY = { cancel: "Cancel", done: "Done", title: "Title · optional", discard: "Discard changes?", discardAction: "Discard", keep: "Keep editing" } as const;
 
-interface PhoneNotepadProps {
+interface PhoneEditNotepadProps {
   open: boolean;
   field: string;
   value: string;
@@ -309,7 +383,7 @@ interface PhoneNotepadProps {
  * text filling the rest (Panel fill, the Notepad edge, radius 12, margin 8 16, 16/22); a footer of the count and Copy that rides
  * above the keyboard. Done writes back and returns to the Expand button; Cancel with changes asks "Discard changes?" first.
  */
-function PhoneNotepad({ open, field, value, draft, setDraft, title, onTitleChange, returnFocusTo, onCancel, onDone, windowRef }: PhoneNotepadProps) {
+function PhoneEditNotepad({ open, field, value, draft, setDraft, title, onTitleChange, returnFocusTo, onCancel, onDone, windowRef }: PhoneEditNotepadProps) {
   const keyboard = useKeyboardInset();
   const [asking, setAsking] = useState(false);
   const [copied, setCopied] = useState(false);

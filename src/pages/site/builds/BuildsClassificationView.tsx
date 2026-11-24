@@ -176,7 +176,7 @@ function PhoneFacetRow({ row }: { row: ClassRowView }) {
         {row.name}
         {row.source ? <span style={{ display: "block", ...phoneText(12, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
       </dt>
-      <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 10px", ...phoneText(13, 400, t.text) }}>
+      <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 12px", ...phoneText(13, 400, t.text) }}>
         {row.values.length === 0 ? <span style={{ color: t.label }}>Not stated</span> : row.values.map((value, index) => <PhoneValue key={`${value.label}-${index}`} value={value} />)}
       </dd>
     </div>

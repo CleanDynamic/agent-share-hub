@@ -10,7 +10,7 @@ import { SHAPES } from "@/dev/fixtures/shapes";
 import { buildCounts, readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 
-import type { BuildStepsView } from "./buildModel";
+import { MISSING, type BuildStepsView } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
 
 const REFINED = "/dev/kit/pages/build-steps";
@@ -199,15 +199,16 @@ describe("a file a step makes", () => {
     expect(within(second).queryByTestId("save-line")).toBeNull();
   });
 
-  it("What you need lists a made file once, as a link to its step, with no Download", () => {
+  it("What you need lists a made file once, saying where it is made and used, with no Download", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
         <NeedPanel view={madeFileView()} onOpenOther={vi.fn()} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
-    const row = within(need).getAllByTestId("need-row").find((entry) => /File/.test(entry.textContent ?? "") && entry.querySelector("a")) as HTMLElement;
-    expect(row.querySelector("a")?.getAttribute("href")).toMatch(/#node-/);
+    const rows = within(need).getAllByTestId("need-row").filter((entry) => (entry.textContent ?? "").includes("brand-guide.md"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain("File · Made in step 1 · used in step 2");
     expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
@@ -216,7 +217,7 @@ describe("NeedPanel", () => {
   it("lists tools and files as one list, each a name over its kind; no subtitle, no footer note, no model not recorded", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
-        <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: "—" }, { label: "First result", value: "35 min" }]} />
+        <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: MISSING }, { label: "First result", value: "35 min" }]} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
@@ -229,8 +230,8 @@ describe("NeedPanel", () => {
     const kinds = rows.map((row) => row.textContent ?? "");
     expect(kinds.some((text) => text.includes("Harness"))).toBe(true);
     expect(kinds.some((text) => text.includes("File"))).toBe(true);
-    // A file row is a link to its step and has no Download; Download lives in the file's step.
-    expect(within(need).queryByRole("link", { name: "Download CLAUDE.md" })).toBeNull();
+    // Synth 08: a file row is a link to its step, with a small secondary Download when the file has one.
+    expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
     // Details: stated rows only, without Made with, and without First result because Time is shown.
     const detailsGroup = within(need).getByRole("region", { name: "Details" });

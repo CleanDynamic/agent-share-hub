@@ -8,6 +8,7 @@
 
 import type { CSSProperties } from "react";
 
+import { PANEL_RADIUS, PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -160,9 +161,27 @@ function entriesWithRows(steps: readonly ReaderStep[]): ReaderStep[] {
  * takes something in, that step's rows (what to paste, what to attach). Nothing is drawn when no step takes anything in. A row's
  * link goes to the step on the page.
  */
-export function BeforeYouSendPanel({ steps, toolOf, onSelect }: { steps: readonly ReaderStep[]; toolOf: (stepId: string) => string | null; onSelect: (stepId: string) => void }) {
+export function BeforeYouSendPanel({ steps, toolOf, onSelect, phone = false }: { steps: readonly ReaderStep[]; toolOf: (stepId: string) => string | null; onSelect: (stepId: string) => void; /** Prompt 22: the fact as the phone's section head, then a Panel module with "Uses" over the rows. */ phone?: boolean }) {
   const entries = entriesWithRows(steps);
   if (entries.length === 0) return null;
+  if (phone) {
+    return (
+      <section data-testid="build-before-you-send" aria-labelledby="build-before-you-send-heading" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <h2 id="build-before-you-send-heading" style={{ ...text(20, 600, t.text), lineHeight: "24px", letterSpacing: "-0.01em", margin: 0, padding: `20px ${PHONE_MARGIN}px 8px` }}>
+          {BEFORE_YOU_SEND}
+        </h2>
+        <div style={{ margin: `0 ${PHONE_MARGIN}px`, padding: 16, borderRadius: PANEL_RADIUS, background: t.surface, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <span style={{ ...text(13, 400, t.label), lineHeight: "16px" }}>Uses</span>
+          {entries.map((entry) => (
+            <div key={entry.step.id} style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ ...text(13, 500, t.text2), paddingTop: 8 }}>{`Step ${entry.step.number}`}</span>
+              <BeforeYouSend entry={entry} toolOf={toolOf} onSelect={onSelect} bare />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
   return (
     <section data-testid="build-before-you-send" aria-labelledby="build-before-you-send-heading" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <h2 id="build-before-you-send-heading" style={{ ...text(15, 600, t.text), fontSize: 20, lineHeight: "24px", margin: 0 }}>

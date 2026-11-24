@@ -28,7 +28,7 @@ import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { PhoneCardSkeletons } from "./BuildsPhone";
+import { PhoneCardSkeletons } from "./BuildsPhoneSkeletons";
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {

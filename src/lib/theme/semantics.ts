@@ -428,7 +428,8 @@ export const dusk: Record<TokenName, string> = {
   "cat-media-fill": "rgba(224,143,180,.12)",
   "cat-fallback-fill": "var(--recess)",
   backdrop: "var(--frame)",
-  label: "#858C87",
+  // Synth 16: Text 3 lifted from #858C87 (4.3:1 on Raised) to clear 4.5:1 on every dark ground, Raised included.
+  label: "#8C938E",
   "on-text": "#04140B",
   hairline: "#1B1F1C",
   header: "transparent",

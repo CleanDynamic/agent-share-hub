@@ -38,7 +38,6 @@ import {
   type RebuildCreditSource,
 } from "@/components/build/rebuildCredit";
 import type { ChangeKind, ChangeLine } from "@/lib/build";
-import { categoryColour } from "@/lib/theme/category";
 import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -96,7 +95,8 @@ export const CHANGE_KIND_COLOUR: Record<ChangeKind, string> = {
   changed: t.action,
   added: t.evidence,
   removed: t.text2,
-  header: categoryColour("artefact"),
+  // Synth 16: the artefact hue measured 3.71:1 on Noon's Card; the legible amber ink is the same family.
+  header: t.litInk,
 };
 
 /** The same, by kind, with an unrecognised kind landing on the quiet rung. */

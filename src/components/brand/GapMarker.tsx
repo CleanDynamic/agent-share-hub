@@ -309,7 +309,7 @@ export function GapMarker({
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span
           data-gap-eyebrow=""
-          style={{ ...eyebrowText, color: state === "solved" ? t.evidence : t.catBreakage }}
+          style={{ ...eyebrowText, color: state === "solved" ? t.evidence : t.breakageInk }}
         >
           {state === "solved" ? "Answered" : "Still open"}
         </span>

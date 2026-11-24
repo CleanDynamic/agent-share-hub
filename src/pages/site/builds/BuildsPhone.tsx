@@ -209,19 +209,7 @@ export function PhoneShowMore({ onMore, loading }: { onMore: () => void; loading
   );
 }
 
-/** Cards as they load: Panel blocks at the cards' own height, so the page does not jump. */
-export function PhoneCardSkeletons({ count, height }: { count: number; height: number }) {
-  return (
-    <div aria-hidden="true" style={{ paddingTop: 12 }}>
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} style={{ margin: `0 ${PHONE_MARGIN}px 8px`, padding: "12px 14px", boxSizing: "border-box", height, borderRadius: 12, background: t.surface, display: "flex", flexDirection: "column", gap: 8 }}>
-          <Skeleton width="55%" height={14} radius={4} />
-          <Skeleton width="35%" height={12} radius={4} />
-        </div>
-      ))}
-    </div>
-  );
-}
+export { PhoneCardSkeletons } from "./BuildsPhoneSkeletons";
 
 /** A card on Panel: radius 12, padding 12 14, 8 between its parts, margin 0 16 8. A link, an article, or a bare block. */
 export const PHONE_CARD: CSSProperties = { boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, margin: `0 ${PHONE_MARGIN}px 8px`, padding: "12px 14px", borderRadius: 12, background: t.surface, color: t.text, textDecoration: "none", minWidth: 0 };

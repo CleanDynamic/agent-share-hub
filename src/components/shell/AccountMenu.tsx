@@ -78,7 +78,6 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, th
     textDecoration: "none",
     outline: "none",
     cursor: "pointer",
-    outlineColor: t.brandAccent,
     border: 0,
     width: "100%",
     textAlign: "left",
@@ -109,7 +108,7 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, th
           <Entry><PageLink to={SITE_NAV.library} style={item}>Your library</PageLink></Entry>
           <Entry><PageLink to="/messages" style={item}>Messages</PageLink></Entry>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />
-          <DropdownMenu.CheckboxItem checked={theme === "dusk"} onCheckedChange={() => onToggleTheme?.()} style={{ ...item, color: t.text, background: "transparent", outlineColor: t.brandAccent }} onFocus={(event) => { event.currentTarget.style.background = HOVER_FILL; }} onBlur={(event) => { event.currentTarget.style.background = "transparent"; }}>Dark theme<span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{theme === "dusk" ? "On" : "Off"}</span></DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem checked={theme === "dusk"} onCheckedChange={() => onToggleTheme?.()} style={{ ...item, color: t.text, background: "transparent" }} onFocus={(event) => { event.currentTarget.style.background = HOVER_FILL; }} onBlur={(event) => { event.currentTarget.style.background = "transparent"; }}>Dark theme<span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{theme === "dusk" ? "On" : "Off"}</span></DropdownMenu.CheckboxItem>
           <Entry><PageLink to={SITE_NAV.settings} aria-current={pathname.startsWith(SITE_NAV.settings) ? "page" : undefined} style={item}>Settings</PageLink></Entry>
           <Entry><PageLink to="/api-docs" style={item}>API docs</PageLink></Entry>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />

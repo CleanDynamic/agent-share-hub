@@ -168,7 +168,9 @@ describe("BuildView on a phone", () => {
     // Steps is the only tab: no tab bar, and the section's own h2, the fact, instead.
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: /sessions?|steps?/ })).toBeTruthy();
-    expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
+    // Prompt 22: the Map is offered on a phone too, as List and Map pills under the fact.
+    const lens = screen.getByRole("group", { name: "How to look at the build" });
+    expect(within(lens).getAllByRole("button").map((pill) => pill.textContent)).toEqual(["List", "Map"]);
   });
 });
 

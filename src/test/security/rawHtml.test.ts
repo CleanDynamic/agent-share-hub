@@ -11,6 +11,8 @@ const ALLOWED = new Set([
   join("src", "pages", "site", "compose", "listNest.tsx"),
   join("src", "pages", "site", "compose", "mapMorph.tsx"),
   join("src", "pages", "ContentDetail.tsx"),
+  // Prompt 18: the phone icon set's SVG paths, constants in mobileIcons.ts, never user input.
+  join("src", "components", "brand", "MobileIcon.tsx"),
 ]);
 
 const RAW = /dangerouslySetInnerHTML|\binnerHTML\s*=|insertAdjacentHTML|document\.write\(|\.document\.write\(/;

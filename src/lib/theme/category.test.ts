@@ -225,7 +225,7 @@ describe("the spellings that are one of the nine under another name", () => {
     expect(categoryColour(input)).toBe(`var(--cat-${expected})`);
     expect(categoryFill(input)).toEqual({
       background: `var(--cat-${expected}-fill)`,
-      color: `var(--cat-${expected})`,
+      color: "var(--text)",
     });
   });
 

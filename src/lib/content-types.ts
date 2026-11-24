@@ -315,8 +315,9 @@ export const LEGACY_BADGE_CATEGORY: Record<string, string> = {
  * default, which was grey in the old palette and is breakage red in the new
  * one. They point here instead.
  */
+/* Synth 16: a badge's words are the ink; the tint and the border carry the category (a hue on its own tint fell under 4.5:1). */
 export const TYPE_COLOR_FALLBACK =
-  'bg-[var(--cat-fallback-fill)] text-[var(--cat-fallback)] border-[var(--cat-fallback)]';
+  'bg-[var(--cat-fallback-fill)] text-[var(--text)] border-[var(--cat-fallback)]';
 
 /**
  * The mapping table above, as the Tailwind classes a badge wears.
@@ -327,19 +328,19 @@ export const TYPE_COLOR_FALLBACK =
  * is what keeps the two in step.
  */
 export const TYPE_COLORS: Record<string, string> = {
-  'Prompt File':           'bg-[var(--cat-instruction-fill)] text-[var(--cat-instruction)] border-[var(--cat-instruction)]',
-  'Agent Blueprint':       'bg-[var(--cat-agents-fill)] text-[var(--cat-agents)] border-[var(--cat-agents)]',
-  'AI Agent Install Guide':'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Workflow Template':     'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Agent Stack':           'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Model Config Guide':    'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Integration Guide':     'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Evaluation Framework':  'bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]',
-  'Failure Library':       'bg-[var(--cat-breakage-fill)] text-[var(--cat-breakage)] border-[var(--cat-breakage)]',
-  'Blog':                  'bg-[var(--cat-narrative-fill)] text-[var(--cat-narrative)] border-[var(--cat-narrative)]',
-  'AI Tools (LLMs)':       'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
-  'Open Question':         'bg-[var(--cat-breakage-fill)] text-[var(--cat-breakage)] border-[var(--cat-breakage)]',
-  'Challenge':             'bg-[var(--cat-instruction-fill)] text-[var(--cat-instruction)] border-[var(--cat-instruction)]',
+  'Prompt File':           'bg-[var(--cat-instruction-fill)] text-[var(--text)] border-[var(--cat-instruction)]',
+  'Agent Blueprint':       'bg-[var(--cat-agents-fill)] text-[var(--text)] border-[var(--cat-agents)]',
+  'AI Agent Install Guide':'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Workflow Template':     'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Agent Stack':           'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Model Config Guide':    'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Integration Guide':     'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Evaluation Framework':  'bg-[var(--cat-evidence-fill)] text-[var(--text)] border-[var(--cat-evidence)]',
+  'Failure Library':       'bg-[var(--cat-breakage-fill)] text-[var(--text)] border-[var(--cat-breakage)]',
+  'Blog':                  'bg-[var(--cat-narrative-fill)] text-[var(--text)] border-[var(--cat-narrative)]',
+  'AI Tools (LLMs)':       'bg-[var(--cat-configuration-fill)] text-[var(--text)] border-[var(--cat-configuration)]',
+  'Open Question':         'bg-[var(--cat-breakage-fill)] text-[var(--text)] border-[var(--cat-breakage)]',
+  'Challenge':             'bg-[var(--cat-instruction-fill)] text-[var(--text)] border-[var(--cat-instruction)]',
 };
 
 const DISPLAY_LABELS: Record<string, string> = {

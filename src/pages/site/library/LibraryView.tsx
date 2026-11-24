@@ -10,7 +10,7 @@ import type { EmptyStateAction } from "@/components/pagestate/PageState";
 import { PageState } from "@/components/pagestate/PageState";
 import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { Thing } from "@/lib/copy/copy";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import { useEffect, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { WaterField } from "@/components/brand/FluidField";
@@ -21,8 +21,12 @@ import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import type { FigurePart } from "@/components/vision/PageFigure";
 import { SectionChevron } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { PhoneRow } from "@/components/phone/PhoneRow";
+import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { SectionFact } from "@/components/phone/SectionFact";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { PANEL_PAD } from "@/components/shell/chromeSize";
+import { PANEL_PAD, PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -238,6 +242,7 @@ const SIDE_HEAD: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20,
 
 function CollectionRow({ item, current, href }: { item: CollectionEntry; current: boolean; href: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const phone = useIsPhone();
   return (
     <Link
       to={href}
@@ -253,8 +258,10 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         padding: "0 12px",
         boxSizing: "border-box",
         borderRadius: r.card,
-        background: t.module,
-        border: `1px solid ${current || state.hovered ? t.selectedEdge : "transparent"}`,
+        ...(phone
+          ? /* A Panel module: a shade, never a line; the open one steps up to Raised. */
+            { background: current ? t.control : t.surface, border: 0, borderRadius: 12, padding: `0 ${PANEL_PAD}px` }
+          : { background: t.module, border: `1px solid ${current || state.hovered ? t.selectedEdge : "transparent"}` }),
         fontFamily: FIGTREE,
         color: t.text,
         textDecoration: "none",
@@ -308,6 +315,23 @@ export function LibraryCollections({ read, items, current, hrefFor, onNew, empty
 const CHANGE_WORD: Record<ChangeTag, string> = { EDITED: "Edited", REMOVED: "Removed", REBUILD: "Rebuilt" };
 
 export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps) {
+  const phone = useIsPhone();
+  if (phone) {
+    /* The fact is the heading; the facts under it are plain text; each change is a row. */
+    return (
+      <section aria-label="Changes" data-testid="library-changes" style={{ marginBottom: 8 }}>
+        <SectionFact fact={figure} link={to ? { label: "All changes", to } : undefined} />
+        <p style={{ ...small, margin: 0, padding: `0 ${PHONE_MARGIN}px 4px` }}>{parts.map((part) => part.text).join(" · ")}</p>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {rows.map((row) => (
+            <li key={row.id}>
+              <PhoneRow title={row.item} line={[CHANGE_WORD[row.tag], row.detail, row.age].filter(Boolean).join(" · ")} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
   return (
     <section aria-label="Changes" data-testid="library-changes" style={{ marginBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -336,6 +360,7 @@ const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.litIn
 
 function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selected: boolean; usedIn: boolean; onSelect: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const phone = useIsPhone();
   /* Facts are plain text joined by " · ": what it is, what happened to it (only when something did), where it is used,
      when it was last used. */
   const facts = [row.type, row.state === "same" ? null : STATE_WORD[row.state], usedIn && row.usedIn ? `Used in ${row.usedIn}` : null, row.lastUsed].filter(Boolean);
@@ -352,13 +377,13 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
           flexDirection: "column",
           gap: 2,
           width: "100%",
-          minHeight: ROW_HEIGHT,
+          minHeight: phone ? 56 : ROW_HEIGHT,
           justifyContent: "center",
           boxSizing: "border-box",
-          padding: "8px 12px",
-          background: t.module,
-          border: `1px solid ${selected || state.hovered ? t.selectedEdge : "transparent"}`,
-          borderRadius: r.card,
+          ...(phone
+            ? /* A phone row sits on the Page shade; the chosen one steps up to a Panel, a shade and no line. */
+              { padding: `8px ${PANEL_PAD}px`, margin: `0 -${PANEL_PAD}px`, width: `calc(100% + ${PANEL_PAD * 2}px)`, background: selected ? t.surface : "transparent", border: 0, borderRadius: 12 }
+            : { padding: "8px 12px", background: t.module, border: `1px solid ${selected || state.hovered ? t.selectedEdge : "transparent"}`, borderRadius: r.card }),
           textAlign: "left",
           fontFamily: FIGTREE,
           color: t.text,
@@ -417,6 +442,26 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
 
 /** The page's own empty state: a head, one line, two actions, and a field of dots that fades in from the right edge. */
 function LibraryEmptyBlock({ empty, onHow }: { empty: LibraryEmpty; onHow: () => void }) {
+  const phone = useIsPhone();
+  if (phone) {
+    /* A Panel module: the head, the line, then the two actions. No field of dots. */
+    return (
+      <div data-testid="library-empty" style={{ padding: PANEL_PAD, borderRadius: 12, background: t.surface, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        <h2 style={SIDE_HEAD}>{empty.title}</h2>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{empty.line}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+          {"href" in empty.action ? (
+            <LibraryControl href={empty.action.href}>{empty.action.label}</LibraryControl>
+          ) : (
+            <LibraryControl onClick={empty.action.onClick}>{empty.action.label}</LibraryControl>
+          )}
+          <LibraryControl variant="ghost" onClick={onHow}>
+            How saving works
+          </LibraryControl>
+        </div>
+      </div>
+    );
+  }
   return (
     <div data-testid="library-empty" style={{ position: "relative", padding: "24px 4px 40px", minHeight: 200 }}>
       {/* The dots fade in from the right edge: two fields, a wide faint one under a narrow stronger one. */}
@@ -458,6 +503,7 @@ function showHowSaving() {
 
 export function LibraryItems(props: LibraryItemsProps) {
   const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, read, thing, empty, itemColumn, rows, selected, onSelect, more } = props;
+  const phone = useIsPhone();
   const usedIn = rows.some((row) => row.usedIn !== undefined);
   const ready = shownState(Array.isArray(read) ? read : [read as ReadLike]) === "ready";
   const emptyAction: EmptyStateAction = "href" in empty.action ? { label: empty.action.label, href: empty.action.href } : { label: empty.action.label, onClick: empty.action.onClick };
@@ -472,10 +518,16 @@ export function LibraryItems(props: LibraryItemsProps) {
       </ul>
   );
   return (
-    <section aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} data-testid="library-items">
+    <section aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} data-testid="library-items" style={phone ? { padding: `0 ${PHONE_MARGIN}px` } : undefined}>
       {heading ? <CollectionHeading heading={heading} /> : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <TabsOnRule tabs={tabs} tab={tab} onTab={onTab} />
+        {phone ? (
+          <div style={{ margin: `0 -${PHONE_MARGIN}px`, width: `calc(100% + ${PHONE_MARGIN * 2}px)` }}>
+            <PhoneTabs label="State" tabs={tabs} value={tab} onChange={onTab} />
+          </div>
+        ) : (
+          <TabsOnRule tabs={tabs} tab={tab} onTab={onTab} />
+        )}
         {controls ? (
           <div style={{ display: "flex", gap: 6 }}>
             <LibraryControl onClick={controls.onFilters}>
@@ -609,8 +661,9 @@ function SelectedRows({ rows }: { rows: SelectedBase["rows"] }) {
 }
 
 export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
+  const phone = useIsPhone();
   return (
-    <section aria-label={`Selected: ${item.title}`} data-testid="library-selected" style={{ padding: 16, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
+    <section aria-label={`Selected: ${item.title}`} data-testid="library-selected" style={{ padding: 16, ...(phone ? { background: t.surface, border: 0, borderRadius: 12 } : { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }) }}>
       {/* What it is and where it stands, in one line of plain text: "Build · Saved 2d ago". */}
       <p style={{ ...small, margin: 0 }}>
         {item.chip}
@@ -752,23 +805,45 @@ function TopicsToFollow({ topics }: { topics: NonNullable<LibraryViewProps["topi
 
 export function LibraryView({ head, kinds, collections, changes, items, selected, preview, topicsToFollow }: LibraryViewProps) {
   const layout = useLibraryLayout();
+  const phone = useIsPhone();
+  const selectedId = selected?.id ?? null;
+  /* A phone shows the chosen item after the list, so choosing a row brings it into view. */
+  useEffect(() => {
+    if (!phone || !selectedId) return;
+    document.querySelector('[data-testid="library-selected"]')?.scrollIntoView?.({ block: "nearest" });
+  }, [phone, selectedId]);
+  /* "How saving works" is shown while the library is empty (a phone has no side panel to keep it in). */
+  const emptyLibrary = Boolean(items.empty.title) && items.rows.length === 0;
   return (
     <LibraryColumns
       layout={layout}
       head={<LibraryHead title={head.title} meta={head.meta} />}
       main={
         <>
-          {kinds ? <LibraryKinds {...kinds} /> : null}
+          {kinds ? (
+            phone ? (
+              /* The kinds are links, so the kind stays in the address (`?kind=`). */
+              <PhonePills<LibraryKind>
+                label="Kinds"
+                value={kinds.value ?? "all"}
+                onChange={kinds.onChange}
+                pills={kinds.items.map((item) => ({ value: item.value, label: item.label, count: item.count, href: item.href }))}
+              />
+            ) : (
+              <LibraryKinds {...kinds} />
+            )
+          ) : null}
           {changes ? <LibraryChanges {...changes} /> : null}
           <LibraryItems {...items} />
         </>
       }
       side={
         <>
+          {phone && selected ? <LibrarySelectedItem item={selected} /> : null}
           <LibraryCollections {...collections} />
-          {selected ? <LibrarySelectedItem item={selected} /> : null}
+          {!phone && selected ? <LibrarySelectedItem item={selected} /> : null}
           {preview ? <LibraryPreview {...preview} /> : null}
-          <HowSavingWorks />
+          {phone && !emptyLibrary ? null : <HowSavingWorks />}
           {topicsToFollow && topicsToFollow.length > 0 ? <TopicsToFollow topics={topicsToFollow} /> : null}
         </>
       }

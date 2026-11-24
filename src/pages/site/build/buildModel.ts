@@ -384,6 +384,8 @@ export function formatFirstResult(minutes: number | null | undefined): string | 
 
 /** What the wall label prints when a fact is missing. */
 export const MISSING = "—";
+/** Synth 16: an event with no time draws no time (the em dash was on screen). */
+export const NO_TIME = "";
 
 const listText = (values: readonly (string | null)[] | null | undefined): string | null => {
   const kept = (values ?? []).map((value) => (value ?? "").trim()).filter(Boolean);
@@ -582,7 +584,7 @@ export function timelineFrom(events: readonly BuildEvent[]): { events: TimelineE
       const at = time(event.occurred_at);
       return {
         kind: event.kind as EventKind,
-        at: at !== null && start !== null ? clockLabel(at - start) : MISSING,
+        at: at !== null && start !== null ? clockLabel(at - start) : NO_TIME,
         text: eventText(event),
       };
     });
@@ -607,6 +609,8 @@ export interface CardView {
   render: (variant: "desktop" | "phone") => ReactNode;
   /** UX-09 P2: a rebuild attached to a reply: the topic's author (no @) and the reply's address. */
   madeInReply?: { handle: string; to: string };
+  /** Prompt 22: what a phone's rebuild Card says: the name, where it goes and its facts ("@kit · 9 steps"). */
+  summary?: { title: string; to: string; meta: string };
 }
 
 /* ── Watch it get built ── */
@@ -618,6 +622,8 @@ export interface ReplayEventView {
   kind: EventKind;
   /** How far into the build, from the first visible step: "04:12". */
   at: string;
+  /** Prompt 22: when the step happened, as the phone's event line says it: "19 Oct, 14:02". Absent when no time was kept. */
+  when?: string;
   /** The step's one line (`eventText`). */
   text: string;
   /** The phase run it sits in: a stable key and, when the creator named it, a title. */
@@ -676,7 +682,8 @@ export function replayEvents(events: readonly BuildEvent[]): ReplayEventView[] {
       id: event.id,
       ordinal: event.ordinal,
       kind: (KINDS.has(event.kind) ? event.kind : "note") as EventKind,
-      at: at !== null && start !== null ? clockLabel(at - start) : MISSING,
+      at: at !== null && start !== null ? clockLabel(at - start) : NO_TIME,
+      ...(event.occurred_at && shortDate(event.occurred_at) ? { when: `${shortDate(event.occurred_at)}, ${new Date(event.occurred_at).toISOString().slice(11, 16)}` } : null),
       text: eventText(event),
       phaseKey: run?.key ?? "none",
       phaseTitle: run?.title ?? null,
@@ -751,6 +758,8 @@ export interface LayerStepView {
   body: string;
   /** The part this step names, when it still resolves. */
   part: { id: string; title: string } | null;
+  /** Prompt 22: the named part's kind in words ("Prompt", "System prompt"), for the phone's card. Absent when no part resolves. */
+  kind?: string;
 }
 
 /** A generated layer as the page reads it: whose words, then the steps. */
@@ -779,6 +788,7 @@ export function layerSteps(layer: Pick<BuildLayer, "content">, resolveNode: (id:
         title: (step.title ?? "").trim(),
         body: (step.body ?? "").trim(),
         part: node ? { id: node.id, title: (node.title ?? "").trim() } : null,
+        ...(node ? { kind: node.type.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) } : null),
       };
     }),
   };

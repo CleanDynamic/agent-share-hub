@@ -38,13 +38,16 @@ const picture = (type: string, size = 100, name = "hero.png") => {
 };
 
 describe("the Add manual step dialog (CA-12 P10)", () => {
-  it("is a 560-wide dialog saying where the step will go, and asks 'Where'", () => {
+  it("is a 440-wide dialog saying where the step will go, and asks 'Where'", () => {
     open();
     expect(screen.getByRole("dialog", { name: MANUAL_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-manual-dialog").style.width).toBe("560px");
-    expect(screen.getByText("Goes after 3 · Fix the mobile layout")).toBeTruthy();
+    expect(screen.getByTestId("add-manual-dialog").style.width).toBe("440px");
     expect(screen.getAllByText("Where").length).toBeGreaterThan(0);
     for (const name of ["App or website", "Terminal", "Phone", "In person", "Other website"]) expect(screen.getByRole("button", { name })).toBeTruthy();
+    // The footer says where the step goes once the required fields are in (until then it names what is missing).
+    where("Terminal");
+    fireEvent.change(line(), { target: { value: "Run the build" } });
+    expect(screen.getByTestId("modal-status").textContent).toBe("Goes after 3 · Fix the mobile layout");
   });
 
   it("an app comes from the apps list, with no AI tool in it, and no default", () => {
