@@ -50,3 +50,13 @@ export const DOCK_TILE_HEIGHT = 44;
 export const DOCK_PAD = 6;
 /** The phone dock's height without the safe-area inset: 6 + 44 + 6. It has no edge: it is a shade. */
 export const DOCK_HEIGHT = DOCK_PAD * 2 + DOCK_TILE_HEIGHT;
+
+/* The phone version's measurements (Synth mobile pack, prompt 17). The dock's and the sheets' safe-area inset is added in CSS. */
+export const PHONE_TOPBAR = 52;
+export const PHONE_TAB = 49;
+export const PHONE_PILL = 32;
+export const PHONE_ROW = 56;
+export const PHONE_DOCK = 56;
+export const PHONE_FAB = 56;
+export const PHONE_SHEET_RADIUS = 16;
+export const PHONE_MARGIN = 16;

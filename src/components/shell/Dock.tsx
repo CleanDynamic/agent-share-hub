@@ -14,12 +14,11 @@
 // is `fixed` everywhere except the catalogue, which draws it inside a strip.
 
 import { useShortWindow } from "./useMinWidth";
-import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "lucide-react";
 import { memo } from "react";
 import { useCurrentPath } from "@/lib/routing/go";
 
-import type { GlyphName } from "@/components/brand/Glyph";
-import { Icon as AnyIcon } from "@/components/brand/Icon";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -31,12 +30,12 @@ import { DOCK_PAD, DOCK_TILE_HEIGHT } from "./chromeSize";
 
 export type DockTileName = "home" | "gallery" | "new" | "openbuilds" | "activity";
 
-const TILES: readonly { name: DockTileName; label: string; href: string; icon: LucideIcon }[] = [
-  { name: "home", label: "Home", href: SITE_NAV.home, icon: Home },
-  { name: "gallery", label: "Builds", href: SITE_NAV.gallery, icon: ImageIcon },
-  { name: "new", label: "New", href: SITE_NAV.create, icon: Plus },
-  { name: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds, icon: Target },
-  { name: "activity", label: "Activity", href: SITE_NAV.activity, icon: Bell },
+const TILES: readonly { name: DockTileName; label: string; href: string; icon: MobileIconName }[] = [
+  { name: "home", label: "Home", href: SITE_NAV.home, icon: "home" },
+  { name: "gallery", label: "Builds", href: SITE_NAV.gallery, icon: "builds" },
+  { name: "new", label: "New", href: SITE_NAV.create, icon: "new" },
+  { name: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds, icon: "ob" },
+  { name: "activity", label: "Activity", href: SITE_NAV.activity, icon: "bell" },
 ];
 
 export interface DockViewProps {
@@ -51,7 +50,8 @@ export interface DockViewProps {
    five control-recipe tiles in it, 44 high, radius 6, 6 apart: the glyph at 16 over the label at 10.5/500. The current
    tile is the bell's current state, the `--control-on` fill and `--control-border` edge in `--text`, with the 2px
    `--nav-mark` bar along its foot; never a colour. The unread count is the header's 12px `--lit-mark` badge. */
-const TILE_GLYPH: Partial<Record<DockTileName, GlyphName>> = { gallery: "image", new: "plus", activity: "bell" };
+/* Prompt 18: the phone icon set at 24, outline at rest and filled for the current tile. */
+const filled = (icon: MobileIconName, current: boolean): MobileIconName => (current && icon !== "new" ? (`${icon}f` as MobileIconName) : icon);
 
 function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps) {
   return (
@@ -108,7 +108,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                 style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
               />
             )}
-            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
+            <MobileIcon name={filled(icon, isCurrent)} size={24} />
             <span aria-hidden="true">{label}</span>
             {badged ? " " : null}
             {/* G7: after the word, so the visible text reads "Activity 3" as the name does; it is placed, so where it sits in the

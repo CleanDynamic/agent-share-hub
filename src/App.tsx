@@ -182,6 +182,8 @@ const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
    fixtures, which must not exist in a production bundle. */
 const KitComponents = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitComponents")) : null;
 const KitPages = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPages")) : null;
+/* Prompts 17 and 18: /dev/kit/phone, the phone pieces and the icon set at 390. */
+const KitPhone = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPhone")) : null;
 
 /* BG-P14 — /dev/wide, the wide-layout demo.
 
@@ -600,6 +602,7 @@ const App = () => (
                   }
                 />
               )}
+              {KitPhone && <Route path="/dev/kit/phone" element={<KitPhone />} />}
               {KitPages && (
                 <Route
                   path="/dev/kit/pages/:page"
