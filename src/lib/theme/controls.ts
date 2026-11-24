@@ -293,11 +293,12 @@ export function fieldStyle(state: FieldState = {}, shape: "line" | "area" = "lin
  * category hue at ≥4.83:1 on Noon and ≥5.75:1 on Dusk — which is why the
  * message and the border can share one token.
  */
+/* Synth 16: the message is words, so the UI face at 13 (one of the five sizes); its colour is the invalid edge's, `--danger-text`. */
 export const fieldMessageStyle: CSSProperties = {
   color: t.dangerText,
-  fontFamily: DM_MONO,
-  fontSize: "12px",
-  lineHeight: 1.4,
+  fontFamily: FIGTREE,
+  fontSize: 13,
+  lineHeight: "18px",
 };
 
 /** `--text2`, so a placeholder reads as absent content rather than as a value. */
@@ -507,9 +508,11 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
 
    CHECKED IS UNCHANGED. `--action` fill with `--action` border, and the
    checked/unchecked distinction was never the failing pairing. */
+/* Synth 16: the unchecked track's Raised fill measured 1.08:1 on Noon's Card and 1.13:1 on Dusk's, so its 2px border
+   (width unchanged) takes Text 3, which clears 3:1 on every ground; checked, the border is the fill's own Mint. */
 export const SWITCH_TRACK_CLASS =
-  "bg-[color:var(--control)] border-transparent " +
-  "data-[state=checked]:bg-[color:var(--brand-accent)]";
+  "bg-[color:var(--control)] border-[color:var(--label)] " +
+  "data-[state=checked]:bg-[color:var(--brand-accent)] data-[state=checked]:border-[color:var(--brand-accent)]";
 
 /** The thumb. Circular — `--r-full` is correct here and almost nowhere else. */
 export function switchThumbStyle(): CSSProperties {

@@ -17,6 +17,13 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { BigButton } from "@/components/phone/BigButton";
+import { PhoneModule } from "@/components/phone/PhoneModule";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { DONE } from "@/lib/copy/copy";
+import { TOUCH_MIN } from "@/lib/theme/density";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { Segmented } from "@/components/brand/Segmented";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
@@ -555,9 +562,144 @@ function NumberedStep({ ordinal, title, children }: { ordinal: number; title: st
   );
 }
 
+/** Copy with a two-second "Copied" and the repo's words announced. */
+function useCopied(value: string) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const copy = async () => {
+    if (!(await copyText(value))) return;
+    setCopied(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), COPIED_MS);
+  };
+  return { copied, copy };
+}
+
+/** A 44 round copy button for the Card rows. */
+function RowCopy({ value, label }: { value: string; label: string }) {
+  const { copied, copy } = useCopied(value);
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={copied ? "Copied" : label}
+        onClick={() => void copy()}
+        {...handlers}
+        style={{ boxSizing: "border-box", width: TOUCH_MIN, height: TOUCH_MIN, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: TOUCH_MIN / 2, background: "transparent", color: copied ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+      >
+        <MobileIcon name={copied ? "check" : "copy"} size={20} />
+      </button>
+      <span role="status">{copied ? <VisuallyHidden>{DONE.copied}</VisuallyHidden> : null}</span>
+    </>
+  );
+}
+
+const cardRow: CSSProperties = { boxSizing: "border-box", minHeight: 48, borderRadius: 12, background: t.module, display: "flex", alignItems: "center", gap: 4, paddingLeft: 12, minWidth: 0, alignSelf: "stretch" };
+
+function PhoneStep({ ordinal, title, children }: { ordinal: number; title: string; children: ReactNode }) {
+  return (
+    <li style={{ listStyle: "none" }}>
+      <PhoneModule>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span aria-hidden data-testid={`connect-step-${ordinal}`} style={{ width: 28, height: 28, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: t.control, color: t.text, fontFamily: DM_MONO, fontSize: 13 }}>
+            {ordinal}
+          </span>
+          <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</h2>
+        </div>
+        {children}
+      </PhoneModule>
+    </li>
+  );
+}
+
+const line15: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 };
+const line13: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label };
+
+/** The page on a phone (mobile prompt 25, Part E): the tool as pills, three numbered Panel modules, the address in a Card row,
+    and the main action pinned in a footer under the bottom inset. */
+function ConnectStepsPhone({ tool, onTool, onDone, doneLabel }: ConnectStepsProps) {
+  const copy = TOOL_COPY[tool];
+  const link = GUIDE_LINKS[tool];
+  const phrase = PHRASES[0];
+  const main = useCopied(copy.code);
+  return (
+    <div data-ui="connector-guide" style={{ color: t.text, fontFamily: FIGTREE }}>
+      <PhonePills<ConnectorTool> label="AI tool" value={tool} onChange={onTool} pills={CONNECTOR_TOOLS.map((name) => ({ value: name, label: name }))} />
+      <ol style={{ margin: 0, padding: 0 }}>
+        <PhoneStep ordinal={1} title={STEP_LABELS[0]}>
+          {copy.before.map((text) => (
+            <p key={text} style={line15}>
+              {text}
+            </p>
+          ))}
+          <div style={cardRow}>
+            <code tabIndex={0} data-testid="connector-address" style={{ flex: 1, minWidth: 0, fontFamily: DM_MONO, fontSize: 15, lineHeight: "20px", whiteSpace: "nowrap", overflowX: "auto", color: t.text }}>
+              {copy.code}
+            </code>
+            <RowCopy value={copy.code} label={copy.code === CONNECTOR_URL ? "Copy address" : "Copy command"} />
+          </div>
+          {copy.after.map((text) => (
+            <p key={text} style={line13}>
+              {text}
+            </p>
+          ))}
+          {link ? (
+            <a href={link.href} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", minHeight: TOUCH_MIN, fontFamily: FIGTREE, fontSize: 15, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              {link.label}
+            </a>
+          ) : null}
+        </PhoneStep>
+
+        <PhoneStep ordinal={2} title={STEP_LABELS[1]}>
+          <p style={line15}>{phrase.line}</p>
+          <div style={cardRow}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 15, lineHeight: "20px", color: t.text, padding: "8px 0" }}>“{phrase.say}”</span>
+            <RowCopy value={phrase.say} label={`Copy “${phrase.say}”`} />
+          </div>
+          <p style={line13}>
+            The whole conversation is sent, word for word. Anything that looks like an API key or other secret is removed before it is saved. Nothing is published unless you publish it.
+          </p>
+        </PhoneStep>
+
+        <PhoneStep ordinal={3} title={STEP_LABELS[2]}>
+          <p style={line15}>Add a session to a draft, then pick the prompts that matter.</p>
+          <div>
+            <BigButton onClick={onDone}>{doneLabel}</BigButton>
+          </div>
+          <p style={line13}>
+            No connector? Use the Extractor on the{" "}
+            <FrameLink to="/import" style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              Import page
+            </FrameLink>
+            .
+          </p>
+        </PhoneStep>
+      </ol>
+
+      <div
+        data-testid="connect-footer"
+        style={{ position: "sticky", bottom: 0, zIndex: 10, boxSizing: "border-box", background: t.bg, padding: `12px ${PHONE_MARGIN}px calc(12px + env(safe-area-inset-bottom))` }}
+      >
+        <BigButton main full aria-label={main.copied ? "Copied" : copy.codeLabel} onClick={() => void main.copy()}>
+          {main.copied ? "Copied" : copy.codeLabel}
+        </BigButton>
+        <span role="status">{main.copied ? <VisuallyHidden>{DONE.copied}</VisuallyHidden> : null}</span>
+      </div>
+    </div>
+  );
+}
+
 export function ConnectSteps({ tool, onTool, onDone, doneLabel }: ConnectStepsProps) {
   const phone = useIsPhone();
   const phrase = PHRASES[0];
+  if (phone) return <ConnectStepsPhone tool={tool} onTool={onTool} onDone={onDone} doneLabel={doneLabel} />;
   return (
     <ol data-ui="connector-guide" style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 24, color: t.text, fontFamily: FIGTREE }}>
       <NumberedStep ordinal={1} title={STEP_LABELS[0]}>

@@ -69,16 +69,17 @@ function Row({ item, onDone }: { item: MoreItem; onDone: () => void }) {
   );
 }
 
-export function MoreSheet({ open, onOpenChange, items, bare = false }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[]; bare?: boolean }) {
+/** `link` and `name`: what Copy link and Share carry when the sheet belongs to one post in a list (absent: the page). `bare`: only the page's rows (prompt 23). */
+export function MoreSheet({ open, onOpenChange, items, link, name, bare = false }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[]; link?: string; name?: string; bare?: boolean }) {
   const { toast } = useToast();
   const [shareable] = useState(() => typeof navigator !== "undefined" && typeof navigator.share === "function");
   const close = () => onOpenChange(false);
   const own: MoreItem[] = bare ? [] : [
     {
       label: "Copy link",
-      onSelect: () => void copyToClipboard(window.location.href).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED })),
+      onSelect: () => void copyToClipboard(link ?? window.location.href).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED })),
     },
-    ...(shareable ? [{ label: "Share", onSelect: () => void navigator.share({ url: window.location.href, title: document.title }).catch(() => undefined) }] : []),
+    ...(shareable ? [{ label: "Share", onSelect: () => void navigator.share({ url: link ?? window.location.href, title: name ?? document.title }).catch(() => undefined) }] : []),
   ];
   /* A bare sheet keeps the page's order (the editor puts Clear the build last itself). */
   const danger = bare ? [] : items.filter((item) => item.tone === "danger");

@@ -190,7 +190,8 @@ describe("UX-03 P3: one label per step", () => {
 
   it("heads each step Step <n> · <Type>, with the number exactly as given and no generated title", () => {
     drawPage(stepsView(tree(), {}));
-    const labels = screen.getAllByTestId("step-label").map((el) => el.textContent);
+    // Synth 08: the head reads "Step 1" with the type as a chip beside it; the heading's name says both.
+    const labels = screen.getAllByTestId("step-head").map((el) => el.getAttribute("aria-label"));
     expect(labels).toContain("Step 1 · Prompt");
     expect(labels).toContain("Step 2 · Multi-agent team");
     expect(labels).toContain("Step 2.1 · Agent");
@@ -200,13 +201,15 @@ describe("UX-03 P3: one label per step", () => {
     expect(screen.getAllByTestId("step-own-title").map((el) => el.textContent)).toEqual(expect.arrayContaining(["Poster team", "Copywriter"]));
   });
 
-  it("draws a File step with its name and Download, and the Files list links to it", () => {
+  it("draws a File step with its name and Download, and What you need links to it", () => {
     drawPage(stepsView(tree(), {}));
     const tile = document.getElementById(`step-${IDS.file}`) as HTMLElement;
-    expect(within(tile).getByTestId("step-label").textContent).toBe("Step 3 · File");
+    expect(within(tile).getByTestId("step-head").getAttribute("aria-label")).toBe("Step 3 · File");
     expect(within(tile).getAllByText("brief.md").length).toBeGreaterThan(0);
     expect(within(tile).getByRole("link", { name: /Download/ })).toBeTruthy();
-    const files = screen.getByRole("region", { name: "Files" });
-    expect(within(files).getByRole("link", { name: "step 3" }).getAttribute("href")).toBe(`#step-${IDS.file}`);
+    // Synth 08: tools and files are one list; the file's row links to its step by the build page's #node- address.
+    const list = screen.getByTestId("need-list");
+    const hrefs = within(list).getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs.some((href) => href?.endsWith(`#node-${IDS.file}`))).toBe(true);
   });
 });

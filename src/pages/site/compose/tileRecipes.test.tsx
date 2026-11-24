@@ -42,7 +42,7 @@ describe("the tile recipes (CA-15b P3)", () => {
     expect(badge).toContain("min-width:24px");
     expect(badge).toContain("border-radius:var(--r-chip)");
     expect(badge).not.toContain("margin-top");
-    expect(badge).toContain("font-size:11px");
+    expect(badge).toContain("font-size:13px"); // Synth 06: mono 13, one of the five sizes
     render(<TileOptions label="Prompt 3 options" />);
     const options = screen.getByRole("button", { name: "Prompt 3 options" });
     expect(options.style.width).toBe("24px"); // S7

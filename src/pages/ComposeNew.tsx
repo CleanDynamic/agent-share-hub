@@ -129,7 +129,10 @@ import {
 } from "@/components/build/tokens";
 import { Button } from "@/components/brand/Button";
 import { DropField } from "@/components/brand/DropField";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { PhoneTopBar } from "@/components/phone/PhoneTopBar";
+import { StartPhone } from "@/components/compose/StartPhone";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -310,7 +313,22 @@ function joinedDraftMessage(title: string, counts: MaterialiseCounts): string {
  * void, which is the reading-surface treatment on a working surface. Flat now:
  * `--bg` under a `--recess` panel with a `--line` hairline.
  */
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, flush = false }: { children: React.ReactNode; /** The phone offer draws its own margins. */ flush?: boolean }) {
+  const phone = useIsPhone();
+  const navigate = useNavigate();
+  const theme = useResolvedTheme();
+  if (phone) {
+    /* Mobile prompt 25: the phone's bar (back to Drafts, the logo, nothing) over one scrolling column on the page shade. No
+       dock: this route is outside the frame. */
+    return (
+      <div data-visual-slot="compose-intake" style={{ position: "fixed", inset: 0, ...workspaceGround, display: "flex", flexDirection: "column", isolation: "isolate" }}>
+        <PhoneTopBar left="back" leftLabel="Back to Drafts" onLeft={() => navigate("/drafts")} centre="logo" theme={theme} />
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, ...(flush ? null : { padding: "8px 16px calc(24px + env(safe-area-inset-bottom))" }) }}>{children}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       data-visual-slot="compose-intake"
@@ -378,6 +396,7 @@ export default function ComposeNew() {
   const [isStarting, setStarting] = useState(false);
   /* Synth 10: the 1.4fr / 1fr grid from 1101; below it one column with the paste box first. */
   const wideGrid = useMinWidth(1101);
+  const phone = useIsPhone();
 
   /** What the connector left waiting. null until the first read answers. */
   const [waiting, setWaiting] = useState<WaitingImport[] | null>(null);
@@ -994,6 +1013,44 @@ export default function ComposeNew() {
     }
     void takeTranscript(text, source === "lovable" ? "pasted Lovable export" : "pasted transcript", source);
   };
+
+  if (phone) {
+    return (
+      <Shell flush>
+        <StartPhone
+          waiting={
+            <WaitingImports
+              imports={waiting ?? []}
+              busy={busy}
+              openingId={openingId}
+              discardingId={discardingId}
+              onReview={(item, sourceLine) => void reviewImport(item, sourceLine)}
+              onDiscard={(item) => void discardWaiting(item)}
+              error={waitingError}
+            />
+          }
+          busy={busy}
+          isStarting={isStarting}
+          text={text}
+          onText={(value) => {
+            setText(value);
+            if (error) setError(null);
+          }}
+          onReadPasted={readPasted}
+          repoUrl={repoUrl}
+          onRepoUrl={(value) => {
+            setRepoUrl(value);
+            if (error) setError(null);
+          }}
+          onReadRepo={() => void takeRepo(repoUrl)}
+          onFile={(file) => void takeFile(file)}
+          onBuildFile={(file) => void drop.acceptFile(file)}
+          onStartEmpty={() => void startEmpty()}
+          error={error}
+        />
+      </Shell>
+    );
+  }
 
   return (
     <Shell>

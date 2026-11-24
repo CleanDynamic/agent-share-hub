@@ -197,7 +197,7 @@ export function CodeEditorField({ value, onChange, id, placeholder, testId = "co
           onBlur?.();
         }}
         /* index.css paints every textarea with a fill, a border and a focus ring; the well draws all three here. */
-        className="!bg-transparent !border-0 !rounded-none focus-visible:!outline-none focus-visible:!shadow-none"
+        className="!bg-transparent !border-0 !rounded-none focus-visible:!outline-0 focus-visible:!shadow-none"
         style={{
           ...codeFont(DM_MONO, metrics),
           flex: "1 1 0",

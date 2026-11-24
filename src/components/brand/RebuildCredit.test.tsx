@@ -199,11 +199,11 @@ describe("tokens only", () => {
     // BG-P24 — three of the four came off the part hues. The nine encode part
     // categories and a change kind is not one, so `changed` is the accent,
     // `added` the evidence token and `removed` the quiet text rung. Only
-    // `header` still borrows a category, and it borrows the one it means.
+    // Synth 16: `header` takes the legible amber ink, since the artefact hue measured 3.71:1 on Noon's Card.
     expect(changeKindColour("changed")).toBe("var(--action)");
     expect(changeKindColour("added")).toBe("var(--evidence)");
     expect(changeKindColour("removed")).toBe("var(--text2)");
-    expect(changeKindColour("header")).toBe("var(--cat-artefact)");
+    expect(changeKindColour("header")).toBe("var(--lit-ink)");
   });
 
   it("carries no raw hex, in any state", () => {

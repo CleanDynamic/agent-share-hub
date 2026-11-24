@@ -82,7 +82,7 @@ describe("F30, F36 and F37 · one Model, one way of saving, the same sections", 
     const order = (root: HTMLElement) => ["edit-uses", "edit-makes", "edit-goes-into"].map((id) => within(root).getByTestId(id)).map((el) => el.compareDocumentPosition(within(root).getByRole("group", { name: "Model" })) & Node.DOCUMENT_POSITION_PRECEDING ? "after" : "before");
     expect(order(dialog)).toEqual(["after", "after", "after"]);
     // Model settings no longer draws the model: effort and instructions only.
-    fireEvent.click(within(dialog).getByRole("button", { name: /^Optional/ }));
+    fireEvent.click(within(dialog).getByTestId("optional-toggle")); // Synth 06: the toggle reads "2 optional details"
     expect(within(dialog).getByText("Model settings")).toBeTruthy();
     expect(within(dialog).getAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(1);
   });

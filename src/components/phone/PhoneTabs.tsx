@@ -3,7 +3,7 @@
 // scroll sideways in their own row with no scrollbar. Light: the bar is `--tab-bar` over a 1px `--tab-bar-edge` line, which
 // is how the tokens already draw it on desktop. Roles and `aria-selected` as `TextTabs` has them.
 
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { PHONE_TAB } from "@/components/shell/chromeSize";
 import type { TextTab } from "@/components/vision/TextTabs";
@@ -20,18 +20,20 @@ export interface PhoneTabsProps<V extends string = string> {
   label: string;
   /** Every tab takes an equal share of the width. */
   equal?: boolean;
+  /** What a tab's label draws, for a tab that carries more than its words (Home's kind after a middle dot). Absent: the label. */
+  renderLabel?: (tab: TextTab<V>, current: boolean) => ReactNode;
 }
 
 const BAR_MIN = 40;
 
-function Tab({ tab, current, equal, onSelect, onKeyDown }: { tab: TextTab; current: boolean; equal?: boolean; onSelect: () => void; onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void }) {
+function Tab({ tab, current, equal, onSelect, onKeyDown, content }: { tab: TextTab; current: boolean; equal?: boolean; onSelect: () => void; onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void; content?: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const label = useRef<HTMLSpanElement>(null);
   const [bar, setBar] = useState(BAR_MIN);
   useLayoutEffect(() => {
     const w = label.current?.getBoundingClientRect().width ?? 0;
     setBar(Math.max(BAR_MIN, Math.round(w)));
-  }, [tab.label, tab.count, current]);
+  }, [tab.label, tab.count, current, content]);
   return (
     <button
       type="button"
@@ -63,7 +65,7 @@ function Tab({ tab, current, equal, onSelect, onKeyDown }: { tab: TextTab; curre
       }}
     >
       <span ref={label} style={{ display: "inline-block" }}>
-        {tab.label}
+        {content ?? tab.label}
         {tab.count !== undefined ? <span style={{ marginLeft: 6, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{tab.count}</span> : null}
       </span>
       {current ? (
@@ -87,7 +89,7 @@ function Tab({ tab, current, equal, onSelect, onKeyDown }: { tab: TextTab; curre
   );
 }
 
-export function PhoneTabs<V extends string = string>({ tabs, value, onChange, label, equal = false }: PhoneTabsProps<V>) {
+export function PhoneTabs<V extends string = string>({ tabs, value, onChange, label, equal = false, renderLabel }: PhoneTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const last = tabs.length - 1;
@@ -112,7 +114,7 @@ export function PhoneTabs<V extends string = string>({ tabs, value, onChange, la
       style={{ display: "flex", overflowX: equal ? "visible" : "auto", scrollbarWidth: "none", msOverflowStyle: "none", background: t.bg }}
     >
       {tabs.map((tab, index) => (
-        <Tab key={tab.value} tab={tab} equal={equal} current={tab.value === value} onSelect={() => onChange(tab.value)} onKeyDown={(e) => move(e, index)} />
+        <Tab key={tab.value} tab={tab} equal={equal} current={tab.value === value} content={renderLabel?.(tab, tab.value === value)} onSelect={() => onChange(tab.value)} onKeyDown={(e) => move(e, index)} />
       ))}
     </div>
   );

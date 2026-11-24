@@ -47,9 +47,9 @@ describe("ClassificationSection", () => {
     ]);
     render(<ClassificationSection classification={FULL} />);
     const section = screen.getByRole("region", { name: "Classification" });
-    expect(within(section).getByRole("heading", { level: 2, name: "Classification" })).toBeTruthy();
+    // Synth: the head is the fact, the count of the facts it draws.
     const drawn = section.querySelectorAll('[data-ui="row"]').length;
-    expect(within(section).getByText(`${drawn} facts about this build`)).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 2, name: `${drawn} facts` })).toBeTruthy();
     expect(section.querySelectorAll("[data-ui='section-head']")).toHaveLength(1);
     expect(within(section).getByText("Hybrid search")).toBeTruthy();
     expect(within(section).getByText("Sorting socks")).toBeTruthy();
@@ -85,7 +85,7 @@ describe("ClassificationSection", () => {
     const order = Array.from(section.querySelectorAll("[data-facet]")).map((node) => node.getAttribute("data-facet"));
     expect(order[0]).toBe("built");
     // The meta counts the facets that have values, not the Not stated rows.
-    expect(within(section).getByText("1 fact about this build")).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 2, name: "1 fact" })).toBeTruthy();
   });
 
   it("shows the Regulated area notice when the flag is true, and only then", () => {

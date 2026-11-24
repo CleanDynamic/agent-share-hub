@@ -430,8 +430,8 @@ describe("the rebuild section itself", () => {
 
     const note = doc.querySelector('[data-testid="rebuild-note"]');
     expect(note).not.toBeNull();
-    expect(styleOf(note)).toContain("background:var(--recess)");
-    expect(styleOf(note)).toContain("border-radius:var(--r-control)");
+    expect(styleOf(note)).toContain("background:var(--surface)");
+    expect(styleOf(note)).toContain("box-shadow:inset 0 0 0 1px var(--field-edge)");
   });
 
   /**
@@ -513,7 +513,8 @@ describe("the rebuild section itself", () => {
     expect(changeKindColour("changed")).toBe("var(--action)");
     expect(changeKindColour("added")).toBe("var(--evidence)");
     expect(changeKindColour("removed")).toBe("var(--text2)");
-    expect(changeKindColour("header")).toBe("var(--cat-artefact)");
+    // Synth 16: the artefact hue measured 3.71:1 on Noon's Card; the header line takes the legible amber ink.
+    expect(changeKindColour("header")).toBe("var(--lit-ink)");
   });
 
   it("labels the note as optional, and says the list is shown either way", () => {

@@ -55,15 +55,15 @@ describe("every control carries the radius step the scale assigns it", () => {
   //
   // Carrying the right TOKEN is not the same as rendering the right SHAPE. See
   // the block at the bottom of this file for the two controls where it isn't.
-  it("gives buttons --r-control", () => {
+  it("gives buttons the control radius, 18px (Synth 06: rounded controls)", () => {
     for (const variant of VARIANTS) {
       if (variant === "link") continue; // text, not a box
-      expect(buttonStyle(variant).borderRadius, variant).toBe("var(--r-control)");
+      expect(buttonStyle(variant).borderRadius, variant).toBe(RADIUS["r-control"]);
     }
   });
 
-  it("gives the switch track --r-control and not --r-full", () => {
-    expect(switchTrackStyle().borderRadius).toBe("var(--r-control)");
+  it("gives the switch track half its 20px height, a capsule, and not --r-full", () => {
+    expect(switchTrackStyle().borderRadius).toBe(CONTROL_SIZE.switchTrack / 2);
     expect(switchTrackStyle().borderRadius).not.toBe("var(--r-full)");
   });
 
@@ -76,14 +76,14 @@ describe("every control carries the radius step the scale assigns it", () => {
     expect(chipStyle("category", { category: "instruction" }).borderRadius).toBe("var(--r-chip)");
   });
 
-  it("gives tabs and menu items --r-chip", () => {
-    expect(tabTriggerStyle().borderRadius).toBe("var(--r-chip)");
-    expect(menuItemStyle().borderRadius).toBe("var(--r-chip)");
+  it("gives a tab no box (Synth 06: a text tab with a bar) and a menu item radius 8", () => {
+    expect(tabTriggerStyle().borderRadius).toBe(0);
+    expect(menuItemStyle().borderRadius).toBe(8);
   });
 
-  it("gives overlay panels --r-panel", () => {
-    expect(menuPanelStyle.borderRadius).toBe("var(--r-panel)");
-    expect(dialogPanelStyle.borderRadius).toBe("var(--r-panel)");
+  it("gives a menu the panel radius and a dialog the window radius", () => {
+    expect(menuPanelStyle.borderRadius).toBe(Number.parseInt(RADIUS["r-panel"], 10));
+    expect(dialogPanelStyle.borderRadius).toBe("var(--r-window)");
   });
 
   it("spends --r-full only on things that are actually circles", () => {
@@ -196,9 +196,10 @@ describe("motion", () => {
     expect(uiTransition()).not.toMatch(/\bease-in\b/);
   });
 
-  it("lifts on hover with a transform, which composites", () => {
-    expect(buttonStyle("default", { hovered: true }).transform).toBe("translateY(-1px)");
-    expect(buttonStyle("default", { hovered: true }).boxShadow).toBeUndefined();
+  it("answers hover with a fill step, never a lift or a shadow (Synth 04: hover fill and press)", () => {
+    expect(buttonStyle("secondary", { hovered: true }).background).not.toBe(buttonStyle("secondary").background);
+    expect(buttonStyle("default", { hovered: true }).transform).toBeUndefined();
+    expect(buttonStyle("default", { hovered: true }).boxShadow).toBe("none");
   });
 
   it("does not lift a disabled button", () => {
@@ -241,18 +242,18 @@ describe("hover is a step on the fill, a border, a colour or a filter — never 
 });
 
 describe("the variant to token mapping", () => {
-  it("labels both primary fills with --on-action, which flips with them", () => {
-    // A literal white would be 1.16:1 on Dusk's red. Both tokens flipping
-    // together is what makes one mapping legal in both themes.
-    expect(buttonStyle("default").background).toBe("var(--action)");
-    expect(buttonStyle("default").color).toBe("var(--on-action)");
-    expect(buttonStyle("destructive").background).toBe("var(--cat-breakage)");
-    expect(buttonStyle("destructive").color).toBe("var(--on-action)");
+  it("paints the main button Mint (Mid Green on light) with its own ink, and danger as Raised with danger words", () => {
+    // Both halves are tokens, so each pair flips together with the theme.
+    expect(buttonStyle("default").background).toBe("var(--brand-accent)");
+    expect(buttonStyle("default").color).toBe("var(--on-brand-accent)");
+    expect(buttonStyle("destructive").background).toBe("var(--control)");
+    expect(buttonStyle("destructive").color).toBe("var(--danger-text)");
   });
 
-  it("gives both secondary treatments a --line border", () => {
+  it("gives both secondary treatments the Raised fill and no edge (shades, not lines)", () => {
     for (const variant of SECONDARY_VARIANTS) {
-      expect(buttonStyle(variant).borderColor, variant).toBe("var(--line)");
+      expect(buttonStyle(variant).background, variant).toBe("var(--control)");
+      expect(buttonStyle(variant).borderColor, variant).toBe("transparent");
     }
   });
 
@@ -293,16 +294,16 @@ describe("the variant to token mapping", () => {
 });
 
 describe("category chips", () => {
-  it("take both halves of a measured pair, never one", () => {
+  it("take both halves of a measured pair, never one: the tint and the ink (Synth 16)", () => {
     const chip = chipStyle("category", { category: "instruction" });
     expect(chip.background).toBe("var(--cat-instruction-fill)");
-    expect(chip.color).toBe("var(--cat-instruction)");
+    expect(chip.color).toBe("var(--text)");
   });
 
   it("fall back to the measured fallback pair rather than to an invented one", () => {
     const chip = chipStyle("category", { category: "not-a-category" });
     expect(chip.background).toBe("var(--cat-fallback-fill)");
-    expect(chip.color).toBe("var(--cat-fallback)");
+    expect(chip.color).toBe("var(--text)");
   });
 
   it("keep the fill doing the work, so selection cannot overwrite the category", () => {
@@ -406,9 +407,9 @@ describe("where the radius tokens do not produce the shape the spec describes", 
     }
   });
 
-  it("the switch track is a capsule: --r-control is 18px on a 24px track", () => {
+  it("the switch track is a capsule: --r-control is 18px on a 20px track", () => {
     expect(px("r-control")).toBe(18);
-    expect(CONTROL_SIZE.switchTrack).toBe(24);
+    expect(CONTROL_SIZE.switchTrack).toBe(20);
     expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(true);
   });
 
@@ -435,20 +436,21 @@ describe("control sizes (UI-P53, the density pass)", () => {
   it("maps each control's old height through the table", () => {
     // The control-heights pass took the buttons, the field, the tabs list, the menu item and the switch track off
     // the table (below); the chip, the thumb and the radio still come from it.
+    // Synth 06 set the chip to the pill's 32, so only the thumb and the radio still come from it.
     const pairs: Array<[number, number]> = [
-      [CONTROL_SIZE.chip, 36],
       [CONTROL_SIZE.switchThumb, 20],
       [CONTROL_SIZE.radio, 16],
     ];
     for (const [size, old] of pairs) expect(size, `${old}px`).toBe(denseHeight(old));
+    expect(CONTROL_SIZE.chip).toBe(32);
   });
 
-  it("holds the control-heights pass's sizes: 32 for buttons, fields, tabs and menu items, a 24 switch track", () => {
-    expect(CONTROL_SIZE.button).toEqual({ sm: 32, default: 32, lg: 32, icon: 32 });
-    expect(CONTROL_SIZE.field).toBe(32);
-    expect(CONTROL_SIZE.tab).toBe(32);
-    expect(CONTROL_SIZE.menuItem).toBe(32);
-    expect(CONTROL_SIZE.switchTrack).toBe(24);
+  it("holds the Synth pack's sizes: buttons 32, 36 and 44, fields 40, text tabs 53, menu items 36, a 20 switch track", () => {
+    expect(CONTROL_SIZE.button).toEqual({ sm: 32, default: 36, lg: 44, icon: 36 });
+    expect(CONTROL_SIZE.field).toBe(40);
+    expect(CONTROL_SIZE.tab).toBe(53);
+    expect(CONTROL_SIZE.menuItem).toBe(36);
+    expect(CONTROL_SIZE.switchTrack).toBe(20);
   });
 
   it("takes the checkbox to 15, the one size the pass names outright", () => {
@@ -464,26 +466,26 @@ describe("control sizes (UI-P53, the density pass)", () => {
     expect(CONTROL_CLASS.field).toContain(`h-[${CONTROL_SIZE.field}px]`);
     expect(CONTROL_CLASS.tabList).toContain(`h-[${CONTROL_SIZE.tab}px]`);
     expect(CONTROL_CLASS.checkbox).toBe(`h-[${CONTROL_SIZE.checkbox}px] w-[${CONTROL_SIZE.checkbox}px]`);
-    // h-6 w-10 is the 24 by 40 switch; h-4 is the 16px thumb, Tailwind's own steps.
-    expect(CONTROL_CLASS.switchTrack).toBe("h-6 w-10");
+    // h-5 w-9 is the 20 by 36 switch; h-4 is the 16px thumb, Tailwind's own steps.
+    expect(CONTROL_CLASS.switchTrack).toBe("h-5 w-9");
     expect(CONTROL_CLASS.switchThumb).toContain("h-4 w-4");
     expect(CONTROL_CLASS.radio).toBe("h-4 w-4");
   });
 
-  it("keeps the switch thumb flush: 16px travelling 20 in a 36px inner track", () => {
-    const inner = 40 - 2 * 2;
-    expect(CONTROL_CLASS.switchThumb).toContain("translate-x-5");
-    expect(20 + CONTROL_SIZE.switchThumb).toBe(inner);
+  it("keeps the switch thumb flush: 16px travelling 16 in a 32px inner track", () => {
+    const inner = 36 - 2 * 2;
+    expect(CONTROL_CLASS.switchThumb).toContain("translate-x-4");
+    expect(16 + CONTROL_SIZE.switchThumb).toBe(inner);
   });
 
   it("holds a menu item to its 32px minimum in the style every menu spends", () => {
     expect(menuItemStyle().minHeight).toBe(CONTROL_SIZE.menuItem);
-    expect(CONTROL_CLASS.menuItem).toBe("py-1");
+    expect(CONTROL_CLASS.menuItem).toBe("px-[10px] py-1");
   });
 
   it("keeps a 44px touch target on a phone for a control that had one", () => {
-    // Below 768px a control that was 44px or taller keeps min-height 44.
-    expect(CONTROL_CLASS.button.lg).toContain(TOUCH_HIT_CLASS);
+    // Below 768px a control that was 44px or taller keeps min-height 44; the large button is 44 at every width now.
+    expect(CONTROL_CLASS.button.lg).toContain("h-[44px]");
     expect(TOUCH_HIT_CLASS).toBe("max-md:min-h-[44px]");
     expect(touchHit(true, 44)).toEqual({ minHeight: 44 });
     expect(touchHit(true, 48)).toEqual({ minHeight: 44 });

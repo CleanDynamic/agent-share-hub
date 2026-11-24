@@ -82,6 +82,9 @@ export const MOBILE_ICONS = {
   hide: `<path d="m3.5 3.5 17 17"/><path d="M10.5 5.6 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.9 3.7M6.7 6.8C4 8.5 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.3-1.1"/>`,
   library: `<rect x="3.5" y="4" width="3" height="16" rx="1.5"/><rect x="8.5" y="4" width="3" height="16" rx="1.5"/><rect x="15.2" y="3.8" width="3" height="16.4" rx="1.5" transform="rotate(-16 16.7 12)"/>`,
   people: `<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>`,
+  /* Prompt 22: the replay's play and pause, filled as the round Mint button draws them. */
+  play: `<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>`,
+  pause: `<rect x="7" y="5.5" width="3.5" height="13" rx="1" fill="currentColor"/><rect x="13.5" y="5.5" width="3.5" height="13" rx="1" fill="currentColor"/>`,
 } as const;
 
 export type MobileIconName = keyof typeof MOBILE_ICONS;

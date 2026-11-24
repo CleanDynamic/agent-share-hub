@@ -730,6 +730,16 @@ function BuildPageBody() {
     refetchOnWindowFocus: false,
   });
 
+  /* Prompt 22: on a phone a rebuild's Card names its maker: their handles, read once the cards are in. */
+  const rebuildMakerIds = useMemo(() => [...new Set((rebuildCards.data ?? []).map((card) => card.creator_id))], [rebuildCards.data]);
+  const rebuildMakers = useQuery<Map<string, string | null>>({
+    queryKey: ["profile", "listHandles", rebuildMakerIds.join(",")],
+    queryFn: () => listHandles(rebuildMakerIds),
+    enabled: phone && rebuildMakerIds.length > 0,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   /* Where next asks for nothing until the reader comes within 400px of the page's foot. */
   const [footRef, nearFoot] = useNear();
   const creatorId = build?.creator_id;
@@ -909,6 +919,7 @@ function BuildPageBody() {
       case "broke":
         return (
           <BreakageBody
+            phone={phone}
             breakage={{
               rows: breakageRows(tree, record.events, nodeTypes),
               gaps: openGaps(tree, stillOpenTopics),
@@ -931,7 +942,17 @@ function BuildPageBody() {
             rebuilds={{
               cards: (rebuildCards.data ?? []).map((card) => {
                 const made = madeInReply.data?.get(card.id);
-                return { ...cardOf(card, "rebuild"), madeInReply: made ? { handle: made.handle, to: replyHref(made.rootId, made.replyId) } : undefined };
+                const handle = (rebuildMakers.data?.get(card.creator_id) ?? "").trim();
+                const parts = card.nodes.length;
+                return {
+                  ...cardOf(card, "rebuild"),
+                  madeInReply: made ? { handle: made.handle, to: replyHref(made.rootId, made.replyId) } : undefined,
+                  summary: {
+                    title: (card.title ?? "").trim() || "Untitled build",
+                    to: `/b2/${card.slug}`,
+                    meta: [handle ? `@${handle}` : null, parts > 0 ? `${parts.toLocaleString("en-GB")} ${parts === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · "),
+                  },
+                };
               }),
               loading: rebuildCards.isPending,
               lineageTo: `/b2/${build.slug}/lineage`,
@@ -1175,7 +1196,8 @@ function BuildPageBody() {
           report control, the comments, where next. Each section a glass panel,
           12 apart. */}
       <LowerSections>
-        {isLoggedIn && !viewerIsCreator ? (
+        {/* Prompt 22: on a phone Report is in the top bar's More sheet. */}
+        {isLoggedIn && !viewerIsCreator && !phone ? (
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <CreditLine maker={null} onReport={() => setReporting({ type: "build", id: build.id })} />
           </div>

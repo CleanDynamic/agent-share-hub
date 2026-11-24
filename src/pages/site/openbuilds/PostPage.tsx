@@ -25,7 +25,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { PostControl } from "@/components/post/postControls";
 import { splitBody, toCardData } from "@/components/post/postCardModel";
 import type { StripTileData } from "@/components/vision/StepStripTiles";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
@@ -145,6 +145,7 @@ export default function PostPage() {
   const [wallBox, setWallBox] = useState(false);
   // Part 6: Line up steps is drawn only 760 wide and up.
   const wide = useMinWidth(760);
+  const phone = useIsPhone();
 
   const signInTo = `/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const signIn = () => navigate(signInTo);
@@ -363,6 +364,7 @@ export default function PostPage() {
             onRemoveAbout={() => setAbout(null)}
             signInTo={signInTo}
             draftTitle={replyDraftTitle(shown)}
+            bar={phone}
             onSent={() => {
               setReplyAt("foot");
               setAbout(null);

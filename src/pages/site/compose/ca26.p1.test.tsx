@@ -11,6 +11,7 @@ import { BuildList } from "./BuildList";
 import { ROVING_ITEM } from "@/lib/focus/buildItems";
 import { SkipToBuild, currentBuildItem } from "./buildFocus";
 import { done, mountList, partsOf, stubMedia } from "./ca21Harness";
+import { __resetPageScroll } from "./pageScroll";
 import { SandboxView, type SandboxViewProps } from "./SandboxView";
 
 const items = () => [...document.querySelectorAll<HTMLElement>(`[data-testid="build-list"] :is(${ROVING_ITEM})`)];
@@ -84,6 +85,8 @@ describe("the build list is one Tab stop", () => {
   });
 
   it("a focused item off screen is scrolled into view, through the one scroll helper (SV-07 P4)", () => {
+    // The helper yields to the maker for 300ms after their input; the key presses of the tests before this one count as that.
+    __resetPageScroll();
     const into = vi.fn();
     Element.prototype.scrollIntoView = into;
     const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);

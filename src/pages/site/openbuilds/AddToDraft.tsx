@@ -77,11 +77,11 @@ function useAddToDraft(step: StepToCopy, open: boolean) {
 export function AddToDraftButton({ step }: { step: StepToCopy }) {
   const [open, setOpen] = useState(false);
   const menu = useAddToDraft(step, open);
-  if (!menu.signedIn) return <TextButton onClick={menu.signIn}>Add to a draft</TextButton>;
+  if (!menu.signedIn) return <TextButton icon="new" onClick={menu.signIn}>Add to a draft</TextButton>;
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <TextButton>Add to a draft</TextButton>
+        <TextButton icon="new">Add to a draft</TextButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" aria-label="Add to a draft" style={{ zIndex: MENU_Z }}>
         {menu.items}

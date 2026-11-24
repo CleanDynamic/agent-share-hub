@@ -46,16 +46,18 @@ export default function OpenBuildsFeedPage() {
 
   /* ── round 1 ── */
 
+  // A space pill (`?space=slug`) narrows the feed to that space; its id comes from the reader's spaces.
+  const mine = useQuery({ queryKey: mySpacesKey(viewerId), queryFn: listMySpaces, enabled: viewerId !== null });
+  const pickedSpace = address.space ? (mine.data ?? []).find((space) => space.slug === address.space) ?? null : null;
   const feed = useInfiniteQuery({
-    queryKey: feedKey(address.scope, address.open, viewerId),
+    queryKey: feedKey(address.scope, address.open, viewerId, pickedSpace?.id),
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => listPostCards({ scope: address.scope === "mine" ? "spaces" : "everyone", stillOpen: address.open || undefined, offset: pageParam, limit: FEED_PAGE }),
+    queryFn: ({ pageParam }) => listPostCards({ scope: address.scope === "mine" && !pickedSpace ? "spaces" : "everyone", ...(pickedSpace ? { spaceId: pickedSpace.id } : null), stillOpen: address.open || undefined, offset: pageParam, limit: FEED_PAGE }),
     getNextPageParam: (last) => last.next ?? undefined,
     placeholderData: keepPreviousData,
     // The key carries the reader: asked once the session is known, never once as nobody first.
-    enabled: !authLoading,
+    enabled: !authLoading && (!address.space || !mine.isPending),
   });
-  const mine = useQuery({ queryKey: mySpacesKey(viewerId), queryFn: listMySpaces, enabled: viewerId !== null });
   const busy = useQuery({ queryKey: busySpacesKey, queryFn: () => listBusySpaces({ limit: 8 }) });
   const spaceIds = (mine.data ?? []).map((space) => space.id);
   const times = useQuery({ queryKey: recentTimesKey(spaceIds), queryFn: () => listRecentPostTimes(spaceIds), enabled: spaceIds.length > 0 });
@@ -124,6 +126,8 @@ export default function OpenBuildsFeedPage() {
             onScope={(scope) => move({ scope })}
             open={address.open}
             onOpen={(open) => move({ open })}
+            space={address.space}
+            onShow={(next) => move(next)}
             onPost={onPost}
             onMakeSpace={onMakeSpace}
             signInTo={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`}

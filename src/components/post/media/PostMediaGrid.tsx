@@ -30,6 +30,10 @@ export const MAX_RATIO = 2;
 /** Two, three and four sit in a block of this shape. */
 export const BLOCK_RATIO = 16 / 9;
 /** The lines between pictures. */
+/** The phone feed's single picture: between 1:1 and 16:9, no taller than 300. */
+export const FEED_MIN_RATIO = 1;
+export const FEED_MAX_RATIO = 16 / 9;
+export const FEED_MAX_HEIGHT = 300;
 export const GRID_GAP = 2;
 export const GRID_RADIUS = 16;
 
@@ -53,11 +57,12 @@ export interface GridLayout {
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
 /** The grid's shape for these pictures, known from their sizes and crops alone. */
-export function gridLayout(sources: readonly CropSource[]): GridLayout {
+export function gridLayout(sources: readonly CropSource[], feed = false): GridLayout {
   const count = sources.length;
   if (count <= 1) {
     const own = croppedRatio(sources[0] ?? { w: null, h: null, crop: null });
-    const ratio = clamp(own, MIN_RATIO, MAX_RATIO);
+    // The phone feed holds one picture between 16:9 and 1:1.
+    const ratio = feed ? clamp(own, FEED_MIN_RATIO, FEED_MAX_RATIO) : clamp(own, MIN_RATIO, MAX_RATIO);
     return { ratio, columns: "1fr", rows: "1fr", cells: [{ ratio, align: own < MIN_RATIO ? "top" : "middle", area: {} }] };
   }
   if (count === 2) {
@@ -104,10 +109,12 @@ export interface GridFrameProps {
   count: number;
   /** Draws cell `index`, given the style its element takes. */
   renderCell: (index: number, style: CSSProperties, cell: GridCell) => ReactNode;
+  /** Prompt 20: the phone feed's frame: Card fill, no hairline, at most 300 tall. */
+  feed?: boolean;
 }
 
 /** The block itself: radius 16, the hairline round it and between the pictures, its shape reserved. */
-export function GridFrame({ layout, count, renderCell }: GridFrameProps) {
+export function GridFrame({ layout, count, renderCell, feed = false }: GridFrameProps) {
   return (
     <div
       role="group"
@@ -124,8 +131,7 @@ export function GridFrame({ layout, count, renderCell }: GridFrameProps) {
         boxSizing: "border-box",
         borderRadius: GRID_RADIUS,
         overflow: "hidden",
-        border: `1px solid ${t.hairline}`,
-        background: t.well,
+        ...(feed ? { maxHeight: FEED_MAX_HEIGHT, background: t.module } : { border: `1px solid ${t.hairline}`, background: t.well }),
       }}
     >
       {layout.cells.map((cell, index) =>
@@ -143,6 +149,8 @@ export interface PostMediaGridProps {
   phone?: boolean;
   /** UX-03 follow-up P13: pictures at most 220 tall, whole, on a well (the build page's thread). */
   compact?: boolean;
+  /** Prompt 20: the phone feed's pictures (see `GridFrameProps.feed`). */
+  feed?: boolean;
 }
 
 /** The tallest a picture is drawn in a compact thread. */
@@ -158,12 +166,12 @@ export const READER_COPY = {
 const WARNING_NAMES: Record<MediaWarning, string> = { nudity: "Nudity", violence: "Violence", sensitive: "Sensitive" };
 
 /** A reader's grid: the ALT badge opens the description, a flagged picture is covered, and (inside a MediaViewerProvider) a picture opens full screen. */
-export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false }: PostMediaGridProps) {
+export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false, feed = false }: PostMediaGridProps) {
   const attrs = pictures.map(mediaAttrsOf);
   const viewer = useMediaViewer();
   const [alt, setAlt] = useState<{ index: number; from: HTMLElement } | null>(null);
   if (attrs.length === 0) return null;
-  const layout = gridLayout(sourcesOf(attrs, mediaById));
+  const layout = gridLayout(sourcesOf(attrs, mediaById), feed);
   const items = attrs.map((one) => ({ attrs: one, media: mediaById.get(one.mediaId) }));
   if (compact) {
     return (
@@ -210,6 +218,7 @@ export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false 
   return (
     <>
       <GridFrame
+        feed={feed}
         layout={layout}
         count={attrs.length}
         renderCell={(index, style, cell) => (

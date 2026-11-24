@@ -27,6 +27,7 @@ export const MobileIcon = memo(function MobileIcon({ name, size = 24, strokeWidt
       focusable="false"
       data-icon={name}
       style={{ display: "block", flexShrink: 0 }}
+      /* SV-01: raw HTML on purpose. MOBILE_ICONS holds this repo's own SVG paths, never user text. */
       dangerouslySetInnerHTML={{ __html: MOBILE_ICONS[name] }}
     />
   );

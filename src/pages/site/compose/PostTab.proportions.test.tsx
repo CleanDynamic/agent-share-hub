@@ -196,10 +196,12 @@ describe("the character ring", () => {
 });
 
 describe("the + button", () => {
-  it("is round, 32, on the control recipe", () => {
+  it("is round, 32, on the Raised shade (no shadow: Synth 06)", () => {
     mount(doc(p("one")));
     const add = within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Add another post" });
     expect([add.style.width, add.style.borderRadius]).toEqual(["32px", "999px"]);
-    expect(add.getAttribute("style")).toContain("var(--control-shadow)");
+    // jsdom drops a var() fill from the attribute, so the Raised recipe is read from what survives: no shadow.
+    expect(add.style.boxShadow).toBe("none");
+    expect(add.getAttribute("style")).not.toContain("var(--control-shadow)");
   });
 });

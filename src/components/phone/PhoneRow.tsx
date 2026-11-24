@@ -8,11 +8,12 @@ import type { CSSProperties, ReactNode } from "react";
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { PHONE_MARGIN, PHONE_ROW } from "@/components/shell/chromeSize";
+import { IntentLink } from "@/lib/routing/IntentLink";
 import { PageLink } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, SENTIENT } from "@/lib/theme/type";
 
 export type PhoneRowLead =
   | { kind: "avatar"; node: ReactNode }
@@ -35,6 +36,12 @@ export interface PhoneRowProps {
   to?: string;
   /** A button row. */
   onSelect?: () => void;
+  /** The title is a work (a build or a draft): Geist Serif 400 at 15/20. */
+  work?: boolean;
+  /** The line is numbers and dates: mono 13. */
+  monoLine?: boolean;
+  /** A link row that starts its page on intent (hover, focus, touch). */
+  intent?: boolean;
   "data-testid"?: string;
 }
 
@@ -77,7 +84,7 @@ function Trail({ trail }: { trail: PhoneRowTrail }) {
   return <span style={{ flexShrink: 0, display: "inline-flex" }}>{trail.node}</span>;
 }
 
-export function PhoneRow({ title, line, lead, trail, to, onSelect, ...rest }: PhoneRowProps) {
+export function PhoneRow({ title, line, lead, trail, to, onSelect, work = false, monoLine = false, intent = false, ...rest }: PhoneRowProps) {
   const { state, handlers } = useInteractive<HTMLAnchorElement & HTMLButtonElement & HTMLDivElement>();
   const style: CSSProperties = {
     boxSizing: "border-box",
@@ -100,17 +107,18 @@ export function PhoneRow({ title, line, lead, trail, to, onSelect, ...rest }: Ph
     <>
       {lead ? <Lead lead={lead} /> : null}
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <span style={{ fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
-        {line ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{line}</span> : null}
+        <span style={{ fontFamily: work ? SENTIENT : undefined, fontSize: 15, fontWeight: work ? 400 : 600, lineHeight: "20px", color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
+        {line ? <span style={{ fontFamily: monoLine ? DM_MONO : undefined, fontSize: 13, lineHeight: "16px", color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{line}</span> : null}
       </span>
       {trail ? <Trail trail={trail} /> : null}
     </>
   );
   if (to) {
+    const Anchor = intent ? IntentLink : PageLink;
     return (
-      <PageLink to={to} data-ui="phone-row" {...rest} {...handlers} style={style}>
+      <Anchor to={to} data-ui="phone-row" {...rest} {...handlers} style={style}>
         {body}
-      </PageLink>
+      </Anchor>
     );
   }
   if (onSelect) {

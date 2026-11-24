@@ -64,7 +64,7 @@ function page(nodes: NodeTree[]) {
 
 const cards = () => screen.getAllByTestId("step-card");
 /** UX-03 follow-up P14: a step's head carries its type as a chip, so a kind is found by its chip. */
-const CHIP: Record<string, string> = { prompt: "Prompt", manual: "Manual step", code: "Code", check: "Check", tool: "Tool", system_prompt: "System prompt", dataset: "Dataset", repo: "GitHub repository", agent: "Agent", team: "Team", file: "File" };
+const CHIP: Record<string, string> = { prompt: "Prompt", manual: "Manual step", code: "Code", check: "Check", tool: "Tool", system_prompt: "System prompt", dataset: "Dataset", repo: "GitHub repository", agent: "Agent", team: "Multi-agent team", file: "File" };
 const chipOf = (card: Element) => card.querySelector('[data-ui="type-chip"]')?.textContent;
 const byKind = (kind: string) => cards().find((card) => card.getAttribute("data-kind") === kind || chipOf(card) === CHIP[kind]) as HTMLElement;
 const emptyRows = (card: HTMLElement) =>

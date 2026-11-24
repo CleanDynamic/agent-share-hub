@@ -53,7 +53,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     expect(screen.getByRole("heading", { name: "Model" })).toBeTruthy();
     for (const name of ["Model or service", "Version", "Invocation", "Questions"]) expect(screen.getAllByText(name).length, name).toBeGreaterThan(0);
     expect(within(screen.getByRole("radiogroup", { name: "Invocation" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Direct", "Through an adapter"]);
-    expect(screen.getByTestId("optional-count").textContent).toBe("13 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("13 optional details");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(fieldNames()).toEqual([
       "Option descriptions",

@@ -11,7 +11,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { panelColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
@@ -59,6 +59,22 @@ export function LibraryColumns({
   testId?: string;
 }) {
   useColumnPanels(true);
+  const phone = useIsPhone();
+  if (phone) {
+    /* Mobile prompt 25: on a phone the panels are not drawn. The saved things and the side sections are one column on the
+       Page shade; each part carries its own 16 margin. */
+    return (
+      <div data-testid={testId} data-layout="phone" style={{ ...ROOT, paddingBottom: 24 }}>
+        <section aria-label="Saved">
+          {head}
+          {main}
+        </section>
+        <aside aria-label="Collections and the selected item" style={{ display: "flex", flexDirection: "column", gap: 24, padding: `24px ${PHONE_MARGIN}px 0` }}>
+          {side}
+        </aside>
+      </div>
+    );
+  }
   const frame: CSSProperties =
     layout === "one" ? { display: "flex", flexDirection: "column", gap: PANEL_GUTTER } : panelColumns("two", { between: layout === "mid" });
   return (
@@ -132,8 +148,9 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
 
 /** The h1 is read by screen readers only (the nav names the page); the counts are the visible head, 13 in Text 3. */
 export function LibraryHead({ title, meta }: { title: string; meta: ReactNode }) {
+  const phone = useIsPhone();
   return (
-    <header style={{ marginBottom: 12 }}>
+    <header style={{ marginBottom: 12, ...(phone ? { padding: `0 ${PHONE_MARGIN}px` } : null) }}>
       <h1 className="sr-only" style={{ margin: 0 }}>
         {title}
       </h1>

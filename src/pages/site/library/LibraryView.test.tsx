@@ -221,3 +221,47 @@ describe("LibraryView", () => {
     expect(screen.queryByTestId("library-selected")).toBeNull();
   });
 });
+
+// Mobile prompt 25, Part B: the Library below 768.
+describe("LibraryView on a phone", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  });
+
+  it("draws the kinds as pills that stay links, the list as 56 tall rows and no panel box", () => {
+    view();
+    const kinds = screen.getByRole("group", { name: "Kinds" });
+    expect(within(kinds).getAllByRole("link").length).toBeGreaterThan(3);
+    expect(screen.getByTestId("library-page").getAttribute("data-layout")).toBe("phone");
+    expect(screen.getAllByTestId("library-row")[0].querySelector("button")?.style.minHeight).toBe("56px");
+    expect(screen.getByRole("tablist", { name: "State" })).toBeInTheDocument();
+  });
+
+  it("chooses an item from its row and keeps the repo's address-driven handler", () => {
+    const onSelect = vi.fn();
+    view({ items: { ...visionLibraryProps().items, onSelect } });
+    fireEvent.click(screen.getAllByTestId("library-row")[0].querySelector("button") as HTMLElement);
+    expect(onSelect).toHaveBeenCalledWith("vr1");
+  });
+
+  it("shows 'How saving works' only while the library is empty", () => {
+    view();
+    expect(screen.queryByRole("region", { name: "How saving works" })).toBeNull();
+    expect(screen.queryByText("Nothing saved yet")).toBeNull();
+  });
+
+  it("draws the empty state as a module with Browse builds and How saving works, and no field of dots", () => {
+    const base = visionLibraryProps();
+    view({ items: { ...base.items, rows: [], empty: { title: "Nothing saved yet", line: "Save a build, a session or a step and it waits for you here.", action: { label: "Browse builds", href: "/builds" } } } });
+    const empty = screen.getByTestId("library-empty");
+    expect(within(empty).getByRole("heading", { name: "Nothing saved yet" })).toBeInTheDocument();
+    expect(within(empty).getByRole("link", { name: "Browse builds" })).toBeInTheDocument();
+    expect(within(empty).getByRole("button", { name: "How saving works" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "How saving works" })).toBeInTheDocument();
+  });
+});

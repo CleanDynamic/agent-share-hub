@@ -12,7 +12,7 @@ import {
   nameColourFor,
   swatchFor,
   normaliseHex,
-  outlineFor,
+  outlineFor, topEdgeFor,
   SUGGESTED_COLOURS,
   textContrastOn,
   withAlpha,
@@ -37,8 +37,12 @@ describe("borderFor and outlineFor", () => {
     expect(borderFor("#7FA7D9")).toEqual({ borderColor: "#7FA7D9", borderWidth: "var(--maker-edge)", boxShadow: "inset 0 0 0 1px rgba(127,167,217,0.35)" });
   });
 
-  it("draws a session's 1px line, radius 12", () => {
-    expect(outlineFor("#7FA7D9")).toEqual({ border: "1px solid #7FA7D9", borderRadius: 12 });
+  it("draws a session's 1.5px line in its maker colour, radius 12 (Synth 16)", () => {
+    expect(outlineFor("#7FA7D9")).toEqual({ border: "1.5px solid #7FA7D9", borderRadius: 12 });
+  });
+
+  it("draws a coloured row's 1.5px top edge inside it, so the row keeps its size", () => {
+    expect(topEdgeFor("#7FA7D9")).toEqual({ boxShadow: "inset 0 1.5px 0 #7FA7D9" });
   });
 
   it("writes an alpha as rgba", () => {

@@ -56,6 +56,8 @@ export interface PhoneBottomSheetProps {
   onCloseAutoFocus?: (event: Event) => void;
   /** Prompt 23: the sheet steps aside (slides down and fades, still mounted) while something picked up in it is dragged onto the page behind. */
   stepAside?: boolean;
+  /** The sheet's shade: Card (the default), or the Notepad tone for the reader's notepad (prompt 22). */
+  tone?: "card" | "notepad";
   "data-testid"?: string;
   children?: ReactNode;
 }
@@ -67,7 +69,7 @@ const asideSheet = (): CSSProperties =>
     ? { opacity: 0, pointerEvents: "none", transition: `opacity ${FAST}ms ${STANDARD}` }
     : { opacity: 0, pointerEvents: "none", transform: "translateY(100%)", transition: `transform ${FAST}ms ${STANDARD}, opacity ${FAST}ms ${STANDARD}` };
 
-export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, stepAside = false, children, ...rest }: PhoneBottomSheetProps) {
+export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, stepAside = false, tone = "card", children, ...rest }: PhoneBottomSheetProps) {
   const focus = useWindowFocus(open, onCloseAutoFocus);
   const keyboard = useKeyboardInset();
   const start = useRef<{ y: number; at: number } | null>(null);
@@ -130,7 +132,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
             data-testid={rest["data-testid"] ?? "bottom-sheet"}
             data-motion="sheet"
             data-height={height}
-            data-fill="card"
+            data-fill={tone}
             aria-describedby={undefined}
             onOpenAutoFocus={focus.onOpenAutoFocus}
             onCloseAutoFocus={focus.onCloseAutoFocus}
@@ -152,7 +154,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               ...size,
               padding: footer ? "8px 0 0" : "8px 0 env(safe-area-inset-bottom)",
               borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`,
-              background: t.module,
+              background: tone === "notepad" ? t.notepad : t.module,
               color: t.text,
               fontFamily: FIGTREE,
               overscrollBehavior: "contain",
