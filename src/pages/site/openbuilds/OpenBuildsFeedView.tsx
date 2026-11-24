@@ -21,7 +21,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { RoundPostButton } from "@/components/phone/RoundPostButton";
+import { PHONE_TOPBAR } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
 import { PageLink as Link } from "@/lib/routing/PageLink";
+import { move } from "@/lib/theme/motion";
+import { useNavigate } from "react-router-dom";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
@@ -173,13 +181,14 @@ function BusyThisWeek({ rows }: { rows: BusyRow[] }) {
 }
 
 /** The topic cards, 8 apart with no lines between, and Show more. */
-export function PostList({ items, more }: { items: FeedItem[]; more?: { loading: boolean; onMore: () => void } }) {
+export function PostList({ items, more, phone = false }: { items: FeedItem[]; more?: { loading: boolean; onMore: () => void }; phone?: boolean }) {
   return (
     <div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Prompt 20: on a phone each topic is a 12 16 item on the Page shade, 24 apart, with no panel and no lines. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 0 : 8 }}>
         {items.map((item) => (
-          <div key={item.card.id} style={{ padding: "0 16px", contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}>
-            <PostCard card={item.card} engagement={item.engagement} moderation={item.moderation} />
+          <div key={item.card.id} style={{ padding: phone ? "12px 16px" : "0 16px", contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}>
+            <PostCard card={item.card} engagement={item.engagement} moderation={item.moderation} phone={phone ? "list" : undefined} />
           </div>
         ))}
       </div>
@@ -193,7 +202,7 @@ export function PostList({ items, more }: { items: FeedItem[]; more?: { loading:
 }
 
 /** The list's body: the cards, the states. */
-function Posts({ view }: { view: OpenBuildsFeedViewProps }) {
+function Posts({ view, phone = false }: { view: OpenBuildsFeedViewProps; phone?: boolean }) {
   const { posts } = view;
   return (
     <PageState
@@ -209,7 +218,7 @@ function Posts({ view }: { view: OpenBuildsFeedViewProps }) {
           : { line: "No posts yet.", action: { label: "Post", onClick: view.onPost } }),
       }}
     >
-      {() => <PostList items={posts.items} more={posts.more} />}
+      {() => <PostList items={posts.items} more={posts.more} phone={phone} />}
     </PageState>
   );
 }
@@ -238,9 +247,53 @@ export function FeedIntro({ post }: { post: ReactNode }) {
   );
 }
 
+/** Prompt 20 Part B: the feed on a phone: the tabs, the reader's spaces as pills (Make a space last), the topics, and the round post button. "Most new posts this week" is not here. */
+function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
+  useColumnPanels(true);
+  useHideBarsOnScroll(false);
+  const hidden = useBarsHidden();
+  const navigate = useNavigate();
+  const tabs: readonly { value: FeedScope; label: string }[] = [
+    { value: "mine", label: "Your spaces" },
+    { value: "everyone", label: "Everyone" },
+  ];
+  const pills = [
+    { value: "all", label: "All" },
+    { value: "open", label: "Still open" },
+    ...view.spaces.rows.map((row) => ({ value: `space:${row.slug}`, label: row.fresh ? `${row.name} ${row.fresh}` : row.name })),
+    { value: "make", label: "Make a space" },
+  ];
+  const pick = (value: string) => {
+    if (value === "all") view.onOpen(false);
+    else if (value === "open") view.onOpen(true);
+    else if (value === "make") view.onMakeSpace();
+    else navigate(`/openbuilds/spaces/${value.slice("space:".length)}`);
+  };
+  return (
+    <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
+      <FeedTitle />
+      {view.signedIn ? (
+        <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}>
+          <PhoneTabs<FeedScope> equal tabs={tabs} value={view.scope} onChange={view.onScope} label="Posts from" />
+        </div>
+      ) : null}
+      {view.pageFailed ? (
+        <PageFailed reads={view.pageFailed} region="OpenBuilds" style={{ padding: 16 }} />
+      ) : (
+        <>
+          <PhonePills pills={pills} value={view.open ? "open" : "all"} onChange={pick} label="Show" />
+          <Posts view={view} phone />
+        </>
+      )}
+      <RoundPostButton label="Post" icon="compose" onClick={view.onPost} />
+    </div>
+  );
+}
+
 export function OpenBuildsFeedView(view: OpenBuildsFeedViewProps) {
   const layout = useHomeLayout();
   const phone = useIsPhone();
+  if (phone) return <PhoneFeed view={view} />;
   const tabs: readonly { value: FeedScope; label: string }[] = [
     { value: "mine", label: "Your spaces" },
     { value: "everyone", label: "Everyone" },

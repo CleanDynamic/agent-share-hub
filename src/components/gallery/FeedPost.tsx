@@ -28,6 +28,7 @@ import { useMemo, useRef, type CSSProperties, type MouseEvent as ReactMouseEvent
 import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import { PatternMarks } from "@/components/gallery/PatternMarks";
@@ -74,6 +75,9 @@ export interface FeedPostProps {
    * Show more opens the posts in place, and the word "Draft" stands where the plaque does.
    */
   preview?: boolean;
+  /** Prompt 20: the phone Home's post: 15/600 name, 15 meta, the phone feed's type, pictures and actions, and a More button that calls `onMore`. */
+  phoneFeed?: boolean;
+  onMore?: () => void;
 }
 
 const column: CSSProperties = { minWidth: 0 };
@@ -96,9 +100,11 @@ export function FeedPost({
   now,
   phone: phoneOverride,
   preview = false,
+  phoneFeed = false,
+  onMore,
 }: FeedPostProps) {
   const windowPhone = useIsPhone();
-  const phone = phoneOverride ?? windowPhone;
+  const phone = phoneFeed || (phoneOverride ?? windowPhone);
   const handle = (makerHandle ?? "").trim();
   const name = (makerName ?? "").trim() || handle || "Maker";
   const profileHref = handle && !preview ? `/profile/${encodeURIComponent(handle)}` : null;
@@ -183,8 +189,9 @@ export function FeedPost({
       rest={restState}
       onRetry={retry}
       clampLines={FEED_TEXT_LINES}
-      connector={{ x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone ? -4 : 16 }}
+      connector={{ x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone && !phoneFeed ? -4 : 16 }}
       phone={phone}
+      feed={phoneFeed}
       resetKey={build.id}
       headingLink={headed && buildHref ? (words) => <HeadingLink to={buildHref}>{words}</HeadingLink> : undefined}
     />
@@ -198,7 +205,7 @@ export function FeedPost({
         display: "grid",
         gridTemplateColumns: "40px minmax(0, 1fr)",
         columnGap: 12,
-        padding: "4px 0",
+        padding: phoneFeed ? 0 : "4px 0",
         boxSizing: "border-box",
         width: "100%",
         color: t.text,
@@ -225,15 +232,17 @@ export function FeedPost({
       {/* Author row: name, @handle · age, the tools. */}
       <div
         data-feed-author-row=""
-        style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap" }}
+        style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: phoneFeed ? 4 : 6, minHeight: phoneFeed ? 20 : 24, marginBottom: phoneFeed ? 4 : 4, whiteSpace: "nowrap" }}
       >
-        <QuietLink to={profileHref} testId="feed-author-name" touch={phone} style={{ flex: "0 100 auto", fontSize: 13, fontWeight: 500, ...ellipsis }} colour={t.text}>
+        <QuietLink to={profileHref} testId="feed-author-name" touch={phone && !phoneFeed} style={{ flex: "0 100 auto", fontSize: phoneFeed ? 15 : 13, fontWeight: phoneFeed ? 600 : 500, ...(phoneFeed ? { lineHeight: "20px" } : null), ...ellipsis }} colour={t.text}>
           {name}
         </QuietLink>
-        <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label }}>
+        <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: phoneFeed ? 15 : 13, lineHeight: phoneFeed ? "20px" : 1.4, color: t.label }}>
           {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
           {age ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${age}` : age}</span> : null}
         </span>
+        {phoneFeed && onMore ? <span style={{ flex: 1 }} /> : null}
+        {phoneFeed && onMore ? <MoreButton onPress={onMore} /> : null}
       </div>
 
       {/* The post. */}
@@ -266,13 +275,13 @@ export function FeedPost({
       </div>
 
       {/* The build line, then the actions. */}
-      <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: 12 }}>
+      <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: phoneFeed ? 4 : 12 }}>
         <div data-feed-build-line="" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
           <QuietLink to={buildHref} tabIndex={headed ? -1 : undefined} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
             {title}
           </QuietLink>
           {facts ? (
-            <span data-testid="feed-build-facts" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label, minWidth: 0 }}>
+            <span data-testid="feed-build-facts" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: phoneFeed ? t.text2 : t.label, minWidth: 0 }}>
               {facts}
             </span>
           ) : null}
@@ -292,11 +301,35 @@ export function FeedPost({
             counts={engagement.counts}
             liked={engagement.liked}
             saved={engagement.saved}
-            style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
+            style={phoneFeed ? undefined : { marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
+            phoneFeed={phoneFeed}
           />
         ) : null}
       </div>
     </article>
+  );
+}
+
+/** The phone feed's More: three dots at 18 in Text 3, in a 32 hit area at the right edge (the 44 target is its row's height). */
+function MoreButton({ onPress }: { onPress: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-label="More"
+      data-testid="feed-more"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onPress();
+      }}
+      {...handlers}
+      style={{ flex: "none", position: "relative", width: 32, height: 32, margin: "-6px -8px -6px 0", padding: 0, border: 0, borderRadius: 999, background: "transparent", color: t.label, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(state.focusVisible) }}
+    >
+      <MobileIcon name="more" size={18} />
+      {/* Touch: the hit area reaches 44 by 44 without moving the dots. */}
+      <span aria-hidden="true" style={{ position: "absolute", inset: -6 }} />
+    </button>
   );
 }
 

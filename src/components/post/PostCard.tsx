@@ -7,6 +7,9 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { MoreSheet } from "@/components/shell/MoreSheet";
+import { siteUrl } from "@/lib/site";
 import type { GalleryMedia } from "@/lib/build";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostMediaGrid } from "@/components/post/media/PostMediaGrid";
@@ -56,6 +59,26 @@ export interface PostCardProps {
   onMessage?: { label: string; onSelect: () => void };
   /** UX-15 P5: "Block @maya" in the `···` menu, for everyone but the author. Asks once (the page's BlockDialog). Absent: not offered. */
   onBlock?: { label: string; onSelect: () => void };
+  /** Prompt 20: the phone's post. "home": text in Text, six lines. "list": a space's or the feed's topic, text in Text 2, six lines. Both: the item frame holds the padding, meta at 15, More is a content sheet, the actions are the phone feed's. Absent: desktop, unchanged. */
+  phone?: "home" | "list";
+}
+
+/** The phone's More: three dots at 18 in Text 3, a 32 hit area with the touch target reaching 44 round it. */
+function PhoneMore({ onPress }: { onPress: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-label="More"
+      data-testid="post-card-more"
+      onClick={onPress}
+      {...handlers}
+      style={{ flex: "none", position: "relative", width: 32, height: 32, margin: "-6px -8px -6px 0", padding: 0, border: 0, borderRadius: 999, background: "transparent", color: t.label, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(state.focusVisible) }}
+    >
+      <MobileIcon name="more" size={18} />
+      <span aria-hidden="true" style={{ position: "absolute", inset: -6 }} />
+    </button>
+  );
 }
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
@@ -185,12 +208,13 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, headingLevel = 3, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, headingLevel = 3, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock, phone }: PostCardProps) {
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
     : full;
   const [asking, setAsking] = useState(false);
+  const [more, setMore] = useState(false);
   const label = t.label;
   const name = card.author.name;
   const meta = [card.author.handle ? `@${card.author.handle}` : null, card.age || null].filter(Boolean).join(" · ");
@@ -218,7 +242,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
   return (
     <article
       aria-label={card.heading}
-      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
+      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: phone ? 0 : "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
     >
       <div style={{ gridColumn: 1, width: 40 }}>
         <Avatar size={40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
@@ -228,10 +252,10 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {/* Synth 11: a pinned card says so above the author line, 13 in Text 2. */}
         {card.pinned ? <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.text2, marginBottom: 4 }}>Pinned</div> : null}
         {/* Head: name, @handle · age · in spaces; the reward at the right end. */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
-          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
-            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{name}</span>
-            <span style={{ ...plain, fontSize: 13, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: phone ? 20 : 24, marginBottom: 4 }}>
+          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone ? "nowrap" : "wrap", alignItems: "baseline", columnGap: phone ? 4 : 6 }}>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(phone ? { flex: "0 100 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{name}</span>
+            <span style={{ ...plain, fontSize: phone ? 15 : 13, lineHeight: phone ? "20px" : 1.4, color: label, whiteSpace: phone ? "nowrap" : "pre-wrap", ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } : null) }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}
               {card.spaces.map((space, index) => (
@@ -243,8 +267,26 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
             </span>
           </div>
           {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
-          {moderation || onReport || onMessage || onBlock ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} onBlock={onBlock} /> : null}
+          {phone ? (
+            <PhoneMore onPress={() => setMore(true)} />
+          ) : moderation || onReport || onMessage || onBlock ? (
+            <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} onBlock={onBlock} />
+          ) : null}
         </div>
+        {phone ? (
+          <MoreSheet
+            open={more}
+            onOpenChange={setMore}
+            link={siteUrl(card.to)}
+            name={card.heading}
+            items={[
+              ...(moderation ? [card.pinned ? { label: "Unpin", onSelect: moderation.onUnpin } : { label: "Pin", onSelect: moderation.onPin }, card.hidden ? { label: "Unhide", onSelect: moderation.onUnhide } : { label: "Hide", onSelect: () => setAsking(true) }] : []),
+              ...(onMessage ? [{ label: onMessage.label, onSelect: onMessage.onSelect }] : []),
+              ...(onReport ? [{ label: "Report", onSelect: onReport, tone: "danger" as const }] : []),
+              ...(onBlock ? [{ label: onBlock.label, onSelect: onBlock.onSelect, tone: "danger" as const }] : []),
+            ]}
+          />
+        ) : null}
         {asking && moderation ? (
           <HideReason
             onHide={(reason) => {
@@ -270,10 +312,10 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
               marginTop: 4,
               fontSize: 15,
               lineHeight: "20px",
-              color: t.text2,
+              color: phone === "home" ? t.text : t.text2,
               whiteSpace: "pre-wrap",
               overflowWrap: "anywhere",
-              ...(clamp && !page ? { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
+              ...(clamp && !page ? { display: "-webkit-box", WebkitLineClamp: phone ? 6 : 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
             }}
           >
             {card.text}
@@ -305,8 +347,8 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
 
         {card.replies ? <RepliesStrip replies={card.replies} /> : null}
 
-        {topic && !compact ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between", ...topic.style }} /> : null}
-        {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between" }} /> : null}
+        {topic && !compact ? <TopicEngagementRow {...topic} phoneFeed={Boolean(phone)} style={phone ? { marginTop: 0, ...topic.style } : { marginTop: 12, maxWidth: 425, justifyContent: "space-between", ...topic.style }} /> : null}
+        {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} phoneFeed={Boolean(phone)} style={phone ? undefined : { marginTop: 12, maxWidth: 425, justifyContent: "space-between" }} /> : null}
         {!compact && reactions ? reactions : null}
       </div>
     </article>

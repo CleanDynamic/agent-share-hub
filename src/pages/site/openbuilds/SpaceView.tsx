@@ -11,8 +11,10 @@ import { PageState } from "@/components/pagestate/PageState";
 import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
 
+import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { RoundPostButton } from "@/components/phone/RoundPostButton";
 import { PostControl, PostPrimary } from "@/components/post/postControls";
-import { PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { PANEL_RADIUS, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TextTabs } from "@/components/vision/TextTabs";
@@ -68,6 +70,52 @@ export function ParentLink() {
   );
 }
 
+/** Prompt 20 Part C: a space on a phone. The head is not boxed: the name 24/28 600 (the title is visible here: nothing else names the space), the description, the made-by line and Join or the member state. Posts and Rules stick under the top bar; the pinned topic is first; the round button is "Post here". */
+function PhoneSpace({ view, member }: { view: SpaceViewProps; member: boolean }) {
+  const joined = view.role !== "none";
+  return (
+    <div data-testid="space-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}>
+      <header style={{ padding: "8px 16px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 24, fontWeight: 600, lineHeight: "28px", letterSpacing: "-0.02em", color: t.text, overflowWrap: "anywhere" }}>{view.name}</h1>
+        {view.description ? <p style={words(15, t.text2)}>{view.description}</p> : null}
+        <p style={words(13, t.label)}>{view.meta}</p>
+        <div>
+          {joined ? (
+            <span data-testid="space-member-state" style={words(13, t.text2, { fontWeight: 600 })}>{view.role === "moderator" ? "Moderator" : "Member"}</span>
+          ) : (
+            <button type="button" onClick={view.onJoin} aria-label={`Join ${view.name}`} style={{ boxSizing: "border-box", height: 32, minHeight: 44, padding: "0 16px", border: 0, borderRadius: r.full, background: t.inverse, color: t.onInverse, ...words(13, t.onInverse, { fontWeight: 600 }), cursor: "pointer" }}>
+              Join
+            </button>
+          )}
+        </div>
+      </header>
+      <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg }}>
+        <PhoneTabs<SpaceTab> equal tabs={TABS} value={view.tab} onChange={view.onTab} label="Space" />
+      </div>
+      {view.tab === "rules" ? (
+        <div role="tabpanel" aria-label="Rules" style={{ ...words(15, view.rules ? t.text : t.text2), padding: 16, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+          {view.rules || "No rules yet."}
+        </div>
+      ) : (
+        <div role="tabpanel" aria-label="Posts">
+          <p style={{ ...words(13, t.label), padding: "12px 16px 0" }}>{view.orderLine}</p>
+          <PageState
+            read={view.posts.read ?? (view.posts.status === "error" ? readOf("error", undefined, view.posts.onRetry) : readOf("ready", view.posts.items))}
+            thing="posts"
+            region="Posts"
+            skeleton={null}
+            style={{ padding: 16 }}
+            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
+          >
+            {() => <PostList items={view.posts.items} more={view.posts.more} phone />}
+          </PageState>
+        </div>
+      )}
+      {member ? <RoundPostButton label="Post here" icon="compose" onClick={view.onPost} /> : null}
+    </div>
+  );
+}
+
 export function SpaceView(view: SpaceViewProps) {
   useColumnPanels(true);
   const phone = useIsPhone();
@@ -88,6 +136,8 @@ export function SpaceView(view: SpaceViewProps) {
       Join space
     </PostPrimary>
   );
+
+  if (phone) return <PhoneSpace view={view} member={member} />;
 
   return (
     <div data-testid="space-view" style={{ ...spacePanel, paddingBottom: 48 }}>

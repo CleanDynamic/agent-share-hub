@@ -14,6 +14,7 @@ import { PageEmpty } from "@/components/pagestate/PageState";
 import type { CSSProperties, ReactNode } from "react";
 
 import { FilterChip } from "@/components/brand/FilterChip";
+import { PhonePills } from "@/components/phone/PhonePills";
 import { PostCard } from "@/components/post/PostCard";
 import { PostControl } from "@/components/post/postControls";
 import type { PostCardData } from "@/components/post/postCardModel";
@@ -175,6 +176,13 @@ export function PostView(view: PostViewProps) {
       ...(view.onMessage ? [{ label: view.onMessage.label, onSelect: view.onMessage.onSelect }] : []),
       ...(view.onReport ? [{ label: "Report", tone: "danger" as const, onSelect: view.onReport }] : []),
       ...(view.onBlock ? [{ label: view.onBlock.label, tone: "danger" as const, onSelect: view.onBlock.onSelect }] : []),
+      // Prompt 20: on a phone the space's members and the join control live in More, not beside the topic.
+      ...(phone && view.side.space
+        ? [
+            { label: view.side.space.members, disabled: true },
+            ...(view.side.space.joined === null ? [] : [view.side.space.joined ? { label: "Leave space", onSelect: view.side.space.onLeave } : { label: "Join space", onSelect: view.side.space.onJoin }]),
+          ]
+        : []),
     ],
   });
   const items = [{ value: "thread" as const, label: threadLabel(view.replies) }, ...(view.builds > 0 ? [{ value: "wall" as const, label: wallLabel(view.builds) }] : [])];
@@ -185,16 +193,17 @@ export function PostView(view: PostViewProps) {
 
   const main = (
     <div>
-      {up ? (
+      {up && !phone ? (
         <nav aria-label="Where this post is" style={{ ...words(13, t.label), marginBottom: 12 }}>
           <UpLink to={up.to}>{up.label}</UpLink>
         </nav>
       ) : null}
 
-      <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} onBlock={view.onBlock} />
+      <PostCard phone={phone ? "home" : undefined} card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} onBlock={view.onBlock} />
 
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 16, paddingBottom: 12 }}>
-        <div role="group" aria-label="Show" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {phone ? <PhonePills pills={items} value={tab} onChange={view.onTab} label="Show" /> : null}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: phone ? 0 : 16, paddingBottom: 12 }}>
+        <div role="group" aria-label="Show" style={{ display: phone ? "none" : "flex", flexWrap: "wrap", gap: 8 }}>
           {items.map((item) => (
             <FilterChip key={item.value} label={item.label} on={item.value === tab} onClick={() => view.onTab(item.value)} style={touchArea(phone)} />
           ))}
@@ -228,7 +237,7 @@ export function PostView(view: PostViewProps) {
     </div>
   );
 
-  return <OpenBuildsColumns testId="openbuilds-post" sideLabel="About this post" main={main} side={<SideColumn {...view.side} />} />;
+  return <OpenBuildsColumns testId="openbuilds-post" sideLabel="About this post" main={main} side={<SideColumn space={phone ? null : view.side.space} builds={view.side.builds} />} />;
 }
 
 export default PostView;

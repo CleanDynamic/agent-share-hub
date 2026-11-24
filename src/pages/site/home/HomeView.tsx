@@ -42,6 +42,8 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
+import { PhoneHome } from "./PhoneHome";
+import { useNear } from "./useNear";
 import { FeedBones, HomeColumns, HomeControl, HomeLoadingView, Rule, SectionBones, ellipsis, text, useHomeLayout } from "./HomeFrame";
 import {
   HOME_FILTERS,
@@ -55,6 +57,7 @@ import {
   type HomeDraftRow,
   type HomeEndCard,
   type HomeFeedItem,
+  type HomePerson,
   type HomeFilter,
   type HomeRebuildPost,
   type HomeReproNote,
@@ -123,6 +126,8 @@ export interface HomeViewProps {
   feed: HomeFeedProps;
   /** Items newer than the last visit, held back until the pill is chosen. */
   newCount: number;
+  /** Prompt 20: up to three authors of those items, for the phone's floating pill. */
+  newAuthors?: readonly HomePerson[];
   onShowNew: () => void;
   /** Signed once for the page: the posts' pictures. */
   srcByPath: MediaSrcMap;
@@ -538,27 +543,6 @@ function FeedItemFrame({ height, divided = false, children, ...rest }: { height:
   );
 }
 
-/** Calls `onNear` once, when the element comes within a screen of view. */
-function useNear<E extends Element>(id: string, onNear?: (ids: string[]) => void) {
-  const ref = useRef<E>(null);
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || !onNear || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          observer.disconnect();
-          onNear([id]);
-        }
-      },
-      { rootMargin: "100% 0px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [id, onNear]);
-  return ref;
-}
-
 /** The author row of a rebuild: name, then "@handle · age". */
 function AuthorRow({ name, line }: { name: string; line: string }) {
   return (
@@ -915,6 +899,9 @@ function Room(props: HomeViewProps & { studioShown: boolean }) {
 
 export function HomeView(props: HomeViewProps) {
   const layout = useHomeLayout();
+  const phone = useIsPhone();
+  // Prompt 20: below 768px Home is the feed alone. Nothing at 768 and up changes.
+  if (phone) return <PhoneHome {...props} />;
   // While the feed loads the page is its loading state, the route's Placeholder, block for block (SV-04 P5).
   if (props.feed.status === "loading") return <HomeLoadingView />;
   if (props.pageFailed) {

@@ -40,7 +40,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { PostBody } from "./PostBody";
-import { postType, THREAD_GAP } from "./postType";
+import { FEED_THREAD_GAP, feedType, postType, THREAD_GAP } from "./postType";
 
 export type PostThreadMode = "closed" | "open" | "page";
 
@@ -82,6 +82,8 @@ export interface PostThreadProps {
   clampLines?: number;
   /** Replaces post 1's body (a rebuild's note and its "Rebuilt from" card stay with the first post). */
   first?: ReactNode;
+  /** Prompt 20: the phone feed's thread: 15/20 words, 24 between posts, the toggle in 15 Text 3. */
+  feed?: boolean;
 }
 
 /** The size of a node on the connector, and the line's width. */
@@ -105,7 +107,9 @@ export function PostThread({
   connector,
   clampLines,
   first: firstSlot,
+  feed = false,
 }: PostThreadProps) {
+  const gap = feed ? FEED_THREAD_GAP : THREAD_GAP;
   const regionId = useId();
   const page = mode === "page";
   const [pageOpen, setPageOpen] = useState(false);
@@ -148,7 +152,7 @@ export function PostThread({
   const [first, ...rest] = posts;
   const total = posts.length;
   const foldable = total > 1 || cut;
-  const lines = postType(phone).firstLine;
+  const lines = (feed ? feedType() : postType(phone)).firstLine;
   const connected = connector !== undefined && open && settled && rest.length > 0;
 
   const press = () => {
@@ -181,13 +185,13 @@ export function PostThread({
             ? lines.small
             : lines.body
           : 16;
-    const nodeTop = THREAD_GAP + firstLine / 2;
+    const nodeTop = gap + firstLine / 2;
     return (
       <div
         key={index + 1}
         data-post={index + 2}
         tabIndex={index === 0 ? -1 : undefined}
-        style={{ position: "relative", paddingTop: THREAD_GAP, outline: "none" }}
+        style={{ position: "relative", paddingTop: gap, outline: "none" }}
       >
         {connected ? line(last ? { top: -1, height: nodeTop + 1 } : { top: -1, bottom: -1 }) : null}
         {connected && connector ? (
@@ -197,7 +201,7 @@ export function PostThread({
             style={{ position: "absolute", left: connector.x - NODE / 2, top: nodeTop - NODE / 2, width: NODE, height: NODE, borderRadius: 3, background: t.threadNode }}
           />
         ) : null}
-        <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} compact={page} />
+        <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} compact={page} feed={feed} />
       </div>
     );
   });
@@ -207,13 +211,13 @@ export function PostThread({
       <div data-post={1} id={rest.length === 0 ? regionId : undefined} style={{ position: "relative" }}>
         {connected && connector ? line({ top: connector.top, bottom: -1 }) : null}
         {firstSlot ?? (
-          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} clampLines={open ? undefined : clampLines} onCut={setCut} />
+          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} feed={feed} clampLines={open ? undefined : clampLines} onCut={setCut} />
         )}
       </div>
       {rest.length > 0 ? (
         <UnfoldRegion open={open} id={regionId} regionRef={regionRef}>
-          {open && restState === "loading" ? <RestSkeleton /> : null}
-          {open && restState === "failed" ? <RestFailed onRetry={onRetry} /> : null}
+          {open && restState === "loading" ? <RestSkeleton gap={gap} /> : null}
+          {open && restState === "failed" ? <RestFailed onRetry={onRetry} gap={gap} /> : null}
           {restState === "ready" ? later : null}
         </UnfoldRegion>
       ) : null}
@@ -226,16 +230,16 @@ export function PostThread({
           {footer}
         </div>
       ) : foldable ? (
-        <Toggle buttonRef={toggleRef} open={open} more={rest.length} controls={regionId} phone={phone} onPress={press} onIntent={open ? undefined : onIntent} />
+        <Toggle buttonRef={toggleRef} open={open} more={rest.length} controls={regionId} phone={phone} feed={feed} onPress={press} onIntent={open ? undefined : onIntent} />
       ) : null}
     </div>
   );
 }
 
 /** One dot skeleton post where the others will appear: a line of words and a picture, as tall as a post of one picture. */
-function RestSkeleton() {
+function RestSkeleton({ gap = THREAD_GAP }: { gap?: number }) {
   return (
-    <LoadingRegion what="more posts" style={{ paddingTop: THREAD_GAP }}>
+    <LoadingRegion what="more posts" style={{ paddingTop: gap }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
         <Skeleton width="80%" height={20} radius={4} />
         <Skeleton height={160} radius={6} />
@@ -245,13 +249,13 @@ function RestSkeleton() {
 }
 
 /** The repo's failed line, with Try again, where the other posts will appear. */
-function RestFailed({ onRetry }: { onRetry?: () => void }) {
+function RestFailed({ onRetry, gap = THREAD_GAP }: { onRetry?: () => void; gap?: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <div
       data-post-failed=""
       role="alert"
-      style={{ paddingTop: THREAD_GAP, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.text2 }}
+      style={{ paddingTop: gap, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.text2 }}
     >
       <span>{failedLine("posts").replace(/ Try again\.$/, "")}</span>
       <button
@@ -300,10 +304,13 @@ function Toggle({
   controls,
   phone,
   plain = false,
+  feed = false,
   buttonRef,
   onPress,
   onIntent,
 }: {
+  /** The phone feed's: 15 in Text 3, 44 tall. */
+  feed?: boolean;
   /** The build page's: an underlined text button, with no box. */
   plain?: boolean;
   open: boolean;
@@ -340,16 +347,16 @@ function Toggle({
         alignSelf: "flex-start",
         boxSizing: "border-box",
         minHeight: phone ? 44 : 32,
-        marginTop: plain ? 0 : 4,
+        marginTop: plain || feed ? 0 : 4,
         padding: 0,
         border: 0,
         borderRadius: 4,
         background: "transparent",
         fontFamily: FIGTREE,
-        fontSize: 13,
-        fontWeight: 500,
-        lineHeight: 1.4,
-        color: state.hovered || state.pressed ? t.text : t.text2,
+        fontSize: feed ? 15 : 13,
+        fontWeight: feed ? 400 : 500,
+        lineHeight: feed ? "20px" : 1.4,
+        color: feed ? t.label : state.hovered || state.pressed ? t.text : t.text2,
         textDecoration: plain ? "underline" : "none",
         textUnderlineOffset: 3,
         cursor: "pointer",

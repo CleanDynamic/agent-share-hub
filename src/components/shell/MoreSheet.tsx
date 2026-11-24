@@ -63,16 +63,17 @@ function Row({ item, onDone }: { item: MoreItem; onDone: () => void }) {
   );
 }
 
-export function MoreSheet({ open, onOpenChange, items }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[] }) {
+/** `link` and `name`: what Copy link and Share carry when the sheet belongs to one post in a list (absent: the page). */
+export function MoreSheet({ open, onOpenChange, items, link, name }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[]; link?: string; name?: string }) {
   const { toast } = useToast();
   const [shareable] = useState(() => typeof navigator !== "undefined" && typeof navigator.share === "function");
   const close = () => onOpenChange(false);
   const own: MoreItem[] = [
     {
       label: "Copy link",
-      onSelect: () => void copyToClipboard(window.location.href).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED })),
+      onSelect: () => void copyToClipboard(link ?? window.location.href).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED })),
     },
-    ...(shareable ? [{ label: "Share", onSelect: () => void navigator.share({ url: window.location.href, title: document.title }).catch(() => undefined) }] : []),
+    ...(shareable ? [{ label: "Share", onSelect: () => void navigator.share({ url: link ?? window.location.href, title: name ?? document.title }).catch(() => undefined) }] : []),
   ];
   const danger = items.filter((item) => item.tone === "danger");
   const rest = items.filter((item) => item.tone !== "danger");
