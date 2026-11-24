@@ -607,6 +607,8 @@ export interface CardView {
   render: (variant: "desktop" | "phone") => ReactNode;
   /** UX-09 P2: a rebuild attached to a reply: the topic's author (no @) and the reply's address. */
   madeInReply?: { handle: string; to: string };
+  /** Prompt 22: what a phone's rebuild Card says: the name, where it goes and its facts ("@kit · 9 steps"). */
+  summary?: { title: string; to: string; meta: string };
 }
 
 /* ── Watch it get built ── */

@@ -27,7 +27,13 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useContext,
 } from "react";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { PhonePills } from "@/components/phone/PhonePills";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import type { StepKind } from "@/lib/build/graph";
 
 import { Button } from "@/components/brand/Button";
 import { Notepad, countLine } from "@/components/brand/Notepad";
@@ -230,7 +236,8 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
     visit(steps);
     return out;
   }, [steps]);
-  const map = lens === "map" && !phone && view.mapAvailable;
+  /* Prompt 22: the Map is offered on a phone too, read only, in a well that pans and zooms. */
+  const map = lens === "map" && view.mapAvailable;
   return { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map };
 }
 
@@ -291,7 +298,7 @@ const moduleStyle = (ringed: boolean): CSSProperties => ({
 });
 
 /** UX-03 follow-up P14: a step is a row in its session's module: a hairline above it and 14 above and below its content. */
-const rowStyle = (ringed: boolean, colour?: string): CSSProperties => ({
+const rowStyle = (ringed: boolean, colour?: string, phone = false): CSSProperties => (phone ? phoneCardStyle(ringed, colour) : {
   display: "flex",
   flexDirection: "column",
   gap: 6,
@@ -305,8 +312,24 @@ const rowStyle = (ringed: boolean, colour?: string): CSSProperties => ({
   ...(colour && !ringed ? { borderTopColor: colour } : null),
 });
 
+/** Prompt 22: on a phone a step is a Card (radius 12, padding 12 14, 6 between its parts), 8 below the one before. A step the
+    maker coloured keeps its colour as the card's 1px edge (`borderFor`'s rule); nothing else has an edge. */
+const phoneCardStyle = (ringed: boolean, colour?: string): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  marginTop: 8,
+  padding: "12px 14px",
+  borderRadius: 12,
+  background: t.module,
+  boxSizing: "border-box",
+  minWidth: 0,
+  ...(colour ? { borderStyle: "solid", ...borderFor(colour) } : null),
+  ...(ringed ? { boxShadow: t.selectedRing } : null),
+});
+
 /** A session: one module (grammar 2), padded `16px 16px 4px` so the last row sits evenly. A coloured session's outline is its colour. */
-const sessionModuleStyle = (colour: string | undefined): CSSProperties => ({
+const sessionModuleStyle = (colour: string | undefined, phone = false): CSSProperties => (phone ? { display: "flex", flexDirection: "column", minWidth: 0 } : {
   background: t.module,
   border: `1px solid ${colour ?? t.moduleBorder}`,
   borderRadius: 8,
@@ -360,7 +383,7 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
   const [, confirm] = useConfirmed();
   return (
     <Button
-      variant="secondary"
+      variant={phone ? "ghost" : "secondary"}
       size={phone ? 44 : 28}
       fontSize={13}
       aria-label={`${label} ${what}`}
@@ -403,7 +426,7 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
 
 /** Synth 08: a step's titled text boxes, one row each on Raised (radius 8, 6px 10px): the title 13/500 and its length in mono
     13 Text 3 ("512 characters"). Pressing a row opens the notepad read only, sized to the text. A box with no title is not here. */
-function TitledBoxes({ boxes, indent = INDENT }: { boxes: readonly { title: string; text: string }[]; indent?: number }) {
+function TitledBoxes({ boxes, indent = INDENT, context }: { boxes: readonly { title: string; text: string }[]; indent?: number; /** What the boxes belong to, for the phone's notepad: "Prompt · Order helper". */ context?: string }) {
   const [open, setOpen] = useState<number | null>(null);
   const rows = useRef<(HTMLButtonElement | null)[]>([]);
   if (boxes.length === 0) return null;
@@ -419,6 +442,7 @@ function TitledBoxes({ boxes, indent = INDENT }: { boxes: readonly { title: stri
         field={current?.title ?? ""}
         value={current?.text ?? ""}
         title={current?.title}
+        context={context}
         returnFocusTo={{ get current() { return open === null ? null : rows.current[open]; } }}
       />
     </div>
@@ -461,7 +485,10 @@ function TitledBoxRow({ box, buttonRef, onOpen }: { box: { title: string; text: 
 /** The text at 15/22 in Text 2 under the step's title: four lines, then the meta line (its word count, 13 Text 3) and "Read all". */
 function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
   const long = isLong(step);
-  const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} /> : null;
+  /* Prompt 22: three lines on a phone, four above it. */
+  const { phone } = useContext(TeamLinesContext);
+  const kindWord = stepHead(step).label.split(" · ").pop() as string;
+  const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} context={[kindWord, step.title].filter(Boolean).join(" · ")} /> : null;
   if (!step.text) return boxes;
   return (
     <>
@@ -480,7 +507,7 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
           lineHeight: "22px",
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
-          ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
+          ...(long ? { display: "-webkit-box", WebkitLineClamp: phone ? 3 : 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
         }}
       >
         <ChangedText text={step.text} changes={step.changes} />
@@ -746,6 +773,20 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
   const marked = markFor({ tool: chat.tool, model: chat.model }) !== null;
   const name = `Session ${chat.number}`;
   const steps = `${fold.tiles} ${fold.tiles === 1 ? "step" : "steps"}`;
+  if (fold.phone) {
+    /* Prompt 22: "Session 1" 15/600 with its title 15 Text 2 after it, its date 13 Text 3 at the right, 8 above its steps. No mark. */
+    return (
+      <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? NO_HARNESS}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", alignItems: "center", gap: 8, minHeight: 44, minWidth: 0 }}>
+        <div style={{ flexGrow: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
+          <h3 style={{ margin: 0, ...text(15, 600, t.text), lineHeight: "20px", flexShrink: 0 }}>{chat.headline}</h3>
+          {chat.title ? <span data-testid="session-title-text" style={{ ...text(15, 400, t.text2), lineHeight: "20px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chat.title}</span> : null}
+        </div>
+        <span data-testid="session-count" style={{ ...text(13, 400, t.label), flexShrink: 0, whiteSpace: "nowrap" }}>{chat.date ?? steps}</span>
+        {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
+        <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={32} label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+      </div>
+    );
+  }
   return (
     <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? NO_HARNESS}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", alignItems: "flex-start", gap: 12, paddingBottom: 8, minWidth: 0 }}>
       {marked ? (
@@ -905,10 +946,59 @@ const showsTitle = (entry: ReaderStep): boolean => {
  * Its accessible name is `Step <n> · <Type>` (UX-03 P3). The name under it is the title its maker typed, or what CA-12 P6
  * named it from what it holds ("acme/shop").
  */
+/** Prompt 22: the mobile icon for a step's kind, drawn at 16 beside the kind on a phone. */
+const KIND_ICON: Record<StepKind, MobileIconName> = {
+  prompt: "prompt",
+  agent: "agent",
+  team: "group",
+  manual: "manual",
+  code: "code",
+  check: "check",
+  file: "file",
+  tool: "tool",
+  decision: "decision",
+  system_prompt: "system",
+  dataset: "dataset",
+  repo: "repo",
+  retrieval: "retrieval",
+};
+
 function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: ReactNode; level?: 4 | 5 }) {
   const { step } = entry;
   const word = stepHead(step).label.split(" · ").pop() as string;
   const Heading = level === 4 ? "h4" : "h5";
+  const { phone } = useContext(TeamLinesContext);
+  if (phone) {
+    /* Prompt 22: the number box, the kind's icon at 16 and the kind 13 Text 2, the actions at the right; the title 15/600 under it. */
+    return (
+      <>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, minWidth: 0 }}>
+          <Heading data-testid="step-head" aria-label={`Step ${step.number} · ${word}`} style={{ ...text(13, 400, t.text2), margin: 0, display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <span
+              data-testid="step-label"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 24, height: 24, padding: "0 4px", boxSizing: "border-box", borderRadius: 6, background: t.control, fontFamily: DM_MONO, fontSize: 13, color: t.text, ...tnum }}
+            >
+              <span style={VISUALLY_HIDDEN}>Step </span>
+              {step.number}
+            </span>
+            <span aria-hidden="true" style={{ display: "inline-flex", color: t.text2 }}>
+              <MobileIcon name={KIND_ICON[step.kind] ?? "prompt"} size={16} />
+            </span>
+            <span>{word}</span>
+          </Heading>
+          <MemberLabel to={refTo({ kind: "node", id: step.id })} />
+          <span style={{ flexGrow: 1 }} />
+          <StepRepliesMark id={step.id} />
+          {right}
+        </div>
+        {showsTitle(entry) ? (
+          <span data-testid="step-own-title" style={{ ...text(15, 600, t.text), lineHeight: "20px", overflowWrap: "anywhere" }}>
+            {entry.title}
+          </span>
+        ) : null}
+      </>
+    );
+  }
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 28, minWidth: 0 }}>
@@ -940,7 +1030,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
        count or the word for one. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed, step.colour) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed, step.colour, phone) }}>
         <StepHead entry={entry} right={<SaveMark kind="step" id={step.id} />} />
         <TypeRest step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
@@ -962,7 +1052,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind="decision"
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed, step.colour, phone) }}
       >
         <StepHead
           entry={entry}
@@ -995,7 +1085,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   if (step.kind === "retrieval" && step.retrieval) {
     /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed, step.colour) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed, step.colour, phone) }}>
         <StepHead entry={entry} right={null} />
         <TypeRest step={step} indent={INDENT} />
         <RetrievalTileBody step={step} indent={INDENT} />
@@ -1015,7 +1105,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed, step.colour, phone) }}
       >
         <StepHead entry={entry} right={step.kind === "file" && file ? <AttachDownload file={file} /> : null} />
         <TypeRest step={step} indent={INDENT} />
@@ -1035,7 +1125,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed, step.colour, phone) }}
       >
         <StepHead entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
         <TypeRest step={step} indent={INDENT} />
@@ -1054,7 +1144,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="step-card"
         data-step={step.number}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed, step.colour, phone) }}
       >
         <StepHead entry={entry} right={null} />
         <TypeRest step={step} indent={INDENT} />
@@ -1074,7 +1164,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed, step.colour) }}>
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed, step.colour, phone) }}>
       <StepHead entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
@@ -1114,7 +1204,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="inner-card"
         data-step={step.number}
-        style={{ ...rowStyle(ringed), gap: 8 }}
+        style={{ ...rowStyle(ringed, undefined, phone), gap: 8 }}
       >
         <StepHead
           entry={entry}
@@ -1385,7 +1475,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
   const { steps, results } = view;
   const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
-  const hint = map ? "Click a session to see what joins it · Esc clears" : headNote(steps).replace(/^./, (c) => c.toUpperCase());
+  const hint = map ? (phone ? "Tap a session to see what joins it" : "Click a session to see what joins it · Esc clears") : headNote(steps).replace(/^./, (c) => c.toUpperCase());
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
@@ -1512,7 +1602,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
         key={run.key}
         data-reader-session={chat?.key}
         data-session-colour={run.colour}
-        style={sessionModuleStyle(run.colour)}
+        style={sessionModuleStyle(run.colour, phone)}
       >
         {chat && typeof first.head === "function" ? first.head(fold) : null}
         <div id={controls} hidden={folded} style={column(0)}>
@@ -1527,9 +1617,22 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
     <div data-testid="build-steps" style={column(16)}>
       {/* Synth 08: the heading is the fact ("3 sessions · 12 steps"), 20/600, with List and Map as pills at its right. */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <h2 data-testid="steps-meta" style={{ ...text(20, 600, t.text), lineHeight: "24px", margin: 0 }}>
+        <h2 data-testid="steps-meta" style={{ ...text(20, 600, t.text), lineHeight: "24px", margin: 0, ...(phone ? { letterSpacing: "-0.01em" } : null) }}>
           {view.counts || "The build"}
         </h2>
+        {view.mapAvailable && phone ? (
+          <div style={{ flexBasis: "100%", margin: "-8px -16px -4px" }}>
+            <PhonePills<"list" | "map">
+              label="How to look at the build"
+              pills={[
+                { value: "list", label: "List" },
+                { value: "map", label: "Map" },
+              ]}
+              value={lens}
+              onChange={setLens}
+            />
+          </div>
+        ) : null}
         {view.mapAvailable && !phone ? (
           <Segmented<"list" | "map">
             label="How to look at the build"
@@ -1549,7 +1652,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
       {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
       {map ? (
         <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
-          <ReaderMap view={view} announce={announce} onRead={setOpen} />
+          <ReaderMap view={view} announce={announce} onRead={setOpen} phone={phone} />
         </Suspense>
       ) : (
         partsModel ? (

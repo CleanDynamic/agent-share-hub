@@ -10,6 +10,9 @@
 import { useState } from "react";
 
 import { PostControl } from "@/components/post/postControls";
+import { BigButton } from "@/components/phone/BigButton";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { PageLink } from "@/lib/routing/PageLink";
@@ -76,8 +79,46 @@ function HeadingLink({ to, children }: { to: string; children: string }) {
 
 export function DiscussedSection({ counts, rows, onStart, isMaker }: DiscussedSectionProps) {
   const [all, setAll] = useState(false);
+  const phone = useIsPhone();
   if (!discussedShown(counts, rows.length, isMaker, onStart !== undefined)) return null;
   const shown = all ? rows : rows.slice(0, DISCUSSED_ROWS);
+  if (phone) {
+    /* Prompt 22: the heading with "Show all" at its right, the topics as Cards (the space and author 13 Text 3, the lead
+       15/600), and "Start a topic about this build" as a big button. */
+    const more = !all && rows.length > DISCUSSED_ROWS;
+    return (
+      <section aria-label={DISCUSSED_TITLE} data-testid="build-discussed" style={{ display: "flex", flexDirection: "column", fontFamily: FIGTREE, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: `20px ${PHONE_MARGIN}px 8px` }}>
+          <h2 style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{DISCUSSED_TITLE}</h2>
+          {more ? (
+            <button type="button" onClick={() => setAll(true)} style={{ flexShrink: 0, minHeight: 44, margin: "-12px 0", padding: 0, border: 0, background: "none", fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer" }}>
+              Show all
+            </button>
+          ) : null}
+        </div>
+        {discussedMeta(counts) ? <p style={{ margin: 0, padding: `0 ${PHONE_MARGIN}px 8px`, fontSize: 13, lineHeight: "16px", color: t.label }}>{discussedMeta(counts)}</p> : null}
+        {shown.length > 0 ? (
+          <ul style={{ listStyle: "none", margin: 0, padding: `0 ${PHONE_MARGIN}px`, display: "flex", flexDirection: "column", gap: 8 }}>
+            {shown.map((row) => (
+              <li key={row.id} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 12, background: t.module, minWidth: 0 }}>
+                {row.meta ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{row.meta}</span> : null}
+                <PageLink to={row.to} style={{ fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, textDecoration: "none", overflowWrap: "anywhere" }}>
+                  {row.heading || "Untitled post"}
+                </PageLink>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {onStart ? (
+          <div style={{ padding: `12px ${PHONE_MARGIN}px 0` }}>
+            <BigButton full onClick={onStart}>
+              {START_TOPIC}
+            </BigButton>
+          </div>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <section aria-label={DISCUSSED_TITLE} data-testid="build-discussed" style={{ fontFamily: FIGTREE }}>
       <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>

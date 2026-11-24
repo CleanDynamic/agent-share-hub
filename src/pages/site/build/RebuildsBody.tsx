@@ -74,7 +74,66 @@ function MadeInReplyLine({ handle, to }: { handle: string; to: string }) {
   );
 }
 
+/* ── on a phone (prompt 22) ── */
+
+function PhoneRebuildCard({ card, compare }: { card: RebuildsBodyView["cards"][number]; compare?: { to: string; label: string } }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const summary = card.summary;
+  return (
+    <li data-testid="build-rebuild-card" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 12, background: t.module, minWidth: 0, fontFamily: FIGTREE }}>
+      {summary ? (
+        <>
+          <Link to={summary.to} {...handlers} style={{ fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, textDecoration: "none", overflowWrap: "anywhere", borderRadius: r.chip, ...ring(state.focusVisible) }}>
+            {summary.title}
+          </Link>
+          {summary.meta ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{summary.meta}</span> : null}
+        </>
+      ) : (
+        card.render("phone")
+      )}
+      {card.madeInReply ? <MadeInReplyLine {...card.madeInReply} /> : null}
+      {compare ? (
+        <PageLink to={compare.to} data-testid="build-compare-link" style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: 44, margin: "-12px 0 -14px", fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+          {compare.label}
+        </PageLink>
+      ) : null}
+    </li>
+  );
+}
+
+function PhoneRebuilds({ rebuilds }: { rebuilds: RebuildsBodyView }) {
+  const { cards, loading, lineageTo, compareLinks } = rebuilds;
+  const count = `${cards.length.toLocaleString("en-GB")} ${cards.length === 1 ? "rebuild" : "rebuilds"}`;
+  return (
+    <section data-testid="build-rebuilds" aria-label="Rebuilds" style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: FIGTREE }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+        <h2 style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{loading ? "Rebuilds" : count}</h2>
+        <PageLink to={lineageTo} data-testid="build-rebuilds-family" style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", minHeight: 44, margin: "-10px 0", fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+          See the family tree
+        </PageLink>
+      </div>
+      {loading ? (
+        <LoadingRegion what="the rebuilds" data-testid="build-rebuilds-loading" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {Array.from({ length: 2 }, (_, index) => (
+            <CardSkeleton key={index} cover={0} body={64} />
+          ))}
+        </LoadingRegion>
+      ) : cards.length > 0 ? (
+        <ul aria-label="Rebuilds of this build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* The page lists the compare links in the cards' own order. */}
+          {cards.map((card, index) => (
+            <PhoneRebuildCard key={card.key} card={card} compare={compareLinks?.[index]} />
+          ))}
+        </ul>
+      ) : (
+        <p data-testid="build-rebuilds-empty" style={{ margin: 0, fontSize: 15, lineHeight: "20px", color: t.text2 }}>This build has no rebuilds yet.</p>
+      )}
+    </section>
+  );
+}
+
 export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBodyView; phone?: boolean }) {
+  if (phone) return <PhoneRebuilds rebuilds={rebuilds} />;
   const { cards, loading, lineageTo, compareLinks } = rebuilds;
   const columns = phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))";
   const gap = phone ? 10 : 12;

@@ -4,6 +4,7 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import { Row } from "@/components/brand/Row";
+import { PANEL_RADIUS, PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { hasClassification, regulatedArea, shownValues } from "@/lib/classify/facets";
@@ -107,6 +108,40 @@ export function ClassificationSection({ classification, maker }: { classificatio
   const notStated = own ? all.filter((entry) => entry.values.length === 0 && MAKER_SET.includes(entry.facet)) : [];
   const rows = [...withValues.map((entry) => ({ ...entry, empty: false })), ...notStated.map((entry) => ({ ...entry, empty: true }))];
   const perColumn = phone ? rows.length : Math.ceil(rows.length / 2);
+  if (phone) {
+    /* Prompt 22: the fact as the phone's section head, "Derived from the build" beside it when a value was, the rows in a Panel
+       module, and "Open Classification" under it. */
+    const derived = withValues.some((entry) => entry.values.some((value) => value.provenance === "derived"));
+    return (
+      <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", minWidth: 0, fontFamily: FIGTREE }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: `20px ${PHONE_MARGIN}px 8px` }}>
+          <h2 style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"}`}</h2>
+          {derived ? <span style={{ flexShrink: 0, fontSize: 13, lineHeight: "16px", color: t.label }}>{DERIVED_NOTE}</span> : null}
+        </div>
+        <div style={{ margin: `0 ${PHONE_MARGIN}px`, padding: "4px 16px", borderRadius: PANEL_RADIUS, background: t.surface, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          {rows.map((entry, index) => (
+            <Row
+              key={entry.key}
+              inModule
+              label={<span data-facet={entry.facet}>{FACET_LABEL[entry.facet]}</span>}
+              value={entry.empty ? <span style={{ color: t.label, fontWeight: 400 }}>Not stated</span> : <FacetValues facet={entry.facet} values={entry.values} />}
+              style={index === rows.length - 1 ? { borderBottom: 0 } : undefined}
+            />
+          ))}
+        </div>
+        {maker && notStated.length > 0 ? (
+          <PageLink to={maker.editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: 44, margin: `0 ${PHONE_MARGIN}px`, fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            {OPEN_CLASSIFICATION}
+          </PageLink>
+        ) : null}
+        {regulatedArea(classification) ? (
+          <p role="note" data-testid="regulated-notice" style={{ margin: 0, padding: `8px ${PHONE_MARGIN}px 0`, fontSize: 13, lineHeight: "18px", color: t.text2 }}>
+            {REGULATED_NOTICE}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
       <SectionHead headingLevel={2} title={`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"}`} />
@@ -155,6 +190,20 @@ export function ClassificationSection({ classification, maker }: { classificatio
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** A facet's values, joined by commas; the stack in mono. */
+function FacetValues({ facet, values }: { facet: Facet; values: readonly Shown[] }) {
+  return (
+    <span style={facet === "stack" ? { fontFamily: DM_MONO } : undefined}>
+      {values.map((value, at) => (
+        <Fragment key={`${value.label}-${at}`}>
+          {at > 0 ? ", " : null}
+          <Value value={value} />
+        </Fragment>
+      ))}
+    </span>
   );
 }
 
