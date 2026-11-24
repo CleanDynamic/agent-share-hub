@@ -3,7 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { Suspense, lazy } from "react";
 import { useIdleReady } from "@/lib/routing/lazyHost";
 
-/** SV-26 P2: the toast bus listens for xp and badges; it loads once the first page has settled (at idle), not with it. */
+/** SV-26 P2: the toast bus listens for badges and streaks; it loads once the first page has settled (at idle), not with it. */
 const GamificationToasts = lazy(() => import("@/components/ambient/GamificationToasts"));
 
 // Auth routes are a dedicated full-screen entry point: no left rail, no right

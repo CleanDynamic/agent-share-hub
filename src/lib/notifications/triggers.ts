@@ -314,7 +314,7 @@ export function notifyReferencesReceived(args: {
 }
 
 // ────────────────────────────────────────────────────────────
-// 9. SYSTEM — level achievement.
+// 9. SYSTEM — creator level.
 // ────────────────────────────────────────────────────────────
 
 /**
@@ -325,34 +325,10 @@ export function notifyReferencesReceived(args: {
 export type CreatorLevel = "reader" | "builder" | "creator" | "curator";
 
 const LEVEL_ORDER: CreatorLevel[] = ["reader", "builder", "creator", "curator"];
-const LEVEL_LABEL: Record<CreatorLevel, string> = {
-  reader: "Reader",
-  builder: "Builder",
-  creator: "Creator",
-  curator: "Curator",
-};
-
-export function notifyLevelEarned(args: {
-  recipientId: string;
-  newLevel: CreatorLevel;
-}) {
-  return silent(
-    (async () => {
-      return createNotification({
-        recipientId: args.recipientId,
-        kind: "system",
-        targetType: "profile",
-        targetId: args.recipientId,
-        body: `You earned the ${LEVEL_LABEL[args.newLevel]} badge`,
-        metadata: { sub: "level_earned", level: args.newLevel },
-      });
-    })()
-  );
-}
-
 /**
- * Recompute a user's creator level from their public stats and emit a
- * `system` notification when they cross a threshold.
+ * Recompute a user's creator level from their public stats and update the
+ * stored level when they cross a threshold. It no longer sends a notification:
+ * level notifications are not shown anywhere.
  *
  * Thresholds (intentionally conservative for now):
  *   - reader:  default
@@ -397,7 +373,6 @@ export function recomputeUserLevel(userId: string) {
         } catch {
           /* ignore — we still send the notification below */
         }
-        await notifyLevelEarned({ recipientId: userId, newLevel: next });
       }
       return null;
     })()

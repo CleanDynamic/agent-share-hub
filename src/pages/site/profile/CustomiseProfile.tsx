@@ -24,7 +24,6 @@ import {
   movePin,
   type BuildDisplay,
   type FeedFilter,
-  type LevelVisible,
   type NotesVisible,
   type SideKey,
 } from "@/lib/profile/settings";
@@ -70,7 +69,6 @@ export const CUSTOMISE_COPY = {
   showBuildsAs: "Show builds as",
   oneBuild: "You can change one build from its ··· menu.",
   notes: "Notes in your feed",
-  level: "Your level",
   saves: "Your saves are always private.",
   morePrivacy: "More privacy settings",
   reset: "Reset to default",
@@ -95,10 +93,6 @@ const DISPLAY_ITEMS: readonly { value: BuildDisplay; label: string }[] = [
 const NOTES_ITEMS: readonly { value: NotesVisible; label: string }[] = [
   { value: "everyone", label: "Everyone" },
   { value: "followers", label: "Followers" },
-  { value: "only_me", label: "Only me" },
-];
-const LEVEL_ITEMS: readonly { value: LevelVisible; label: string }[] = [
-  { value: "everyone", label: "Everyone" },
   { value: "only_me", label: "Only me" },
 ];
 
@@ -306,11 +300,8 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
       </Group>
 
       <Group title={CUSTOMISE_COPY.groups.who}>
-        <Row label={CUSTOMISE_COPY.notes} id={`${ids}-notes`} group phone={phone} noRule>
+        <Row label={CUSTOMISE_COPY.notes} id={`${ids}-notes`} group hint={CUSTOMISE_COPY.saves} phone={phone} noRule>
           <Segmented<NotesVisible> label={CUSTOMISE_COPY.notes} semantics="radio" size={28} items={NOTES_ITEMS} value={draft.settings.notesVisible} onChange={(notesVisible) => settings({ notesVisible })} />
-        </Row>
-        <Row label={CUSTOMISE_COPY.level} id={`${ids}-level`} group hint={CUSTOMISE_COPY.saves} phone={phone}>
-          <Segmented<LevelVisible> label={CUSTOMISE_COPY.level} semantics="radio" size={28} items={LEVEL_ITEMS} value={draft.settings.levelVisible} onChange={(levelVisible) => settings({ levelVisible })} />
         </Row>
         {/* UX-15 P2: private profile and blocking live in Settings. */}
         <PageLink to="/settings/privacy" style={{ ...FOOT_NOTE, color: t.label, textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1, alignSelf: "flex-start" }}>

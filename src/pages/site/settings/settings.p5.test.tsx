@@ -189,7 +189,6 @@ const headProps = (over: Partial<ProfileHeadProps> = {}): ProfileHeadProps => ({
   avatarAlt: null,
   header: null,
   meta: metaParts({ handle: "maya", place: null, joined: "Feb 2026", followers: 3, following: 1 }),
-  level: null,
   oneLine: null,
   links: [],
   record: recordParts("maya", { builds: 1, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }),

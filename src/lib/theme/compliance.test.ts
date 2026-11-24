@@ -251,13 +251,6 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "separate document and inherits nothing from the page, so a custom " +
       "property in it resolves to nothing at all. Dev-only route.",
   },
-  "src/components/ambient/ActionXpHintInner.tsx": {
-    max: 1,
-    why:
-      "A LEGIBILITY SCRIM behind an XP hint that floats over whatever surface " +
-      "raised it, which may be any route in either theme. Same unresolved " +
-      "question as the other two scrims — see the note below them.",
-  },
   /* Added in SV-26 with the reasons each has; the literals came in with CA-20 to SV-25 and the sweep had not been run. */
   "src/dev/fixtures/parts.ts": {
     max: 5,

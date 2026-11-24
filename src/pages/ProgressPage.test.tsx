@@ -1,14 +1,12 @@
-// RC-P27 — the progress page, in six sections.
+// RC-P27 — the progress page, in four sections.
 //
-// The claims: /analytics draws exactly six sections, in order (the reset note,
-// Progress, Needs you, Your builds, This week, Badges), and with the note read
-// and nothing needing the maker, the other four in the same order; no text on
-// it is drawn in --lit, while the progress fills are; it asks for six things
-// and none is a parked feature's table or function, and the frame's progress
-// hook asks for user_progress alone; PROGRESS is three figures in DM Mono with
-// tabular digits in --text, the bar, and the six sources of XP; THIS WEEK is
-// at most three challenges, each "n of m" in DM Mono with the same bar; BADGES
-// is the ten, earned first; and a refused read is a refusal, never level 1.
+// The claims: /analytics draws, under the h1, Needs you (only when something
+// needs the maker), the builds table headed by its fact, This week and the
+// badges, in that order; XP and "Level" are nowhere on it, and nothing stands in
+// their place; no text on it is drawn in --lit, while the progress fills are;
+// it asks for five things and none is a parked feature's table or function;
+// THIS WEEK is at most three challenges, each "n of m" in DM Mono with the same
+// bar and no XP reward; BADGES is the six that are not about runs, earned first.
 //
 // Two renderings, because jsdom drops var() from a style object but keeps the
 // attribute text: behaviour runs through the real data layer over a recording
@@ -71,9 +69,6 @@ vi.mock("@/integrations/supabase/client", () => {
 
 import Analytics from "@/pages/Analytics";
 import { MY_BUILD_STATS_KEY } from "@/components/analytics/BuildAnalytics";
-import { RESET_NOTE_KEY } from "@/components/progress/ResetNote";
-import { useProgress } from "@/hooks/useProgress";
-import { LISTED_XP_SOURCES, XP_SOURCES } from "@/lib/progress/sources";
 
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
@@ -103,7 +98,6 @@ const metrics = (n: number) => ({
   failed_last_30_days: 0,
 });
 
-const PROGRESS = { xp_total: 412, level: 3 }; // level 3 starts at 243 and level 4 at 485
 const WEEK = [
   { reason: "run_reported", source_id: "b-21", created_at: NOW },
   { reason: "run_reported", source_id: "b-22", created_at: NOW },
@@ -133,7 +127,6 @@ const PARKED = [
 
 function answerAll({ needsYou = true }: { needsYou?: boolean } = {}) {
   stand.answers = {
-    user_progress: { data: PROGRESS, error: null, status: 200 },
     xp_events: { data: WEEK, error: null, status: 200 },
     user_badges: { data: HELD.map((badge_key) => ({ badge_key })), error: null, status: 200 },
     builds: { data: [build(1), build(4, needsYou ? 3 : 0)], error: null, status: 200 },
@@ -166,20 +159,17 @@ function renderPage() {
 async function settled() {
   await screen.findAllByTestId("badge-slot");
   await screen.findAllByTestId("weekly-challenge");
-  await screen.findByTestId("progress-xp");
   await screen.findByTestId("build-stats-table");
 }
 
-/** A section by what names it: its heading, or the note. */
+/** A section by what names it: its heading. */
 function sectionName(element: Element): string {
-  if (element.getAttribute("role") === "note") return "Reset note";
   return element.querySelector("h2")?.textContent ?? `(${element.getAttribute("data-testid")})`;
 }
 
 /** The page as static markup over a query cache holding the same rows, parsed back into a DOM. */
 function staticPage(): HTMLElement {
   const client = freshClient();
-  client.setQueryData(["progress", USER], PROGRESS);
   client.setQueryData(["progress.week", USER], WEEK);
   client.setQueryData(["progress.badges", USER], new Set(HELD));
   client.setQueryData([MY_BUILD_STATS_KEY, USER], {
@@ -219,55 +209,59 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-describe("the six sections", () => {
-  it("are the note, Progress, Needs you, Your builds, This week and Badges, in that order, and nothing else", async () => {
+describe("the sections", () => {
+  it("are Needs you, Your builds, This week and Badges, in that order, under the h1, and nothing else", async () => {
     renderPage();
     await settled();
     await screen.findByTestId("needs-you");
 
     const page = screen.getByTestId("progress-page");
-    expect([...page.children].map(sectionName)).toEqual([
-      "Reset note",
-      "Level 3",
-      "Needs you",
-      "2 builds",
-      "This week",
-      "3 of 6 badges",
-    ]);
+    expect([...page.children].map(sectionName)).toEqual(["Needs you", "2 builds", "This week", "3 of 6 badges"]);
     expect(within(page).getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
-      "Level 3",
       "Needs you",
       "2 builds",
       "This week",
       "3 of 6 badges",
     ]);
     expect(screen.getByRole("heading", { level: 1, name: "Your progress" })).toBeTruthy();
-    expect(within(page).getAllByRole("note")).toHaveLength(1);
+    expect(within(page).queryAllByRole("note")).toHaveLength(0);
   });
 
-  it("keep their order when the note has been read and nothing needs the maker", async () => {
-    window.localStorage.setItem(RESET_NOTE_KEY, "1");
+  it("starts with the builds table when nothing needs the maker, with no block above it", async () => {
     answerAll({ needsYou: false });
     renderPage();
     await settled();
 
     const page = screen.getByTestId("progress-page");
-    expect([...page.children].map(sectionName)).toEqual(["Level 3", "2 builds", "This week", "3 of 6 badges"]);
+    expect([...page.children].map(sectionName)).toEqual(["2 builds", "This week", "3 of 6 badges"]);
   });
 
-  it("leave out every panel of the old product", async () => {
+  it("draws no XP and no level anywhere", async () => {
+    renderPage();
+    await settled();
+
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/\bXP\b/i);
+    expect(text).not.toMatch(/Level\s/);
+    expect(text).not.toMatch(/level up/i);
+    expect(screen.queryByTestId("progress-level")).toBeNull();
+    expect(screen.queryByTestId("xp-reset-note")).toBeNull();
+    expect(screen.queryByRole("progressbar", { name: /level/i })).toBeNull();
+  });
+
+  it("leaves out every panel of the old product", async () => {
     renderPage();
     await settled();
 
     expect(screen.queryByRole("tablist")).toBeNull();
-    for (const gone of [/skill tree/i, /daily/i, /quest/i, /streak/i, /perk/i, /XP ledger/i, /creator marks/i, /showcase/i, /trophies/i]) {
+    for (const gone of [/skill tree/i, /daily/i, /quest/i, /streak/i, /perk/i, /ledger/i, /creator marks/i, /showcase/i, /trophies/i]) {
       expect(screen.queryByText(gone)).toBeNull();
     }
   });
 });
 
 describe("the page's reads", () => {
-  it("ask for six things, and none of them is a parked feature's table or function", async () => {
+  it("ask for five things, and none of them is a parked feature's table or function", async () => {
     renderPage();
     await settled();
 
@@ -276,26 +270,11 @@ describe("the page's reads", () => {
       "rpc:maker_build_metrics",
       "rpc:maker_stats",
       "user_badges",
-      "user_progress",
       "xp_events",
     ]);
     expect(stand.requests.filter((request) => PARKED.includes(request))).toEqual([]);
   });
 
-  it("the frame's progress hook asks for user_progress and nothing else", async () => {
-    function Chip() {
-      const { level, progress } = useProgress();
-      return <span data-testid="chip">{`${level}:${progress?.xp_total ?? "-"}`}</span>;
-    }
-    render(
-      <Providers client={freshClient()}>
-        <Chip />
-      </Providers>,
-    );
-
-    expect((await screen.findByText("3:412")).getAttribute("data-testid")).toBe("chip");
-    expect(stand.requests).toEqual(["user_progress"]);
-  });
 });
 
 describe("colour", () => {
@@ -305,66 +284,13 @@ describe("colour", () => {
     const inked = [...root.querySelectorAll("*")].filter((element) =>
       [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()),
     );
-    expect(inked.length).toBeGreaterThan(40);
+    expect(inked.length).toBeGreaterThan(25);
     expect(inked.filter((element) => inkOf(element, root) === "var(--lit)").map((element) => element.textContent)).toEqual([]);
 
     // The one other amber: a highest-tier badge's fill, whose ink is --on-lit.
     const highest = root.querySelector('[data-testid="badge-mark-family"]');
     expect(styleOf(highest)["background"]).toBe("var(--lit)");
     expect(styleOf(highest)["color"]).toBe("var(--on-lit)");
-  });
-});
-
-describe("PROGRESS", () => {
-  it("heads the section with the level, and gives the XP and the XP to the next level in mono 13 Text 2 (Synth 15)", () => {
-    const root = staticPage();
-
-    expect(root.querySelector('[data-testid="progress-level"]')?.textContent).toBe("Level 3");
-    const xp = root.querySelector('[data-testid="progress-xp"]');
-    expect(xp?.textContent).toBe("412 XP · 73 to level 4");
-    const style = styleOf(xp);
-    expect(style["font-family"]).toContain("Geist Mono");
-    expect(style["font-variant-numeric"]).toBe("tabular-nums");
-    expect(style["color"]).toBe("var(--text2)");
-    // The bar: 6px, the Mint fill on the Raised track.
-    const track = root.querySelector('[data-testid="level-bar"] [role="progressbar"]');
-    expect(styleOf(track)["height"]).toBe("6px");
-    expect(styleOf(track)["background"]).toBe("var(--control)");
-    expect(styleOf(track?.firstElementChild ?? null)["background"]).toBe("var(--brand-accent)");
-  });
-
-  it("draws the level's progress as the bar, 169 of the 242 XP between level 3 and level 4", async () => {
-    renderPage();
-    const bar = await screen.findByRole("progressbar", { name: "Progress to level 4" });
-
-    expect(bar.getAttribute("aria-valuenow")).toBe("169");
-    expect(bar.getAttribute("aria-valuemax")).toBe("242");
-    expect(bar.getAttribute("aria-valuetext")).toBe("169 of 242 XP");
-  });
-
-  it("lists how you earn: the sources that are not about runs, in order, each with its XP", async () => {
-    renderPage();
-    const heading = await screen.findByRole("heading", { level: 3, name: "How you earn" });
-
-    const items = within(heading.parentElement as HTMLElement).getAllByTestId("xp-source");
-    expect(items.map((item) => item.textContent)).toEqual(LISTED_XP_SOURCES.map((source) => `${source.event}${source.xp} XP`));
-    expect(LISTED_XP_SOURCES.map((source) => source.event)).toEqual([
-      "Your build is published (first time only)",
-      "Someone publishes a rebuild of your build",
-      "Your solution is accepted",
-    ]);
-    expect(XP_SOURCES).toHaveLength(6);
-  });
-
-  it("says a refused read is a refusal, never level 1", async () => {
-    stand.answers.user_progress = { data: null, error: { code: "42501", message: "denied" }, status: 403 };
-    renderPage();
-
-    const refusal = await screen.findByTestId("progress-error");
-    expect(refusal.textContent).toContain("You don't have access to this.");
-    expect(within(refusal).getByRole("button", { name: "Try again" })).toBeTruthy();
-    expect(screen.queryByTestId("progress-xp")).toBeNull();
-    expect(screen.queryByRole("progressbar", { name: /Progress to level/ })).toBeNull();
   });
 });
 

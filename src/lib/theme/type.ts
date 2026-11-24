@@ -19,7 +19,7 @@
 //                the credit line on Rebuild, a profile card's name in Followers.
 //                It has no weight axis, so it is never bolded.
 //   Geist Mono   ONLY for numbers: counts in tables, step numbers, keys,
-//                character counts, XP figures, "1 of 3". Never a sentence,
+//                character counts, "1 of 3". Never a sentence,
 //                a label or a handle.
 // The names FIGTREE, SENTIENT and DM_MONO stay as the three roles' handles so
 // callers do not change; FIGTREE is Geist, SENTIENT is Geist Serif, DM_MONO is
@@ -180,7 +180,7 @@ export const figure = {
 } as const satisfies CSSProperties;
 
 /** 13/16 Geist Mono. NUMBERS ONLY: counts in tables, step numbers, keyboard keys,
-    character counts, XP figures, "1 of 3". Tabular digits. */
+    character counts, "1 of 3". Tabular digits. */
 export const monoLabel = {
   fontFamily: DM_MONO,
   fontSize: "13px",

@@ -313,7 +313,7 @@ export const privacy: LegalText = {
             ["Builds layout and chosen filters (builds:layout:v1, builds:facets:v1)", "Local storage", "To remember how you like the Builds page", "Until you clear your browser"],
             ["Composer view (bg-compose-view:…)", "Local storage", "To remember how the composer's session list is shown", "Until you clear your browser"],
             ["A declined review (openbuilds.layer-review.declined.…)", "Local storage", "So a build's explanation review is not offered again after you said no", "Until you clear your browser"],
-            ["What you have already seen (bg-home-seen, openbuilds:seen:…, bg-xp-reset-note-seen)", "Local storage", "To mark what is new on Home and in a space, and not show a note again", "Until you clear your browser"],
+            ["What you have already seen (bg-home-seen, openbuilds:seen:…)", "Local storage", "To mark what is new on Home and in a space, and not show a note again", "Until you clear your browser"],
             ["A collapsed panel in Messages (pinned-context-collapsed:…)", "Local storage", "To remember that you folded a conversation's pinned context", "Until you clear your browser"],
             ["An ad shown on a page (openbuilds_page_ad_shown_…). Not strictly necessary.", "Session storage", "On older content pages, so a visitor who is not signed in sees a page's ad once per visit", "Until you close the tab"],
           ],

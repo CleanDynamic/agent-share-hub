@@ -39,9 +39,6 @@ export interface FixtureViewer {
   initials: string;
   avatar_hue: number;
   unread: number;
-  level: number;
-  xp: number;
-  xp_next: number;
   track: string;
   streak_days: number;
   streak_best: number;

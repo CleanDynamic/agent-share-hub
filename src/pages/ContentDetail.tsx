@@ -137,7 +137,6 @@ export default function ContentDetail() {
       handle: author.username || author.id.slice(0, 8),
       avatarUrl: author.avatar_url || "",
       isVerified: false,
-      level: 1,
       customBio: author.bio || undefined,
       derivedBio: author.derived_bio || "",
       isFollowing: data?.viewer.isFollowing ?? false,

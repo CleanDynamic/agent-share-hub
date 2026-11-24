@@ -29,6 +29,5 @@ export {
   notifyMentions,
   notifyNewMessageCoalesced,
   notifyReferencesReceived,
-  notifyLevelEarned,
   recomputeUserLevel,
 } from "./triggers";

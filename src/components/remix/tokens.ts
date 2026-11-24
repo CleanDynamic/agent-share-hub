@@ -68,7 +68,6 @@ export const tokens = {
   glass: GLASS_BLUR,
 } as const;
 
-export const xpColor = tokens.orange;
 export const reputationColor = tokens.teal;
 export const streakColor = tokens.amber;
 
