@@ -28,10 +28,6 @@ vi.mock("@/hooks/useUnreadNotifications", () => ({
   useUnreadNotifications: () => ({ display: null, count: 0 }),
 }));
 vi.mock("@/hooks/useBreakpoint", () => ({ useBreakpoint: () => "xl" }));
-vi.mock("@/hooks/useProgress", () => ({
-  useProgress: () => ({ level: 1, xpInLevel: 0, xpForNext: 100, progress: { xp_total: 0 } }),
-}));
-vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => null }));
 
 const { AppShell } = await import("@/components/AppShell");
 

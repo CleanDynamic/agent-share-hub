@@ -9,7 +9,7 @@
      collections  "2 collections"
      marks        "Marks": the earned marks, joined by " · "
 
-   YOUR PROGRESS (P9) is a section at the top for the owner only: Level, the XP line, the streak and the track picker.
+   YOUR PROGRESS (P9) is a section at the top for the owner only: the streak and the track picker.
    The "Works in" tool list is gone. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
@@ -46,9 +46,6 @@ export interface SideSpace {
 export type TrackValue = "architect" | "curator" | "mentor" | "explorer";
 
 export interface ProgressView {
-  level: number;
-  /** "1,840 / 2,400 xp", or null when not known. */
-  xpLine: string | null;
   /** "12-day streak", or null when there is none. */
   streak: string | null;
   track: TrackValue | null;
@@ -234,8 +231,6 @@ function Progress({ progress }: { progress: ProgressView }) {
     <section aria-label={PROGRESS_TITLE} data-testid="profile-progress" style={MODULE}>
       <h2 style={HEAD}>{PROGRESS_TITLE}</h2>
       <div style={{ ...BODY, marginTop: 8, display: "flex", flexDirection: "column", gap: 4, fontVariantNumeric: "tabular-nums" }}>
-        <span>{`Level ${progress.level}`}</span>
-        {progress.xpLine ? <span>{progress.xpLine}</span> : null}
         {progress.streak ? <span>{progress.streak}</span> : null}
       </div>
       {/* The four tracks are wider than the side panel: they scroll inside it rather than spill past its edge. */}

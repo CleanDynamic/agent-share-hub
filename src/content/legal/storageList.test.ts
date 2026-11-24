@@ -34,7 +34,6 @@ const WRITERS: Record<string, string[]> = {
   "src/lib/build/layers.ts": ["openbuilds.layer-review.declined."],
   "src/pages/site/home/homeModel.ts": ["bg-home-seen"],
   "src/pages/site/openbuilds/openBuildsFeedModel.ts": ["openbuilds:seen:"],
-  "src/components/progress/ResetNote.tsx": ["bg-xp-reset-note-seen"],
   "src/components/messages/ConversationHeader.tsx": ["pinned-context-collapsed:"],
   "src/components/ContentBlockViewer.tsx": ["openbuilds_page_ad_shown_"],
 };

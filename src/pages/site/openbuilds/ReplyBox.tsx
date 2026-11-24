@@ -34,6 +34,7 @@ import { makeReplyDraft, replyTileInput, type ReplyStepTile } from "@/lib/openbu
 
 import { EMPTY_REPLY, replyHasContent, sendReply, type ReplyDraft } from "./sendReply";
 import { StepTileEditor } from "./StepTileEditor";
+import { PhoneReplyBar, attachmentLabel } from "./PhoneReplyBar";
 import { attachmentOf, inputOf } from "./sendPost";
 
 export const REPLY_PLACEHOLDER = "Reply with words, work, or both";
@@ -58,6 +59,8 @@ export interface ReplyBoxProps {
   pick?: WorkSize;
   /** After a reply is in the Thread (the box goes back to the foot). */
   onSent?: () => void;
+  /** Prompt 21: the phone's pinned reply bar, in place of the Card. The logic below is the same. */
+  bar?: boolean;
 }
 
 const textLine = (size: 13 | 15, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: size === 15 ? "20px" : "16px", color, margin: 0 });
@@ -73,7 +76,7 @@ function RemoveLink({ onClick, label }: { onClick: () => void; label: string }) 
 
 const EMPTY_TILE: ReplyStepTile = { kind: "prompt", text: "", tool: null, model: null };
 
-export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signInTo, draftTitle, pick, onSent }: ReplyBoxProps) {
+export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signInTo, draftTitle, pick, onSent, bar = false }: ReplyBoxProps) {
   const qc = useQueryClient();
   const { user, profile } = useAuth();
   const viewerId = user?.id ?? null;
@@ -174,6 +177,40 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
         : { kind: "picture", key: "reply-picture", path: input.mediaPath, mediaKind: input.mediaKind, src: preview }
       : cardAttachment({ id: "reply", stillOpen: false, aboutNodeId: null }, attachmentOf(input, 0), work, new Map());
   const name = profile?.display_name?.trim() || profile?.username || "You";
+
+  if (bar) {
+    return (
+      <>
+        <PhoneReplyBar
+          id={REPLY_BOX_ID}
+          fieldId={`reply-box-${parentId}`}
+          placeholder={REPLY_PLACEHOLDER}
+          body={draft.body}
+          onBody={(body) => change({ body })}
+          area={area}
+          viewerId={viewerId}
+          signInTo={signInTo}
+          hasContent={replyHasContent({ ...draft, about }) || Boolean(tile && tile.text.trim())}
+          uploading={uploading}
+          onSend={() => void send()}
+          onPick={(picked) => void attach(picked)}
+          onFile={() => file.current?.click()}
+          onTile={() => {
+            if (tile) return setTile(null);
+            change({ attachment: null });
+            setTile(EMPTY_TILE);
+          }}
+          tileOpen={tile !== null}
+          about={about}
+          onRemoveAbout={onRemoveAbout}
+          attachment={drawn ? { label: attachmentLabel(drawn), onRemove: () => change({ attachment: null }) } : null}
+          tile={tile ? <div style={{ maxHeight: "40dvh", overflowY: "auto" }}><StepTileEditor tile={tile} onChange={setTile} idPrefix={`reply-tile-${parentId}`} /></div> : null}
+          notice={notice}
+        />
+        <input ref={file} type="file" aria-label="Choose an image or file" hidden onChange={(event) => void addFile(event.target.files?.[0])} />
+      </>
+    );
+  }
 
   return (
     // UX-09 P1: `#reply-box` on a topic's address brings this box into view, with its field focused (Reply on a gap).

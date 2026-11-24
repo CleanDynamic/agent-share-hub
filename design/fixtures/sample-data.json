@@ -7,9 +7,6 @@
   "initials": "MA",
   "avatar_hue": 1,
   "unread": 3,
-  "level": 7,
-  "xp": 1840,
-  "xp_next": 2400,
   "track": "curator",
   "streak_days": 12,
   "streak_best": 31
@@ -185,20 +182,17 @@
    {
     "title": "Run three builds you haven’t run before",
     "done": 1,
-    "target": 3,
-    "xp": 90
+    "target": 3
    },
    {
     "title": "Solve a gap",
     "done": 0,
-    "target": 1,
-    "xp": 150
+    "target": 1
    },
    {
     "title": "Re-confirm one of your stale builds",
     "done": 1,
-    "target": 1,
-    "xp": 0
+    "target": 1
    }
   ],
   "week": [

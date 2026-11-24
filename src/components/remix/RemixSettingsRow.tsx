@@ -99,7 +99,7 @@ export default function RemixSettingsRow({
         <div className="flex min-w-0 flex-col gap-0.5">
           <span style={{ fontSize: 14, fontWeight: 600, color: tokens.text }}>Allow remixing</span>
           <span style={{ fontSize: 12.5, color: tokens.textMuted }}>
-            Remixes always credit you and share a little XP.
+            Remixes always credit you.
           </span>
         </div>
 

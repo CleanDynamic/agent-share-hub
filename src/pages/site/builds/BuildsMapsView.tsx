@@ -17,19 +17,23 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Segmented } from "@/components/brand/Segmented";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { Skeleton } from "@/components/brand/Skeleton";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { tokenAlpha } from "@/lib/theme/tokens";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BUILDS_PANEL, BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BUILDS_PANEL, BuildsControl, panelFor, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { ActiveFilters, type TableChip } from "./BuildsTableView";
 import { EMPTY } from "@/lib/copy/copy";
+import { PHONE_CARD, PhoneShowMore, phoneText } from "./BuildsPhone";
 
 /** The well, in the board's own units. */
 export const WELL_W = 400;
@@ -48,6 +52,8 @@ export interface MapBoxView {
   label: string;
   /** "OPUS · 4". */
   meta: string;
+  /** The maker's colour for the session; the phone draws it as a 3px inset on the box's left. */
+  colour?: string;
 }
 
 export interface MapPartView {
@@ -82,6 +88,8 @@ export interface MapCardView {
   maker: string | null;
   /** "3 parts · 5 sessions". */
   summary: string;
+  /** The build's shape as a word ("App"); the phone says it after the maker. */
+  shape?: string;
   /** How many sessions the build has: none is "No sessions yet", one is "One session. A Map needs two." */
   sessions: number;
   /** BF-03 (D2): the Map was not read; the card says so in its summary and the well says nothing. */
@@ -189,6 +197,90 @@ function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: str
   );
 }
 
+/* ── one Map on a phone (prompt 21): 180 tall, radius 10, Card fill with a faint 12px dot grid; session boxes 92 by 36 on Raised
+   ("Session 1"), a maker's colour as a 3px inset on the left; lines 2px. Places come from `mapsModel` as they do on desktop. ── */
+
+const PHONE_WELL_H = 180;
+
+const sessionWord = (label: string): string => {
+  const at = /^S(\d+)/.exec(label);
+  return at ? `Session ${at[1]}` : label;
+};
+
+function PhoneWell({ drawing, note, words }: { drawing: MapDrawing | null; note?: string; words: string }) {
+  const { state, handlers } = useInteractive<HTMLDivElement>();
+  const [w, h] = drawing ? [drawing.width, Math.max(drawing.height, PHONE_WELL_H)] : [WELL_W, PHONE_WELL_H];
+  /* The drawing keeps its own width, so the boxes stay 92 and the lines stay on their edges; a well narrower than that scrolls. */
+  const scrolls = drawing !== null && (drawing.width > 300 || drawing.height > PHONE_WELL_H);
+  return (
+    <div
+      role="group"
+      aria-label={words}
+      tabIndex={scrolls ? 0 : undefined}
+      {...(scrolls ? handlers : null)}
+      style={{
+        position: "relative",
+        height: PHONE_WELL_H,
+        boxSizing: "border-box",
+        borderRadius: 10,
+        background: t.module,
+        backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
+        backgroundSize: "12px 12px",
+        overflow: scrolls ? "auto" : "hidden",
+        ...(scrolls ? ring(state.focusVisible) : null),
+      }}
+    >
+      {drawing ? (
+        <div aria-hidden="true" style={{ position: "relative", width: "100%", minWidth: w, height: h }}>
+          {drawing.parts.map((part) => (
+            <span key={part.key} style={{ position: "absolute", left: pct(part.x, w), top: pct(part.y, h), fontFamily: FIGTREE, fontSize: 13, color: t.label, whiteSpace: "nowrap" }}>
+              {part.label}
+            </span>
+          ))}
+          <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ position: "absolute", inset: 0 }}>
+            {drawing.lines.map((line) => (
+              <path key={line.id} d={line.d} fill="none" stroke={tokenAlpha("label", 0.5)} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+            ))}
+          </svg>
+          {drawing.boxes.map((box) => (
+            <span
+              key={box.key}
+              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: BOX_W, height: BOX_H, boxSizing: "border-box", padding: "0 8px", display: "flex", alignItems: "center", background: t.inset, borderRadius: 8, overflow: "hidden", whiteSpace: "nowrap", ...(box.colour ? { boxShadow: `inset 3px 0 0 ${box.colour}`, paddingLeft: 12 } : null), ...phoneText(12, 400, t.text) }}
+            >
+              <span style={{ ...ellipsis, display: "block" }}>{sessionWord(box.label)}</span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, padding: 16, display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
+          <Skeleton width="40%" height={36} radius={8} />
+          <Skeleton width="40%" height={36} radius={8} />
+        </div>
+      )}
+      {note ? <span style={{ position: "absolute", left: 0, right: 0, top: "50%", transform: "translateY(-50%)", textAlign: "center", ...phoneText(13, 400, t.label) }}>{note}</span> : null}
+    </div>
+  );
+}
+
+function PhoneMapCard({ card, direction, index }: { card: MapCardView; direction: MapsDirection; index: number }) {
+  const line = !card.failed && card.shape ? card.shape : card.summary;
+  return (
+    <article data-testid="map-card" style={{ ...PHONE_CARD, ...(index >= 4 ? { contentVisibility: "auto", containIntrinsicSize: "auto 268px" } : null) }}>
+      <span style={{ minWidth: 0 }}>
+        <Link to={card.href} style={{ display: "block", ...ellipsis, ...phoneText(15, 600, t.text), textDecoration: "none" }}>
+          {card.title}
+        </Link>
+        <span style={phoneText(13, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${line}`}</span>
+      </span>
+      <PhoneWell
+        drawing={card.drawings ? card.drawings[direction] : null}
+        note={card.drawings === null || card.failed ? undefined : card.sessions === 0 ? EMPTY.sessions : card.sessions === 1 ? "One session. A Map needs two." : undefined}
+        words={card.words}
+      />
+    </article>
+  );
+}
+
 export function MapCard({ card, direction, index }: { card: MapCardView; direction: MapsDirection; index: number }) {
   return (
     <article
@@ -224,7 +316,42 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, filters, setName, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
+  const phone = useIsPhone();
   useColumnPanels(true);
+  if (phone) {
+    return (
+      <div data-testid="builds-maps" style={{ ...ROOT, ...panelFor(true) }}>
+        <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px" }}>
+          <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setOpen(true)} />
+          <UpdatingStatus updating={updating} />
+        </div>
+        <PhonePills<MapsDirection>
+          label="Map direction"
+          value={direction}
+          onChange={onDirection}
+          pills={[
+            { value: "horizontal", label: "Horizontal" },
+            { value: "vertical", label: "Vertical" },
+          ]}
+        />
+        {withMap !== null ? <p style={{ margin: 0, padding: "0 16px", ...phoneText(13, 400, t.label) }}>{`${withMap} with a Map`}</p> : null}
+        <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
+        {filters ? <BuildsFilters {...filters} open={open} onOpenChange={setOpen} /> : null}
+        {notice ? <div style={{ margin: "16px 16px 0" }}>{notice}</div> : null}
+        {cards.length === 0 && empty ? (
+          <div style={{ margin: "20px 16px 0" }}>{empty}</div>
+        ) : (
+          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...(updating ? { opacity: 0.5 } : null) }}>
+            {cards.map((card, index) => (
+              <PhoneMapCard key={card.id} card={card} direction={direction} index={index} />
+            ))}
+          </div>
+        )}
+        {onMore ? <PhoneShowMore onMore={onMore} loading={loadingMore} /> : null}
+      </div>
+    );
+  }
   return (
     <div data-testid="builds-maps" style={{ ...ROOT, ...BUILDS_PANEL }}>
       <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />

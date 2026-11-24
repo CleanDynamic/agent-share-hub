@@ -39,6 +39,8 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 import { ChevronDown } from "lucide-react";
 
+import { PhoneActiveFilters } from "./BuildsPhone";
+import { PhoneTable, type PhoneCardView, type PhoneNumber } from "./BuildsTablePhone";
 import { useColumnDrag, type HeadDrag } from "./columnDrag";
 import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
@@ -170,6 +172,9 @@ export interface ColumnsMenu {
   /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
   options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean; move?: { left: boolean; right: boolean } }[];
   onToggle: (id: ColumnId) => void;
+  /** Prompt 21: each column's own group (Identity, Classification, Proof, Structure, OpenBuilds), for the phone's Columns sheet,
+      where the shown columns are not set apart (they cannot be moved there). Absent: the options' own groups. */
+  groups?: Readonly<Partial<Record<ColumnId, string>>>;
   /** BF-13 (C6): a shown column one place left or right; the keyboard's way to what a head's drag does. */
   onMove?: (id: ColumnId, direction: "left" | "right") => void;
   /** Back to the default twelve; drawn only while the columns are not. */
@@ -331,7 +336,9 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
 
 /** BF-04 (X3): the one chip row, drawn by the Table, Maps and Classification alike. */
 export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableChip[]; onRemove: (key: string) => void; onClearAll: () => void }) {
+  const phone = useIsPhone();
   if (chips.length === 0) return null;
+  if (phone) return <PhoneActiveFilters chips={chips} onRemove={onRemove} onClearAll={onClearAll} />;
   return (
     <div role="group" aria-label="Active filters" data-focus-list="" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
       {chips.map((chip) => (
@@ -576,6 +583,46 @@ function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; f
   );
 }
 
+/* ── the table on a phone (prompt 21) ── */
+
+/** The columns whose value is a number the cards can show. The first three of these the reader chose, in their order. */
+const CARD_NUMBERS: ReadonlySet<ColumnId> = new Set(["steps", "rebuilds", "likes", "cost"]);
+
+const GROUP_ORDER = ["Identity", "Classification", "Proof", "Structure", "OpenBuilds"] as const;
+
+function numbersOf(columns: readonly ColumnId[], row: TableRowView): PhoneNumber[] {
+  return columns
+    .filter((id) => CARD_NUMBERS.has(id))
+    .slice(0, 3)
+    .map((id): PhoneNumber => {
+      if (id === "cost") return { name: COLUMN_NAME[id], value: row.cost || "Not measured", empty: !row.cost, mono: false };
+      const value = id === "steps" ? row.steps : id === "rebuilds" ? row.rebuilds : (row.likes ?? 0);
+      return { name: COLUMN_NAME[id], value: String(value || 0), empty: !value, mono: true };
+    });
+}
+
+function phoneCards(columns: readonly ColumnId[], rows: readonly TableRowView[]): PhoneCardView[] {
+  return rows.map((row) => ({ id: row.id, href: row.href, title: row.title, maker: row.maker, facts: [row.built, row.field].filter(Boolean).join(" · "), numbers: numbersOf(columns, row) }));
+}
+
+/** The footer's calculation words as a phone says them: "Median 11, Steps", "Most common Food and drink, Field". */
+function phoneSummary(columns: readonly ColumnId[], footer: TableFooterView): string[] {
+  return columns.flatMap((id) => {
+    const value = footer.byColumn?.[id];
+    if (!value) return [];
+    return [RIGHT.has(id) ? `${value}, ${COLUMN_NAME[id]}` : `Most common ${value}, ${COLUMN_NAME[id]}`];
+  });
+}
+
+function phoneColumnGroups(menu: ColumnsMenu) {
+  const nameOf = (option: ColumnsMenu["options"][number]): string | undefined => menu.groups?.[option.id] ?? option.group;
+  const names = menu.groups ? [...GROUP_ORDER] : [...new Set(menu.options.map(nameOf))];
+  return names.map((name) => ({
+    name,
+    rows: menu.options.filter((option) => nameOf(option) === name).map((option) => ({ id: option.id, label: option.name, checked: option.on, disabled: option.locked, dim: option.locked })),
+  })).filter((group) => group.rows.length > 0);
+}
+
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
@@ -594,6 +641,47 @@ export function BuildsTableView(props: BuildsTableViewProps) {
     return () => el.removeEventListener("scroll", onScroll);
   }, [shown]);
   const dragOf = useColumnDrag(headRow, onDropColumn ? (id, index) => onDropColumn(id as ColumnId, index) : undefined);
+  const phone = useIsPhone();
+  if (phone) {
+    const calculate = footer.calculate;
+    return (
+      <PhoneTable
+        lenses={lenses}
+        lens={lens}
+        onLens={onLens}
+        updating={updating}
+        activeCount={activeCount}
+        onOpenFilters={onOpenFilters}
+        setName={setName}
+        sort={{
+          current: sortColumn ? COLUMN_NAME[sortColumn.id] : "",
+          choices: columns.filter((id) => sortable.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], on: sortColumn?.id === id })),
+          onChoose: (id) => onSortColumn(id as ColumnId, false, true),
+        }}
+        columns={columnsLabel && columnsMenu ? { label: columnsLabel, groups: phoneColumnGroups(columnsMenu), onToggle: (id) => columnsMenu.onToggle(id as ColumnId), onReset: columnsMenu.onReset } : undefined}
+        chips={chips}
+        onRemoveChip={onRemoveChip}
+        onClearAll={onClearAll}
+        cards={phoneCards(columns, rows)}
+        summary={phoneSummary(columns, footer)}
+        calculations={(footer.calculations ?? []).map((calculation) => ({ key: calculation.key, text: calculation.text, onRemove: calculation.onRemove }))}
+        calculate={
+          calculate
+            ? {
+                options: calculate.options.flatMap((option) => option.kinds.map((entry) => ({ key: `${option.column}:${entry.kind}`, label: `${entry.label}, ${option.name}`, on: entry.on }))),
+                onToggle: (key) => {
+                  const [column, kind] = key.split(":");
+                  calculate.onToggle(column as ColumnId, kind as CalcKind);
+                },
+              }
+            : undefined
+        }
+        onMore={onMore}
+        loadingMore={loadingMore}
+        empty={empty}
+      />
+    );
+  }
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />

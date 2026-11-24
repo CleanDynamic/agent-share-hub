@@ -64,6 +64,7 @@ import {
   chosenColumns,
   columnsLabel,
   columnsMenu,
+  COLUMN_GROUP,
   drawnColumns,
   filteredColumns,
   footerCalculations,
@@ -502,6 +503,7 @@ export default function BuildsPage() {
                   layout.filterColumns ? filterColumns : [],
                 ),
                 onMove: (id, direction) => update((current) => withColumns(current, movedColumn(chosenColumns(current.columns, countsLive), id, direction))),
+                groups: COLUMN_GROUP,
               },
               /* BF-13 (C6): the reader's own columns, Build aside, can be dragged; a filter's or a sort's column is not theirs to place. */
               draggable: new Set(chosen.filter((id) => id !== "build")),

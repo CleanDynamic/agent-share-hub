@@ -11,7 +11,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { AttachmentView, PicturesBlock } from "@/components/post/PostCard";
-import { PostControl } from "@/components/post/postControls";
+import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
+import { PostControl, PostPrimary } from "@/components/post/postControls";
 import { cardAttachment, type CardAttachment } from "@/components/post/postCardModel";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
@@ -225,7 +226,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           rows={6}
           autoFocus
           onChange={(event) => change({ body: event.target.value })}
-          style={areaStyle(phone, 6, { fontSize: 15, outline: "none" })}
+          style={areaStyle(phone, 6, { fontSize: phone ? 16 : 15, outline: "none" })}
         />
         {notice ? (
           <p id="new-post-notice" role={boxError ? undefined : "alert"} style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
@@ -313,6 +314,30 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
       </RecipeButton>
     </>
   );
+
+  // Prompt 21: on a phone the window is a full sheet: the title row with its 44 close button, the fields, and Post pinned to the
+  // foot above the keyboard. Closing with changes asks first (the sheet's "Discard changes?"). Everything above is unchanged.
+  if (phone) {
+    return (
+      <PhoneBottomSheet
+        open
+        onOpenChange={(next) => !next && onClose()}
+        title="New post"
+        height="full"
+        dirty={hasContent(draft)}
+        data-testid="new-post-window"
+        footer={{
+          actions: (
+            <PostPrimary onClick={post} disabled={uploading}>
+              Post
+            </PostPrimary>
+          ),
+        }}
+      >
+        <div style={{ padding: "0 16px 16px" }}>{body}</div>
+      </PhoneBottomSheet>
+    );
+  }
 
   return <PublishFrame open onClose={onClose} title="New post" width={560} testId="new-post-window" body={body} footer={footer} />;
 }

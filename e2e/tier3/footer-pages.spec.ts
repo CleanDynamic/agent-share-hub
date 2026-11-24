@@ -7,7 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const PAGES = [
-  { path: "/rules", title: "Community rules", second: "reproductions-and-rebuilds", side: "Report a problem", sideHref: "/report" },
+  { path: "/rules", title: "Community rules", second: "rebuilds", side: "Report a problem", sideHref: "/report" },
   { path: "/report", title: "Report a problem", second: "block-someone", side: "Contact", sideHref: "/contact" },
   { path: "/contact", title: "Contact", second: "email", side: "Community rules", sideHref: "/rules" },
 ] as const;

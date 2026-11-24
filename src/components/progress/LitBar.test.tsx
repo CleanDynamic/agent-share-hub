@@ -14,14 +14,14 @@ describe("the bar's paint", () => {
 
   it("gives its value as the text beside it does, and fills that share of the width", () => {
     const { container } = render(
-      <LitBar value={169} max={242} label="Progress to level 4" valueText="169 of 242 XP" />,
+      <LitBar value={169} max={242} label="Challenge progress" valueText="169 of 242" />,
     );
 
-    const bar = screen.getByRole("progressbar", { name: "Progress to level 4" });
+    const bar = screen.getByRole("progressbar", { name: "Challenge progress" });
     expect(bar.getAttribute("aria-valuenow")).toBe("169");
     expect(bar.getAttribute("aria-valuemin")).toBe("0");
     expect(bar.getAttribute("aria-valuemax")).toBe("242");
-    expect(bar.getAttribute("aria-valuetext")).toBe("169 of 242 XP");
+    expect(bar.getAttribute("aria-valuetext")).toBe("169 of 242");
     expect((container.querySelector("[data-bar-fill]") as HTMLElement).style.width).toBe("69.8%");
     expect(bar.style.height).toBe("6px");
   });

@@ -6,7 +6,7 @@
 // is being measured against (the publish score of 60, the gallery cut-off).
 //
 // COLOUR IS MEANING, so it is chosen by what the bar measures and never by taste:
-//   --lit        progress, XP and goals
+//   --lit        progress and goals
 //   --evidence   proof and freshness
 //   --action     money
 //   --cat-agents rebuilds

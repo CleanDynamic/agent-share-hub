@@ -74,6 +74,15 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
  * Routes where a pinned footer or a full-screen task replaces the dock: the editor, Start a build, Rebuild, onboarding and the
  * sign-in screen (the dialog is opened by `?signin=` on any page). Messages replaces it with the composer's reply bar.
  */
+/**
+ * Prompt 21: a topic pins its own reply bar to the bottom, so the dock slides down and away on that route and comes back on
+ * leaving it. Unlike `dockHiddenFor` the dock stays mounted, so the move is a transform, not a pop.
+ */
+export function dockAwayFor(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
+  return /^\/openbuilds\/topics\/[^/]+$/.test(path);
+}
+
 export function dockHiddenFor(pathname: string, search = ""): boolean {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
   if (new URLSearchParams(search).has("signin")) return true;

@@ -96,9 +96,15 @@ describe("the footer pages (TB-02)", () => {
   const termsItems = (terms.sections.find((s) => s.id === "what-you-must-not-do")?.blocks.find((b) => b.kind === "list") as { items: string[] }).items;
   const rulesItems = (rules.sections[0].blocks[0] as { items: string[] }).items;
 
+  it("give the rules a Rebuilds section, with no sentence about reproducing or running builds or about XP outside the Terms' own ten rules", () => {
+    expect(rules.sections.find((s) => s.id === "rebuilds")?.heading).toBe("Rebuilds");
+    const said = textsOf(rules).filter((text) => !rulesItems.includes(text));
+    for (const text of said) expect(text, text).not.toMatch(/reproduc|\bXP\b|\b(ran|run) a build\b/i);
+  });
+
   it("keep the Terms' ten rules unedited and in order", () => {
     expect(rulesItems).toEqual(termsItems);
-    expect(rules.sections.map((s) => s.id)).toEqual(["what-you-must-not-do", "reproductions-and-rebuilds", "spaces", "what-we-may-do"]);
+    expect(rules.sections.map((s) => s.id)).toEqual(["what-you-must-not-do", "rebuilds", "spaces", "what-we-may-do"]);
     expect(report.sections.map((s) => s.id)).toEqual(["report-something", "block-someone", "children", "appeals-and-complaints"]);
     expect(contact.sections.map((s) => s.id)).toEqual(["who-we-are", "email", "your-data", "reports"]);
   });

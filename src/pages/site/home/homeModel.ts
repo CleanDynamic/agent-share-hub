@@ -347,6 +347,24 @@ export function newerThan(items: readonly Pick<FeedItem, "at">[], seen: number |
   }).length;
 }
 
+/** Prompt 20: the authors of the posts held back as new, newest first, one each, at most `limit`: the floating pill's avatars. */
+export function newAuthorsOf(
+  items: readonly (Pick<FeedItem, "at"> & { maker?: HomePerson | { id: string; handle?: string | null; name?: string | null; avatarUrl?: string | null }; author?: { id: string; handle?: string | null; name?: string | null; avatarUrl?: string | null }; root?: { author: { id: string; handle?: string | null; name?: string | null; avatarUrl?: string | null } } })[],
+  seen: number | null,
+  limit = 3,
+): HomePerson[] {
+  if (seen === null) return [];
+  const out = new Map<string, HomePerson>();
+  const fresh = items.filter((item) => Date.parse(item.at) > seen).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  for (const item of fresh) {
+    const who = item.maker ?? item.author ?? item.root?.author;
+    if (!who || out.has(who.id)) continue;
+    out.set(who.id, { id: who.id, handle: who.handle ?? null, name: who.name ?? who.handle ?? "Someone", avatarUrl: who.avatarUrl ?? null });
+    if (out.size >= limit) break;
+  }
+  return [...out.values()];
+}
+
 /** The items shown: all of them, or, while the pill holds the new ones back, those no newer than the last visit. */
 export function shownItems<T extends Pick<FeedItem, "at">>(items: readonly T[], seen: number | null, revealed: boolean): T[] {
   if (revealed || newerThan(items, seen) === 0) return [...items];

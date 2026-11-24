@@ -1872,6 +1872,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "Synth 08: a step's titled text box row is Raised, radius 8, 6px 10px (the build page prompt).",
   },
   {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `const PHONE_REPLY_GAP: CSSProperties = { columnGap: "10px" };`,
+    why: "Prompt 21: a phone reply's 28 avatar and its text are 10 apart, so a reply to a reply indents 38 (the mobile pack's measure).",
+  },
+  {
     rule: "spacing 3 is not in SPACE_REFINED",
     text: `gap: 3,`,
     why: "Prompt 19: the phone dock's slot puts its label 3 below its icon (the mobile pack's measure).",

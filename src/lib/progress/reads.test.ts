@@ -44,7 +44,6 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 import { isPermissionError } from "@/lib/errors/permission";
-import { getProgressFigures } from "./index";
 import { badgesInOrder, getMyBadgeKeys } from "./badges";
 import { ProgressReadError } from "./errors";
 import { WEEK_EVENTS_LIMIT, getMyWeekEvents } from "./weekly";
@@ -62,33 +61,6 @@ const only = () => {
   return stand.calls[0];
 };
 const method = (chain: Call[], name: string) => chain.filter(([prop]) => prop === name).map(([, ...args]) => args);
-
-describe("getProgressFigures", () => {
-  it("reads two named columns of the reader's one user_progress row", async () => {
-    stand.answer = { data: { xp_total: 412, level: 3 }, error: null, status: 200 };
-
-    await expect(getProgressFigures(USER)).resolves.toEqual({ xp_total: 412, level: 3 });
-    const { table, chain } = only();
-    expect(table).toBe("user_progress");
-    expect(method(chain, "select")).toEqual([["xp_total, level"]]);
-    expect(method(chain, "eq")).toEqual([["user_id", USER]]);
-    expect(method(chain, "maybeSingle")).toEqual([[]]);
-  });
-
-  it("answers null when the reader has no row yet, which is the start", async () => {
-    await expect(getProgressFigures(USER)).resolves.toBeNull();
-  });
-
-  it("throws a refusal it can be told by, never the start", async () => {
-    stand.answer = { data: null, error: { code: "42501", message: "permission denied for table user_progress" }, status: 403 };
-
-    const error = await getProgressFigures(USER).catch((caught: unknown) => caught);
-    expect(error).toBeInstanceOf(ProgressReadError);
-    expect(isPermissionError(error)).toBe(true);
-    expect((error as ProgressReadError).message).toBe(`getProgressFigures failed (user ${USER})`);
-    expect((error as ProgressReadError).message).not.toContain("permission denied");
-  });
-});
 
 describe("getMyWeekEvents", () => {
   it("reads this week's rows of the three challenge reasons from the ledger, capped", async () => {

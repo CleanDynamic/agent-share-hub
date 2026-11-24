@@ -1,6 +1,6 @@
 // UX-10 P5 and P7: what the record line and the side column count, in one request (get_profile_side, 20261109120000).
 //
-// Every count is what the reader may see. `level` is null unless the owner shows it (level_visible) or the reader is the owner.
+// Every count is what the reader may see. The function may still return a level; the page does not read it.
 // A private profile the reader does not follow answers null: nothing to count.
 
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,6 @@ export interface ProfileSideData {
   firstRebuildSlug: string | null;
   stepsAdded: number;
   topicsStarted: number;
-  level: number | null;
   /** The tools and models of their published builds, most used first, up to 5. */
   worksIn: string[];
   spaces: ProfileSpace[];
@@ -48,7 +47,6 @@ export function toProfileSide(raw: unknown): ProfileSideData | null {
     firstRebuildSlug: typeof s.first_rebuild_slug === "string" ? s.first_rebuild_slug : null,
     stepsAdded: whole(s.steps_added),
     topicsStarted: whole(s.topics_started),
-    level: s.level === null || s.level === undefined ? null : whole(s.level) || null,
     worksIn: Array.isArray(s.works_in) ? (s.works_in as unknown[]).filter((tool): tool is string => typeof tool === "string").slice(0, 5) : [],
     spaces: spaces.flatMap((space) =>
       typeof space?.slug === "string" && typeof space.name === "string"

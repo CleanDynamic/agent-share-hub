@@ -19,8 +19,9 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { panelColumns } from "@/components/shell/pageGrid";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
+import { PhoneHomeLoading } from "./PhoneHomeLoading";
 import { FIGTREE } from "@/lib/theme/type";
 
 /** The board's three columns show from 1101; the left goes below that, and the right joins the feed below 761. */
@@ -235,6 +236,9 @@ function RightBones() {
     not drawn up the page and then pushed away when the content arrives. */
 export function HomeLoadingView() {
   const layout = useHomeLayout();
+  const phone = useIsPhone();
+  // Prompt 20: on a phone the loading state is the feed's shape only: the tabs' row, then post skeletons.
+  if (phone) return <PhoneHomeLoading />;
   return (
     <>
     <PageHeader title="Home" />
@@ -256,3 +260,4 @@ export function HomeLoadingView() {
     </>
   );
 }
+

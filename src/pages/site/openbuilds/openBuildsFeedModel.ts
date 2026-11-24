@@ -8,11 +8,13 @@ export type FeedScope = "mine" | "everyone";
 export interface FeedAddress {
   scope: FeedScope;
   open: boolean;
+  /** `?space=<slug>`: only that space's posts (the phone's space pills). Null: none. */
+  space: string | null;
 }
 
 /** Signed in, the default is Your spaces; signed out there is only Everyone. */
 export function readFeedAddress(params: URLSearchParams, signedIn: boolean): FeedAddress {
-  return { scope: signedIn && params.get("scope") !== "everyone" ? "mine" : "everyone", open: params.get("open") === "1" };
+  return { scope: signedIn && params.get("scope") !== "everyone" ? "mine" : "everyone", open: params.get("open") === "1", space: signedIn ? params.get("space") || null : null };
 }
 
 /** The address with `next` in it; a default value leaves the address. Other parameters stay. */
@@ -26,11 +28,16 @@ export function feedSearch(params: URLSearchParams, next: Partial<FeedAddress>, 
     if (next.open) out.set("open", "1");
     else out.delete("open");
   }
+  if (next.space !== undefined) {
+    if (next.space) out.set("space", next.space);
+    else out.delete("space");
+  }
   return out;
 }
 
 /** The reads' keys, shared by the page and the route table's prefetch: ['posts', '<fn>', ...args]. */
-export const feedKey = (scope: FeedScope, open: boolean, viewerId: string | null) => postKey("listPostCards", "feed", scope, open, viewerId);
+export const feedKey = (scope: FeedScope, open: boolean, viewerId: string | null, spaceId?: string | null) =>
+  postKey("listPostCards", "feed", scope, open, viewerId, ...(spaceId ? [spaceId] : []));
 export const mySpacesKey = (viewerId: string | null) => postKey("listMySpaces", viewerId);
 export const busySpacesKey = postKey("listBusySpaces");
 export const recentTimesKey = (ids: readonly string[]) => postKey("listRecentPostTimes", ...ids);

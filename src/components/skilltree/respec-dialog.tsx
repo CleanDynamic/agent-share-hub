@@ -72,9 +72,8 @@ export default function RespecDialog({
             marginTop: 7,
           }}
         >
-          Your <strong style={{ color: meta.color }}>{meta.name}</strong>{" "}
-          track XP is kept — nothing is lost. Your active perks swap to the
-          new track&apos;s tree, and respec goes on a 30-day cooldown.
+          Your active perks swap to the new track&apos;s tree, and respec goes on
+          a 30-day cooldown.
         </p>
 
         {!canRespec && nextRespecDate && (

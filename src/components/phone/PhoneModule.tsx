@@ -1,5 +1,5 @@
 // A module on a phone (prompt 17): a Panel block inside the page, margin 8 16, radius 12, padding 16, a 10 gap between its
-// children. For a group that must read as one thing: an empty state, a level card, a reference. A shade, never a line.
+// children. For a group that must read as one thing: an empty state, a reference. A shade, never a line.
 
 import type { CSSProperties, ReactNode } from "react";
 

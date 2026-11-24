@@ -36,7 +36,6 @@ interface Author {
   handle: string;
   avatarUrl: string;
   isVerified: boolean;
-  level: number;
   customBio?: string;
   derivedBio: string;
   isFollowing: boolean;
@@ -616,7 +615,6 @@ export function ContentDetailShell({
                     {author.displayName}
                   </span>
                   {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
-                  <span style={{ fontSize: 11, color: "var(--text2)" }}>Lv.{author.level}</span>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text2)" }}>@{author.handle}</div>
               </div>

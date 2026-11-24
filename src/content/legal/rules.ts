@@ -1,6 +1,6 @@
 // TB-02: the Community rules page, as data. Its words are the Terms' (terms.ts) plus what the code does; it adds no rule.
 // `source: "terms"` sections copy the Terms' current wording. `source: "code"` sections state what the code does:
-//   reproductions-and-rebuilds: src/lib/build/signals.ts, rebuild.ts, fork.ts, and the build_reproductions insert policy.
+//   rebuilds: src/lib/build/rebuild.ts and fork.ts.
 
 import { TERMS_VERSION } from "./legalConstants";
 import { TERMS_REVIEWED } from "./reviewed";
@@ -36,14 +36,10 @@ export const rules: LegalText = {
       ],
     },
     {
-      id: "reproductions-and-rebuilds",
-      heading: "Reproductions and rebuilds",
+      id: "rebuilds",
+      heading: "Rebuilds",
       source: "code",
       blocks: [
-        {
-          kind: "p",
-          text: "A reproduction is someone other than the maker saying they ran a build and it worked, with the date and the model they used. A maker cannot record one on their own build. Only say a build worked if you ran it.",
-        },
         {
           kind: "p",
           text: "A rebuild is your own copy of someone's build, changed and published. It always credits the build it came from and shows what changed. A rebuild with nothing changed cannot be published.",
