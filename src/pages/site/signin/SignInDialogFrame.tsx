@@ -7,6 +7,11 @@
 
    Behind it there is no dim scrim: the overlay is clear, and the host draws the dot water over it (`SignInWaterLayer`).
 
+   ON A PHONE (mobile prompt 27 Part B) there is no centred dialog: the whole screen is the dot water (the canvas, `position: absolute;
+   inset: 0`), the space above the card is a flex area that centres the beaver (168 wide, `data-clear`, no pointer events), and the
+   dialog is a Panel card fixed to the bottom (`data-occlude`, radius 20 on its top corners, the bottom inset in its padding). There is
+   no close button there: Back and Escape close it, and a hidden Close is kept for assistive technology.
+
    The frame is Radix's dialog, the site's one primitive: focus trap, Escape, scroll lock, `role="dialog"` and
    `aria-modal`, and the title wired up as the label. PURE: the view, the row-1 control and the handlers come in as props. */
 
@@ -15,13 +20,15 @@ import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
+import { useKeyboardInset } from "@/components/phone/useKeyboardInset";
+import { SignInWaterCanvas } from "@/lib/dots/SignInWaterLayer";
 import { Segmented } from "@/components/brand/Segmented";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { useRoom } from "@/components/brand/useRoom";
 import { BeaverLogo } from "@/components/shell/BeaverLogo";
-import { DIALOG_LOGO_WIDTH } from "@/components/shell/chromeSize";
+import { DIALOG_LOGO_WIDTH, PHONE_SIGNIN_LOGO_WIDTH } from "@/components/shell/chromeSize";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { prefersReducedMotion } from "@/lib/theme/motion";
+import { BASE, FAST, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -122,6 +129,7 @@ export function SignInDialogFrame({
 }: SignInDialogFrameProps) {
   const room = useRoom();
   const phone = useIsPhone();
+  const keyboard = useKeyboardInset();
   const body = useRef<HTMLDivElement>(null);
   /* G5: focus goes back to the control that opened the dialog. The dialog has no Radix Trigger (the address opens it), so
      the element that had focus when it mounted is kept here and focused on close, however it closes. */
@@ -153,6 +161,7 @@ export function SignInDialogFrame({
   /* Callback refs held in state: Radix mounts its portal a layout pass after the dialog, so the elements arrive later. */
   const [scrimEl, scrim] = useState<HTMLDivElement | null>(null);
   const [contentEl, content] = useState<HTMLDivElement | null>(null);
+  const [cardEl, card] = useState<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     if (!scrimEl || !contentEl) return;
     const animates = typeof contentEl.animate === "function";
@@ -162,6 +171,17 @@ export function SignInDialogFrame({
     if (prefersReducedMotion() || !animates) {
       scrimEl.style.opacity = open ? "" : "0";
       contentEl.style.opacity = open ? "" : "0";
+      return;
+    }
+    if (phone) {
+      /* A phone: the screen fades in FAST and the card slides up in BASE on STANDARD (reduced motion: a fade only, above). */
+      if (open) {
+        contentEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FAST, easing: STANDARD });
+        cardEl?.animate([{ transform: "translateY(24px)" }, { transform: "none" }], { duration: BASE, easing: STANDARD });
+      } else {
+        contentEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FAST, easing: STANDARD, fill: "forwards" });
+        scrimEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: SCRIM_OUT_MS, easing: SCRIM_EASING, fill: "forwards" });
+      }
       return;
     }
     if (open) {
@@ -174,7 +194,7 @@ export function SignInDialogFrame({
     }
     // The opener is the one recorded when the dialog mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, scrimEl, contentEl]);
+  }, [open, scrimEl, contentEl, cardEl, phone]);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -198,53 +218,112 @@ export function SignInDialogFrame({
           onPointerDownOutside={(event) => event.preventDefault()}
           /* Radix hides the rest of the page from assistive technology; the attribute says so to the dialog's own role too (G14). */
           aria-modal="true"
-          style={{
-            position: "fixed",
-            left: "50%",
-            top: "50%",
-            translate: "-50% -50%",
-            /* Above the water (51), which is above the overlay (50). */
-            zIndex: 52,
-            boxSizing: "border-box",
-            width: phone ? "calc(100vw - 32px)" : DIALOG.width,
-            maxHeight: "calc(100dvh - 32px)",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            padding: "16px 20px 20px",
-            borderRadius: DIALOG.radius,
-            background: t.window,
-            boxShadow: `0 0 0 1px ${t.windowBorder}, ${t.windowShadow}`,
-            outline: "none",
-            fontFamily: FIGTREE,
-          }}
+          style={
+            phone
+              ? {
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 52,
+                  boxSizing: "border-box",
+                  display: "flex",
+                  flexDirection: "column",
+                  paddingBottom: keyboard,
+                  background: t.frame,
+                  outline: "none",
+                  fontFamily: FIGTREE,
+                  overflow: "hidden",
+                }
+              : {
+                  position: "fixed",
+                  left: "50%",
+                  top: "50%",
+                  translate: "-50% -50%",
+                  /* Above the water (51), which is above the overlay (50). */
+                  zIndex: 52,
+                  boxSizing: "border-box",
+                  width: DIALOG.width,
+                  maxHeight: "calc(100dvh - 32px)",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                  padding: "16px 20px 20px",
+                  borderRadius: DIALOG.radius,
+                  background: t.window,
+                  boxShadow: `0 0 0 1px ${t.windowBorder}, ${t.windowShadow}`,
+                  outline: "none",
+                  fontFamily: FIGTREE,
+                }
+          }
         >
-          <div
-            data-testid="signin-row-one"
-            style={{ height: DIALOG.control, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}
-          >
-            {rowStart}
-            <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={32} />
-            </Dialog.Close>
-          </div>
-          <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", flexShrink: 0 }}>
-            <BeaverLogo theme={room} size={DIALOG_LOGO_WIDTH} />
-          </div>
-          <Dialog.Title className="sr-only" style={{ margin: 0 }}>
-            {VIEW_TITLE[view] ?? VIEW_TITLE.login}
-          </Dialog.Title>
-          <div
-            ref={body}
-            tabIndex={-1}
-            data-testid="signin-view-body"
-            style={{ outline: "none", display: "flex", flexDirection: "column" }}
-          >
-            <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {children}
-            </div>
-          </div>
+          {phone ? (
+            <>
+              {/* The whole screen is the water; it sits under the beaver and the card. */}
+              <SignInWaterCanvas style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
+              <div aria-hidden="true" style={{ position: "relative", flex: "1 1 0", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
+                <BeaverLogo theme={room} size={PHONE_SIGNIN_LOGO_WIDTH} clear />
+              </div>
+              <Dialog.Title className="sr-only" style={{ margin: 0 }}>
+                {VIEW_TITLE[view] ?? VIEW_TITLE.login}
+              </Dialog.Title>
+              <div
+                ref={card}
+                data-occlude=""
+                data-testid="signin-phone-card"
+                style={{
+                  position: "relative",
+                  flexShrink: 0,
+                  boxSizing: "border-box",
+                  maxHeight: "calc(100% - 24px)",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  padding: "16px 16px calc(16px + env(safe-area-inset-bottom))",
+                  borderRadius: "20px 20px 0 0",
+                  background: t.surface,
+                }}
+              >
+                <div data-testid="signin-row-one" style={{ flexShrink: 0, display: "flex", alignItems: "center", minHeight: 44 }}>
+                  {rowStart}
+                </div>
+                <div ref={body} tabIndex={-1} data-testid="signin-view-body" style={{ outline: "none", display: "flex", flexDirection: "column" }}>
+                  <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {children}
+                  </div>
+                </div>
+              </div>
+              <Dialog.Close className="sr-only">Close</Dialog.Close>
+            </>
+          ) : (
+            <>
+              <div
+                data-testid="signin-row-one"
+                style={{ height: DIALOG.control, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}
+              >
+                {rowStart}
+                <Dialog.Close asChild>
+                  <IconButton icon={X} label="Close" size={32} />
+                </Dialog.Close>
+              </div>
+              <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                <BeaverLogo theme={room} size={DIALOG_LOGO_WIDTH} clear />
+              </div>
+              <Dialog.Title className="sr-only" style={{ margin: 0 }}>
+                {VIEW_TITLE[view] ?? VIEW_TITLE.login}
+              </Dialog.Title>
+              <div
+                ref={body}
+                tabIndex={-1}
+                data-testid="signin-view-body"
+                style={{ outline: "none", display: "flex", flexDirection: "column" }}
+              >
+                <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {children}
+                </div>
+              </div>
+            </>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

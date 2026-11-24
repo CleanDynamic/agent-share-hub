@@ -39,10 +39,15 @@
 // improvise.
 
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { AuthButton } from "@/components/auth/AuthButton";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { BigButton } from "@/components/phone/BigButton";
+import { PhoneModule } from "@/components/phone/PhoneModule";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { TOUCH_MIN } from "@/lib/theme/density";
 import { useRoom } from "@/components/brand/useRoom";
 import { BeaverLogo } from "@/components/shell/BeaverLogo";
 import { CARD_LOGO_WIDTH } from "@/components/shell/chromeSize";
@@ -74,6 +79,37 @@ const CHIP_PAD = "2px 8px";
    a 420 card (the Panel fill here, radius 16, 24 padding). Every state of the page stands in it. */
 function ConsentShell({ children }: { children: React.ReactNode }) {
   const room = useRoom();
+  const phone = useIsPhone();
+  const navigate = useNavigate();
+  /* Mobile prompt 27 Part D: no top bar but a 44 close at the top left. The beaver at 96, centred, then the state; no card, a
+     sticky footer carries the answers. Close steps back, or goes Home when the page was opened directly. */
+  if (phone) {
+    const close = () => {
+      const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+      if (idx > 0) navigate(-1);
+      else navigate("/");
+    };
+    return (
+      <main data-testid="consent-phone" style={{ minHeight: "100dvh", background: t.frame, display: "flex", flexDirection: "column", boxSizing: "border-box", paddingTop: "env(safe-area-inset-top)", fontFamily: FIGTREE }}>
+        <div style={{ padding: "4px 8px" }}>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={close}
+            style={{ width: TOUCH_MIN, height: TOUCH_MIN, border: 0, borderRadius: TOUCH_MIN / 2, background: "transparent", color: t.text, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
+          >
+            <MobileIcon name="close" size={24} />
+          </button>
+        </div>
+        <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", padding: "8px 0 16px" }}>
+          <BeaverLogo theme={room} size={96} />
+        </div>
+        <div data-testid="consent-card" style={{ display: "flex", flexDirection: "column", flexGrow: 1, padding: "0 16px", boxSizing: "border-box" }}>
+          {children}
+        </div>
+      </main>
+    );
+  }
   return (
     <main style={{ minHeight: "100dvh", background: t.frame, display: "flex", flexDirection: "column", alignItems: "center", padding: "120px 16px 48px", boxSizing: "border-box", fontFamily: FIGTREE }}>
       <div aria-hidden="true" style={{ marginBottom: 24 }}>
@@ -187,6 +223,7 @@ function DenyButton({
 }
 
 export default function OAuthConsent() {
+  const phone = useIsPhone();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { user, profile, isLoggedIn, loading: authLoading } = useAuth();
@@ -338,6 +375,63 @@ export default function OAuthConsent() {
   /* Synth 13 Part D: "Acting as @handle"; the email where there is no handle yet. */
   const account = profile?.username ? `@${profile.username}` : user?.email || "your account";
   const busy = decision !== null;
+
+  if (phone) {
+    return (
+      <ConsentShell>
+        {head}
+        <h1 className="sr-only">Authorize an application</h1>
+        <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, gap: 16 }}>
+          <div style={{ textAlign: "center" }}>
+            {/* The application's name as it registered it: data, drawn as text. */}
+            <p data-testid="consent-application" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text, overflowWrap: "anywhere" }}>
+              {applicationName}
+            </p>
+            <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, overflowWrap: "anywhere" }}>Acting as {account}</p>
+          </div>
+          <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>
+            This will let {applicationName} upload conversations to your {SITE_NAME} account as waiting imports for you to review. It cannot publish anything, and it cannot change or delete anything you have already made.
+          </p>
+          <div style={{ margin: "0 -16px" }}>
+            <PhoneModule label={scopes.length === 1 ? "Scope requested" : "Scopes requested"} style={{ gap: 8 }}>
+              <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.label }}>{scopes.length === 1 ? "Scope requested" : "Scopes requested"}</h2>
+              {scopes.length > 0 ? (
+                <ul style={{ display: "flex", flexDirection: "column", gap: 8, listStyle: "none", margin: 0, padding: 0 }}>
+                  {scopes.map((scope) => (
+                    <li key={scope} style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>
+                      {scope}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>None requested.</span>
+              )}
+            </PhoneModule>
+          </div>
+          <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, overflowWrap: "anywhere" }}>
+            Returns to {redirectUri}
+            {applicationUri ? ` · ${applicationUri}` : ""}
+          </p>
+          {decisionError ? (
+            <p role="alert" style={{ ...fieldMessageStyle, margin: 0 }}>
+              {decisionError}
+            </p>
+          ) : null}
+          <div
+            data-testid="consent-footer"
+            style={{ position: "sticky", bottom: 0, marginTop: "auto", marginLeft: -16, marginRight: -16, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", background: t.frame, display: "flex", gap: 8, boxSizing: "border-box" }}
+          >
+            <BigButton onClick={() => decide("deny")} disabled={busy} style={{ flex: 1 }}>
+              {decision === "deny" ? "Denying…" : "Deny"}
+            </BigButton>
+            <BigButton main onClick={() => decide("allow")} disabled={busy} style={{ flex: 1 }}>
+              {decision === "allow" ? "Allowing…" : "Allow"}
+            </BigButton>
+          </div>
+        </div>
+      </ConsentShell>
+    );
+  }
 
   return (
     <ConsentShell>

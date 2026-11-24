@@ -106,6 +106,7 @@ function MobileHeaderContainer() {
         viewer={viewer}
         unread={unread > 0}
         theme={resolved}
+        progress={page.progress}
       />
       <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} />
       {searchEver ? (

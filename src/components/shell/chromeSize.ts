@@ -20,6 +20,8 @@ export const PHONE_LOGO_WIDTH = 40;
 /** The footer's beaver, the sign-in dialog's, and the one above a standalone card. */
 export const FOOTER_LOGO_WIDTH = 48;
 export const DIALOG_LOGO_WIDTH = 104;
+/** The beaver above the phone's sign-in card (mobile prompt 27 Part B). */
+export const PHONE_SIGNIN_LOGO_WIDTH = 168;
 export const CARD_LOGO_WIDTH = 96;
 
 /** The editor bar (the build editor, Start a build, Rebuild): a `1fr auto 1fr` grid, 88 tall, with a 44px round back button. */

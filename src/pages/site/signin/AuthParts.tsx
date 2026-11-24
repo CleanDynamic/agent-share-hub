@@ -30,6 +30,7 @@ import { Check, Eye, EyeOff, Github, X, type LucideIcon } from "lucide-react";
 import type { InputValidation } from "@/components/auth/AuthInput";
 import { GoogleIcon, XIcon, type OAuthProvider } from "@/components/auth/OAuthButtons";
 import { Button } from "@/components/brand/Button";
+import { BigButton } from "@/components/phone/BigButton";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { InlineLoader } from "@/components/brand/InlineLoader";
 import { useRoom } from "@/components/brand/useRoom";
@@ -109,6 +110,25 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
       ))}
     </>
   );
+  /* Mobile prompt 27 Part B: on a phone the first is Inverse and the rest Raised, 48 tall, radius 24. */
+  if (sizes.phone) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {PROVIDERS.map((provider, index) => (
+          <BigButton
+            key={provider.id}
+            full
+            disabled={loadingProvider !== null}
+            onClick={() => onProvider(provider.id)}
+            style={index === 0 ? { background: t.inverse, color: t.onInverse, fontWeight: 500 } : { fontWeight: 500 }}
+          >
+            {loadingProvider === provider.id ? <PendingRing /> : null}
+            {loadingProvider === provider.id ? provider.opening : provider.label}
+          </BigButton>
+        ))}
+      </div>
+    );
+  }
   /* One column, 8 apart. */
   return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{buttons}</div>;
 }
@@ -216,6 +236,8 @@ export interface AuthFieldProps {
   describedBy?: string;
   /** G14: the field is in error because of that message. */
   invalid?: boolean;
+  /** The placeholder stays in the markup (specs find the field by it) but is not drawn: the label above says the same. */
+  quietPlaceholder?: boolean;
 }
 
 export function AuthField({
@@ -236,6 +258,7 @@ export function AuthField({
   notice,
   describedBy,
   invalid: invalidFromForm = false,
+  quietPlaceholder = false,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
   const [focused, setFocused] = useState(false);
@@ -254,26 +277,44 @@ export function AuthField({
         <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.text2 }}>{label}</span>
         <span
           data-testid="auth-field-box"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            height: sizes.field,
-            /* Synth 13: a one-line field, 40 tall with its edge (44 on a phone), radius 20. */
-            boxSizing: "border-box",
-            padding: "0 14px",
-            borderRadius: r.field,
-            background: t.field,
-            border: `1px solid ${invalid ? t.dangerText : focused ? t.fieldEdge : t.line}`,
-            color: t.text2,
-            fontFamily: FIGTREE,
-            fontSize: 15,
-            ...ring(focusVisible),
-          }}
+          style={
+            sizes.phone
+              ? {
+                  /* Mobile prompt 27: a PhoneField: 44 tall, radius 12, its edge an inset line (the focus ring on focus), 16px text. */
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  height: sizes.field,
+                  boxSizing: "border-box",
+                  padding: "0 12px",
+                  borderRadius: 12,
+                  background: t.surface,
+                  boxShadow: `inset 0 0 0 ${focused || invalid ? 2 : 1}px ${invalid ? t.dangerText : focused ? t.focusRing : t.fieldEdge}`,
+                  color: t.text2,
+                  fontFamily: FIGTREE,
+                  fontSize: 16,
+                }
+              : {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  height: sizes.field,
+                  /* Synth 13: a one-line field, 40 tall with its edge (44 on a phone), radius 20. */
+                  boxSizing: "border-box",
+                  padding: "0 14px",
+                  borderRadius: r.field,
+                  background: t.field,
+                  border: `1px solid ${invalid ? t.dangerText : focused ? t.fieldEdge : t.line}`,
+                  color: t.text2,
+                  fontFamily: FIGTREE,
+                  fontSize: 15,
+                  ...ring(focusVisible),
+                }
+          }
         >
-          <Icon size={16} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
+          {sizes.phone ? null : <Icon size={16} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />}
           <input
-            className={INPUT_CLASS}
+            className={quietPlaceholder ? `${INPUT_CLASS} placeholder:!text-transparent` : INPUT_CLASS}
             type={showPasswordToggle ? (revealed ? "text" : "password") : type}
             value={value}
             onChange={(event) => onChange(event.target.value)}
@@ -307,7 +348,7 @@ export function AuthField({
               border: 0,
               outline: "none",
               fontFamily: FIGTREE,
-              fontSize: 15,
+              fontSize: sizes.phone ? 16 : 15,
               color: t.text,
             }}
           />
@@ -327,7 +368,7 @@ export function AuthField({
                    padding would put it and the box does not grow. */
                 width: sizes.phone ? 44 : 32,
                 height: sizes.phone ? 44 : DIALOG.control - 2,
-                margin: sizes.phone ? "0 -14px 0 -8px" : "0 -8px 0 -4px",
+                margin: sizes.phone ? "0 -12px 0 -8px" : "0 -8px 0 -4px",
                 padding: 0,
                 border: 0,
                 background: "transparent",
@@ -469,18 +510,10 @@ export function PrimaryAction({ children, loadingText, loading = false, disabled
     );
   }
   return (
-    <Button
-      variant="primary"
-      size={sizes.primary}
-      fontSize={13}
-      fullWidth
-      type={type}
-      disabled={disabled || loading}
-      onClick={onClick}
-    >
+    <BigButton main full type={type} disabled={disabled || loading} onClick={onClick}>
       {loading ? <PendingRing /> : null}
       {loading ? (loadingText ?? children) : children}
-    </Button>
+    </BigButton>
   );
 }
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
+import { BigButton } from "@/components/phone/BigButton";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +25,7 @@ export default function Onboarding() {
   // What to ask next depends on what the profile already holds, which arrives after the session (SV-03).
   const loading = sessionLoading || profileLoading;
   const navigate = useNavigate();
+  const phone = useIsPhone();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [step, setStep] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
@@ -78,7 +81,7 @@ export default function Onboarding() {
   }
 
   // Prompt 19: the phone's top bar offers Skip, which leaves for the gallery as finishing does, saving nothing.
-  useRegisterPageBar({ skip: () => navigate("/gallery") });
+  useRegisterPageBar({ skip: () => navigate("/gallery"), title: `${step} of 3`, progress: { step, of: 3 } });
 
   if (loading) return null;
 
@@ -111,7 +114,9 @@ export default function Onboarding() {
     padding: 28,
     boxSizing: "border-box" as const,
   };
-  const headingStyle = { margin: 0, fontFamily: FIGTREE, fontSize: 31, lineHeight: "36px", fontWeight: 600, color: t.text };
+  const headingStyle = phone
+    ? { margin: 0, fontFamily: FIGTREE, fontSize: 24, lineHeight: "28px", fontWeight: 600, letterSpacing: "-0.02em", color: t.text }
+    : { margin: 0, fontFamily: FIGTREE, fontSize: 31, lineHeight: "36px", fontWeight: 600, color: t.text };
   const subheadingStyle = {
     margin: "8px 0 0",
     fontFamily: FIGTREE,
@@ -121,11 +126,11 @@ export default function Onboarding() {
     color: t.text2,
   };
   const tileStyle = (selected: boolean) => ({
-    height: 32,
-    padding: "0 14px",
+    height: phone ? 36 : 32,
+    padding: phone ? "0 16px" : "0 14px",
     background: selected ? t.inverse : t.module,
     border: 0,
-    borderRadius: 16,
+    borderRadius: phone ? 18 : 16,
     color: selected ? t.onInverse : t.text,
     fontFamily: FIGTREE,
     fontSize: 13,
@@ -134,23 +139,45 @@ export default function Onboarding() {
   });
   const mainButton = { height: 40, borderRadius: 20, background: t.action, color: t.onAction, fontSize: 15, fontWeight: 600 };
 
+  /* Mobile prompt 27 Part C: the main button, "Continue", pinned in a sticky footer on a phone; the desktop's own button elsewhere. */
+  const stepStyle = { display: "flex", flexDirection: "column" as const, gap: 24, flexGrow: 1 };
+  const cta = (label: string, onClick: () => void, disabled: boolean, busy: boolean) =>
+    phone ? (
+      <div
+        data-testid="onboarding-footer"
+        style={{ position: "sticky", bottom: 0, marginTop: "auto", marginLeft: -16, marginRight: -16, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", background: t.frame, boxSizing: "border-box" }}
+      >
+        <BigButton main full onClick={onClick} disabled={disabled}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          {label}
+        </BigButton>
+      </div>
+    ) : (
+      <Button onClick={onClick} disabled={disabled} className="w-full" style={mainButton}>
+        {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        {label}
+      </Button>
+    );
+
   return (
-    <div className="flex min-h-[80vh] justify-center px-4" style={{ paddingTop: 40, alignItems: "flex-start" }}>
+    <div className="flex min-h-[80vh] justify-center px-4" style={{ paddingTop: phone ? 8 : 40, alignItems: phone ? "stretch" : "flex-start", flexDirection: phone ? "column" : undefined }}>
       <SeoHead title="Onboarding" description={`Set up your ${SITE_NAME} profile.`} path="/onboarding" noIndex />
-      <div style={panelStyle}>
-        {/* Where the reader is, in words. */}
-        <p style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label, margin: "0 0 12px", ...tabular }}>
-          {step} of 3
-        </p>
+      <div style={phone ? { display: "flex", flexDirection: "column", flexGrow: 1, boxSizing: "border-box" } : panelStyle}>
+        {/* Where the reader is, in words. On a phone the top bar says it. */}
+        {phone ? null : (
+          <p style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label, margin: "0 0 12px", ...tabular }}>
+            {step} of 3
+          </p>
+        )}
 
         {/* STEP 1 */}
         {step === 1 && (
-          <div className="space-y-6">
+          <div className={phone ? undefined : "space-y-6"} style={phone ? stepStyle : undefined}>
             <div>
               <h1 style={headingStyle}>What do you want your AI to do?</h1>
               <p style={subheadingStyle}>Select one or more areas you're interested in.</p>
             </div>
-            <div className="flex flex-wrap" style={{ gap: 8 }}>
+            <div className="flex flex-wrap" style={{ gap: 8 }} data-testid="onboarding-chips">
               {USE_CASES.map((uc) => {
                 const selected = interests.includes(uc);
                 return (
@@ -166,21 +193,18 @@ export default function Onboarding() {
                 );
               })}
             </div>
-            <Button onClick={saveStep1} disabled={interests.length === 0 || saving} className="w-full" style={mainButton}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Continue
-            </Button>
+            {cta("Continue", saveStep1, interests.length === 0 || saving, saving)}
           </div>
         )}
 
         {/* STEP 2 */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className={phone ? undefined : "space-y-6"} style={phone ? stepStyle : undefined}>
             <div>
               <h1 style={headingStyle}>Which AI tools do you use?</h1>
               <p style={subheadingStyle}>Pick all that apply.</p>
             </div>
-            <div className="flex flex-wrap" style={{ gap: 8 }}>
+            <div className="flex flex-wrap" style={{ gap: 8 }} data-testid="onboarding-chips">
               {AI_TOOLS.filter((tool) => tool !== "Any Tool").map((tool) => {
                 const selected = tools.includes(tool);
                 return (
@@ -196,28 +220,25 @@ export default function Onboarding() {
                 );
               })}
             </div>
-            <Button onClick={saveStep2} disabled={tools.length === 0 || saving} className="w-full" style={mainButton}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Continue
-            </Button>
+            {cta("Continue", saveStep2, tools.length === 0 || saving, saving)}
           </div>
         )}
 
         {/* STEP 3 */}
         {step === 3 && profile?.account_type !== "creator" && (
-          <div className="space-y-6 text-center">
+          <div className={phone ? undefined : "space-y-6 text-center"} style={phone ? stepStyle : undefined}>
             <div>
               <h1 style={headingStyle}>You're all set</h1>
               <p style={{ ...subheadingStyle, marginTop: "8px" }}>
                 Your Discover page is now personalised to show content matching your interests.
               </p>
             </div>
-            <Button onClick={finishUser} className="w-full" style={mainButton}>Start browsing</Button>
+            {cta("Start browsing", finishUser, false, false)}
           </div>
         )}
 
         {step === 3 && profile?.account_type === "creator" && (
-          <div className="space-y-6">
+          <div className={phone ? undefined : "space-y-6"} style={phone ? stepStyle : undefined}>
             <div>
               <h1 style={headingStyle}>Set up your creator profile</h1>
               <p style={subheadingStyle}>Tell people a bit about yourself.</p>
@@ -249,10 +270,7 @@ export default function Onboarding() {
                 <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
               </div>
             </div>
-            <Button onClick={finishCreator} disabled={saving} className="w-full" style={mainButton}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save
-            </Button>
+            {cta("Save", finishCreator, saving, saving)}
           </div>
         )}
       </div>

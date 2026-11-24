@@ -10,7 +10,11 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
-import { Glyph } from "@/components/brand/Glyph";
+import { useQuery } from "@tanstack/react-query";
+
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { loadAccount } from "@/lib/settings/account";
+import { PHONE_MARGIN, PHONE_ROW } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { PANEL_GAP } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
@@ -22,6 +26,54 @@ import { FIGTREE } from "@/lib/theme/type";
 const panel: CSSProperties = { background: t.surface, borderRadius: 12, padding: 16, boxSizing: "border-box", minWidth: 0 };
 const title: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text };
 
+
+/* Mobile prompt 27 Part A: on a phone `/settings` is its own screen. The top bar (back, "Settings") is the frame's, so the h1 is
+   read aloud and not drawn. Two Panel modules (radius 12, margin 0 16) under a 13/500 Text 3 label each; rows 56 tall, the
+   name 15/500, its value 13 Text 3 under it, a chevron at the right. A section opens as a page of its own (its bar is the
+   section's: see `SectionPage`). */
+const GROUPS: readonly { label: string; keys: readonly SectionKey[] }[] = [
+  { label: "Account", keys: ["account", "notifications", "privacy"] },
+  { label: "More", keys: ["apps", "data", "appearance"] },
+];
+
+function PhoneList({ section, children }: { section: SectionKey | null; children?: ReactNode }) {
+  const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: 60_000, enabled: section === null });
+  if (section) return <div style={{ fontFamily: FIGTREE }}>{children}</div>;
+  const value = (key: SectionKey): string => {
+    if (key === "account") return account.data ? (account.data.email ?? "Not set") : SECTIONS[0].note;
+    return SECTIONS.find((s) => s.key === key)!.note;
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 24, fontFamily: FIGTREE }}>
+      <h1 className="sr-only">Settings</h1>
+      <nav aria-label="Settings" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {GROUPS.map((group) => (
+          <section key={group.label} aria-label={group.label} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <h2 style={{ margin: 0, padding: `0 ${PHONE_MARGIN}px`, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.label }}>{group.label}</h2>
+            <ul style={{ listStyle: "none", margin: `0 ${PHONE_MARGIN}px`, padding: 0, borderRadius: 12, background: t.surface, overflow: "hidden" }}>
+              {group.keys.map((key) => {
+                const s = SECTIONS.find((one) => one.key === key)!;
+                return (
+                  <li key={key}>
+                    <PageLink to={settingsPath(key)} style={{ ...link, display: "flex", alignItems: "center", gap: 12, minHeight: PHONE_ROW, padding: `8px ${PHONE_MARGIN}px`, boxSizing: "border-box" }}>
+                      <span style={{ display: "block", flexGrow: 1, minWidth: 0 }}>
+                        <span style={{ display: "block", color: t.text, fontSize: 15, fontWeight: 500, lineHeight: "20px" }}>{s.label}</span>
+                        <span style={{ display: "block", color: t.label, fontSize: 13, lineHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value(key)}</span>
+                      </span>
+                      <span aria-hidden="true" style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+                        <MobileIcon name="chevr" size={20} />
+                      </span>
+                    </PageLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </nav>
+    </div>
+  );
+}
 
 const link: CSSProperties = { textDecoration: "none", color: "inherit", display: "block" };
 
@@ -36,29 +88,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
   const phone = useIsPhone();
   const wide = useMinWidth(1101);
 
-  if (phone) {
-    if (section) return <div style={panel}>{children}</div>;
-    return (
-      <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 8, fontFamily: FIGTREE }}>
-        <h1 style={title}>Settings</h1>
-        <nav aria-label="Settings">
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {SECTIONS.map((s) => (
-              <li key={s.key}>
-                <PageLink to={settingsPath(s.key)} style={{ ...link, display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 0" }}>
-                  <span style={{ display: "block", flexGrow: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", color: t.text, fontSize: 15, lineHeight: "20px" }}>{s.label}</span>
-                    <span style={{ display: "block", color: t.label, fontSize: 13, lineHeight: "16px" }}>{s.note}</span>
-                  </span>
-                  <Glyph name="chev" size={12} />
-                </PageLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-    );
-  }
+  if (phone) return <PhoneList section={section}>{children}</PhoneList>;
 
   const current: SectionKey = section ?? "account";
   return (
