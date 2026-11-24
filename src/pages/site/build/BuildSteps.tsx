@@ -783,7 +783,16 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
         </div>
         <span data-testid="session-count" style={{ ...text(13, 400, t.label), flexShrink: 0, whiteSpace: "nowrap" }}>{chat.date ?? steps}</span>
         {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
-        <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={32} label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+        <button
+          type="button"
+          aria-label={`${fold.folded ? "Expand" : "Collapse"} ${name}`}
+          aria-expanded={!fold.folded}
+          aria-controls={fold.controls}
+          onClick={fold.toggle}
+          style={{ flexShrink: 0, width: 44, height: 44, padding: 0, border: 0, borderRadius: r.full, background: "transparent", color: t.text2, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          <MobileIcon name={fold.folded ? "chevr" : "chev"} size={20} />
+        </button>
       </div>
     );
   }
@@ -868,7 +877,13 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
       {chat.outputs && !fold?.folded ? (
         <div data-testid="outputs" style={{ marginLeft: SETUP_INDENT, display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ paddingTop: 2 }}>
-            <ReadAll label="Show the links" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
+            {copy?.phone ? (
+              <Button variant="ghost" size={44} fontSize={13} aria-expanded={outputsOpen} onClick={() => setOutputsOpen((value) => !value)}>
+                Show the links
+              </Button>
+            ) : (
+              <ReadAll label="Show the links" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
+            )}
           </span>
           {outputsOpen ? (
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>

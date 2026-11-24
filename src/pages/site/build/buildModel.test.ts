@@ -324,7 +324,7 @@ describe("the run sequence", () => {
     const words = layerSteps(layer as never, (id) => (id === "s" ? (tree[1] as never) : undefined));
     expect(words.attribution).toMatch(/^Written by OpenBuilds.ai/);
     expect(words.steps).toEqual([
-      { n: 1, title: "Paste it", body: "Into a chat.", part: { id: "s", title: "The prompt" } },
+      { n: 1, title: "Paste it", body: "Into a chat.", part: { id: "s", title: "The prompt" }, kind: "System prompt" },
       { n: 2, title: "Then", body: "", part: null },
     ]);
     expect(runBody(build, tree, types, layer as never, () => undefined).words?.steps).toHaveLength(2);

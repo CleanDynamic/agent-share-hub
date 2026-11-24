@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { BigButton } from "@/components/phone/BigButton";
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { Pause, Play, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
@@ -380,7 +381,7 @@ function PhoneReplay({
           {...play.handlers}
           style={{ flexShrink: 0, width: 48, height: 48, padding: 0, border: 0, borderRadius: r.full, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(play.state.focusVisible) }}
         >
-          {playing ? <Pause size={20} strokeWidth={1.8} aria-hidden="true" /> : <Play size={20} strokeWidth={1.8} aria-hidden="true" />}
+          <MobileIcon name={playing ? "pause" : "play"} size={22} />
         </button>
         <PhoneScrubber events={events} position={position} markers={markers} onMove={onMove} onPointMarker={onPointMarker} />
         <span style={{ flexShrink: 0, fontFamily: DM_MONO, fontSize: 13, color: t.label, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
@@ -404,7 +405,7 @@ function PhoneReplay({
       ) : null}
 
       <div data-testid="build-replay-current" style={{ display: "flex", flexDirection: "column", gap: 4, padding: 16, borderRadius: 12, background: t.surface }}>
-        <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{[`Event ${current.ordinal}`, current.kind.charAt(0).toUpperCase() + current.kind.slice(1), current.at].join(" · ")}</span>
+        <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{[`Event ${current.ordinal}`, current.kind.charAt(0).toUpperCase() + current.kind.slice(1), current.when ?? current.at].join(" · ")}</span>
         {current.phaseTitle ? <span style={{ fontSize: 15, lineHeight: "20px", color: t.text }}>{current.phaseTitle}</span> : null}
         <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{current.text}</p>
       </div>

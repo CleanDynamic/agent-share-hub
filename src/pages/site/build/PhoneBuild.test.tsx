@@ -14,6 +14,7 @@ import type { BuildViewProps } from "./BuildView";
 import { BuildView } from "./BuildView";
 import { stepTabs } from "./buildModel";
 import { RebuildsBody } from "./RebuildsBody";
+import { LayerSteps } from "./RunBody";
 
 function stepsProps(over: Partial<BuildViewProps> = {}): BuildViewProps {
   const { title, outcome, ...steps } = buildStepsFixture("list");
@@ -127,6 +128,31 @@ describe("the section bodies on a phone", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("This build has no rebuilds yet.")).toBeTruthy();
+  });
+});
+
+describe("the Steps lens and the replay on a phone", () => {
+  it("offers the Map read only: 130 wide session Cards, and a tap marks the chosen one", async () => {
+    const props = stepsProps();
+    const map = props.steps ? { ...props.steps, mapAvailable: true } : props.steps;
+    mount({ ...props, steps: map });
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    expect(screen.getByText("Tap a session to see what joins it")).toBeTruthy();
+    const boxes = await screen.findAllByTestId("phone-map-session");
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(boxes[0].style.width).toBe("130px");
+    fireEvent.click(boxes[0]);
+    expect(boxes[0].getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("Understand it: each step is a Card with its kind beside the number", () => {
+    render(
+      <MemoryRouter>
+        <LayerSteps layer={{ attribution: "Written by OpenBuilds.ai.", steps: [{ n: 1, title: "Brief", body: "Write the brief.", part: { id: "p", title: "Brief" }, kind: "System prompt" }] }} phone onOpenPart={() => undefined} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("System prompt")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /in the anatomy/ })).toBeTruthy();
   });
 });
 

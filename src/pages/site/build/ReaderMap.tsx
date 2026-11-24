@@ -11,7 +11,8 @@ import { PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { t } from "@/lib/theme/tokens";
 
 import { readerMapDirection } from "@/lib/build/making";
-import { sessionMapFor } from "@/lib/build/sessionMap";
+import { joinedSessions, sessionMapFor, type SessionMapModel } from "@/lib/build/sessionMap";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
 import { MAP_AND_PANEL, MAP_COLUMN, MAP_STACKED } from "@/pages/site/compose/mapRecipes";
 import { SessionMapColumn } from "@/pages/site/compose/SessionMap";
@@ -63,6 +64,93 @@ function usePinch() {
   return { zoom, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp } };
 }
 
+/** The phone's session boxes: 130 wide Cards (radius 10) in stage rows, 16 apart across and 40 apart down. */
+export const PHONE_BOX = { w: 130, h: 64, gapX: 16, gapY: 40, pad: 16 } as const;
+
+function phoneLayout(model: SessionMapModel) {
+  const rows = new Map<number, string[]>();
+  for (const session of model.sessions) {
+    const stage = model.stages.stageOf[session.key] ?? 1;
+    rows.set(stage, [...(rows.get(stage) ?? []), session.key]);
+  }
+  const ordered = [...rows.entries()].sort(([a], [b]) => a - b);
+  const pos = new Map<string, { x: number; y: number }>();
+  let width = 0;
+  ordered.forEach(([, keys], row) => {
+    keys.forEach((key, col) => {
+      pos.set(key, { x: PHONE_BOX.pad + col * (PHONE_BOX.w + PHONE_BOX.gapX), y: PHONE_BOX.pad + row * (PHONE_BOX.h + PHONE_BOX.gapY) });
+    });
+    width = Math.max(width, PHONE_BOX.pad * 2 + keys.length * PHONE_BOX.w + (keys.length - 1) * PHONE_BOX.gapX);
+  });
+  return { pos, width, height: PHONE_BOX.pad * 2 + ordered.length * PHONE_BOX.h + Math.max(ordered.length - 1, 0) * PHONE_BOX.gapY };
+}
+
+/** Read only: tap a session to see what joins it (its neighbours and the lines to them stay; the rest dim). */
+function PhoneMap({ model, selected, onSelect, zoom }: { model: SessionMapModel; selected: string | null; onSelect: (key: string | null) => void; zoom: number }) {
+  const layout = useMemo(() => phoneLayout(model), [model]);
+  const joined = joinedSessions(model, selected);
+  const on = (key: string) => !selected || key === selected || joined.has(key);
+  const centre = (key: string, edge: "top" | "bottom") => {
+    const at = layout.pos.get(key);
+    return at ? { x: at.x + PHONE_BOX.w / 2, y: at.y + (edge === "bottom" ? PHONE_BOX.h : 0) } : null;
+  };
+  return (
+    <div style={{ width: layout.width * zoom, height: layout.height * zoom }}>
+      <div style={{ position: "relative", width: layout.width, height: layout.height, transform: zoom === 1 ? undefined : `scale(${zoom})`, transformOrigin: "0 0" }}>
+        <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+          {model.links.map((link) => {
+            const a = centre(link.from, "bottom");
+            const b = centre(link.session, "top");
+            if (!a || !b) return null;
+            const hot = selected !== null && (link.from === selected || link.session === selected);
+            const mid = (a.y + b.y) / 2;
+            return <path key={link.id} d={`M${a.x} ${a.y}C${a.x} ${mid} ${b.x} ${mid} ${b.x} ${b.y}`} fill="none" stroke={hot ? t.text : t.label} strokeWidth={hot ? 2 : 1.5} opacity={!selected || hot ? 1 : 0.4} />;
+          })}
+        </svg>
+        {model.sessions.map((session) => {
+          const at = layout.pos.get(session.key);
+          if (!at) return null;
+          const chosen = session.key === selected;
+          return (
+            <button
+              key={session.key}
+              type="button"
+              data-testid="phone-map-session"
+              aria-pressed={chosen}
+              onClick={() => onSelect(chosen ? null : session.key)}
+              style={{
+                position: "absolute",
+                left: at.x,
+                top: at.y,
+                width: PHONE_BOX.w,
+                height: PHONE_BOX.h,
+                boxSizing: "border-box",
+                padding: "8px 12px",
+                border: 0,
+                borderRadius: 10,
+                background: t.module,
+                boxShadow: chosen ? `inset 0 0 0 1px ${t.selectedEdge}` : undefined,
+                opacity: on(session.key) ? 1 : 0.5,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 2,
+                textAlign: "left",
+                cursor: "pointer",
+                fontFamily: FIGTREE,
+              }}
+            >
+              <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{`Session ${session.number}`}</span>
+              {session.title ?? session.app ? <span style={{ fontSize: 13, fontWeight: 600, lineHeight: "16px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.title ?? session.app}</span> : null}
+              <span style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label }}>{`${session.tiles} ${session.tiles === 1 ? "step" : "steps"}`}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ReaderMap({ view, start, phone = false }: ReaderMapProps) {
   const pinch = usePinch();
   const [selected, setSelected] = useState<string | null>(start?.selected ?? null);
@@ -87,9 +175,7 @@ export default function ReaderMap({ view, start, phone = false }: ReaderMapProps
             overscrollBehavior: "contain",
           }}
         >
-          <div style={{ ...MAP_COLUMN, padding: 12, transform: pinch.zoom === 1 ? undefined : `scale(${pinch.zoom})`, transformOrigin: "0 0" }}>
-            <SessionMapColumn model={model} direction={readerMapDirection(view.making)} selected={shown} onSelect={setSelected} />
-          </div>
+          <PhoneMap model={model} selected={shown} onSelect={setSelected} zoom={pinch.zoom} />
         </div>
         <SessionMapPanel model={model} selected={shown} stacked />
       </div>

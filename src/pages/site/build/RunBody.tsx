@@ -392,9 +392,12 @@ export function LayerSteps({
         <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           {layer.steps.map((step) => (
             <li key={step.n} data-testid="build-layer-step" style={{ display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", borderRadius: 12, background: t.module, minWidth: 0, fontFamily: FIGTREE }}>
-              <span aria-hidden="true" style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 24, height: 24, padding: "0 4px", boxSizing: "border-box", borderRadius: 6, background: t.control, fontFamily: DM_MONO, fontSize: 13, color: t.text }}>
-                {step.n}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 24, height: 24, padding: "0 4px", boxSizing: "border-box", borderRadius: 6, background: t.control, fontFamily: DM_MONO, fontSize: 13, color: t.text }}>
+                  {step.n}
+                </span>
+                {step.kind ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.text2 }}>{step.kind}</span> : null}
+              </div>
               {step.title ? (
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>
                   <span style={VISUALLY_HIDDEN}>{`Step ${step.n}: `}</span>
