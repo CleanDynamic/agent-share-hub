@@ -15,20 +15,18 @@
    build's mark in a 44 control tile, the title, the outcome and the credit. The picture light is the plaque's lamp, so
    it is lit, dimmed or absent from `plaqueState()` (data), never as decoration.
 
-   PHONE keeps today's stacking order: the hero, the action row, the reproduction, the sections as chips, then the
-   steps and What you need (or the anatomy, the viewer and the timeline). */
+   PHONE (prompt 22) is its own view, `PhoneBuild.tsx`: the head, the actions, the post, the sections as pills, the chosen
+   section, then What you need and the lower sections, on the Page shade. */
 
 import { mappedHarnesses } from "@/lib/build/harnessMap";
 import { useRef, useState, type CSSProperties, type ReactNode, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
-import { useToast } from "@/hooks/use-toast";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
-import { FilterChip } from "@/components/brand/FilterChip";
 import { ResultWindow } from "@/components/brand/FramedWork";
 import { Row } from "@/components/brand/Row";
 import { SectionHead } from "@/components/vision/SectionHead";
@@ -37,7 +35,6 @@ import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { PostThread } from "@/components/post/PostThread";
 import { PostRefsProvider } from "@/components/post/RefLinks";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
-import { ScrollRow } from "@/components/shell/ScrollRow";
 import {
   BETWEEN,
   useIsPhone,
@@ -63,6 +60,7 @@ import type {
   CompletenessView,
 } from "./buildModel";
 import { BeforeYouSendPanel } from "./BeforeYouSend";
+import { PhoneBuild } from "./PhoneBuild";
 import { DetailsGroup, NeedPanel, StepsList, stepDomId, toolLookup } from "./BuildSteps";
 import { menuItem, menuSurface } from "../compose/refinedStyles";
 import { buildSummary } from "@/lib/build/buildSummary";
@@ -936,88 +934,15 @@ function DesktopBuild(props: BuildViewProps) {
 
 /* ── phone ── */
 
-function PhoneBuild(props: BuildViewProps) {
-  const { hero, actions, proof, anatomy, viewer, timeline, steps } = props;
-  const { announce, region } = useAnnouncer();
-  const viewerRef = useRef<HTMLDivElement>(null);
-  useColumnPanels(true);
+/* Prompt 22: the phone's build page is its own view, `PhoneBuild.tsx`. */
 
-  /* The viewer is below the tabs and the anatomy: whatever changes it brings it into view. */
-  const reveal = () => viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "nearest" });
-
-  let lower: ReactNode;
-  if (steps) {
-    lower = <BuildPanel viewer={viewer} steps={steps} phone announce={announce} />;
-  } else {
-    lower = (
-      <>
-        <AnatomyPanel
-          anatomy={anatomy}
-          phone
-          onSelect={(id) => {
-            anatomy.onSelect(id);
-            reveal();
-          }}
-        />
-        <div ref={viewerRef} role="tabpanel" id="build-tabpanel" aria-labelledby={`build-tab-${viewer.tab}`} style={{ scrollMarginTop: 72 }}>
-          <Viewer viewer={viewer} part={selectedPart(anatomy)} phone announce={announce} />
-        </div>
-        <TimelinePanel
-          timeline={timeline}
-          phone
-          onPlay={() => {
-            timeline.onPlay();
-            viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" });
-          }}
-        />
-      </>
-    );
-  }
-
-  /* One column: the head, the post and The build in the main panel, then What you need and Before you send it, then the lower panels. */
-  return (
-    <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: PANEL_GUTTER, lineHeight: "normal", minWidth: 0 }}>
-      <div style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 24 }}>
-        {hero.thread ? <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} /> : <Hero hero={hero} actions={actions} phone announce={announce} />}
-        {viewer.tabs.length < 2 && steps ? null : (
-          <ScrollRow gap={6} label="Sections of this build" tablist>
-            {viewer.tabs.map((tab) => (
-              <FilterChip
-                key={tab.value}
-                label={tab.label}
-                on={tab.value === viewer.tab}
-                tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
-                onClick={() => {
-                  viewer.onTabChange(tab.value);
-                  if (!steps) reveal();
-                }}
-              />
-            ))}
-          </ScrollRow>
-        )}
-        {lower}
-        {props.classification}
-        {props.discussed}
-      </div>
-      <aside aria-label="What you need" style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 32 }}>
-        <SideParts proof={proof} steps={steps} />
-      </aside>
-      {region}
-    </div>
-  );
-}
-
-/** Prompt 19: the phone's top bar More sheet: the build's actions, then the maker's Edit and Report. */
-function useBuildMore({ actions, bar }: BuildViewProps) {
-  const { toast } = useToast();
+/**
+ * Prompt 19, 22: the phone's top bar More sheet holds only the actions the page does not show: the maker's Edit and Report
+ * (the shell's sheet adds Copy link). Rebuild, Copy for AI, Download, Lineage and Compare are on the page itself.
+ */
+function useBuildMore({ bar }: BuildViewProps) {
   useRegisterPageBar({
     more: [
-      { label: "Rebuild", onSelect: actions.onRebuild },
-      { label: "Copy for AI", onSelect: () => void actions.onCopyForAI().then((ok) => ok && toast({ title: DONE.copied })) },
-      { label: "Download", onSelect: actions.onDownload },
-      ...(actions.onDownloadSetup ? [{ label: DOWNLOAD_COPY.setup, onSelect: () => actions.onDownloadSetup?.() }] : []),
-      { label: "Lineage", to: actions.lineageTo },
-      ...(actions.compareTo ? [{ label: "Compare with the original", to: actions.compareTo }] : []),
       ...(bar?.editHref ? [{ label: "Edit build", to: bar.editHref }] : []),
       ...(bar?.onReport ? [{ label: "Report", tone: "danger" as const, onSelect: bar.onReport }] : []),
     ],

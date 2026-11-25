@@ -72,17 +72,42 @@ describe("accessibility", () => {
   });
 });
 
-describe("on a phone", () => {
-  it("the avatar is 72 overlapping by 36, the actions in one row, the side's sections after the feed (Synth 12), the feed full width", () => {
+describe("on a phone (mobile prompt 26 Part A)", () => {
+  it("the avatar is 80 overlapping the picture by 40, Follow and Message at its right, the side's sections after the feed, no panels", () => {
     phone();
     render(wrap(<ProfileView {...profileFixture("populated", false)} />));
     const avatar = screen.getByTestId("profile-head").querySelector('[data-ui="avatar"]') as HTMLElement;
-    expect(avatar.style.width).toBe("72px");
-    expect((avatar.parentElement as HTMLElement).style.marginTop).toBe("-36px");
-    expect(within(screen.getByTestId("profile-actions")).getAllByRole("button").map((button) => button.textContent)).toEqual(["Follow", "Message", "···"]);
+    expect(avatar.style.width).toBe("80px");
+    expect(avatar.style.borderRadius).toBe("18px");
+    expect((avatar.parentElement as HTMLElement).style.marginTop).toBe("-40px");
+    const actions = within(screen.getByTestId("profile-actions")).getAllByRole("button");
+    expect(actions.map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual(["Follow", "Message"]);
     const feed = screen.getByTestId("profile-feed");
     const side = screen.getByTestId("profile-side");
     expect(feed.compareDocumentPosition(side) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByTestId("profile-feed").parentElement?.style.maxWidth).toBe("");
+    expect(screen.getByTestId("profile-view").getAttribute("data-phone")).toBe("");
+    expect(screen.getByRole("tablist", { name: "Show" })).toBeTruthy();
+  });
+
+  it("the header picture is 170 tall across the full width, or the dot pattern when there is none", () => {
+    phone();
+    const props = profileFixture("populated", false);
+    const { unmount } = render(wrap(<ProfileView {...props} head={{ ...props.head, header: null }} />));
+    expect(screen.getByTestId("profile-header-picture").style.height).toBe("170px");
+    expect(screen.getByTestId("profile-header-picture").getAttribute("data-texture")).toBe("dot-grid");
+    unmount();
+    render(wrap(<ProfileView {...props} head={{ ...props.head, header: { url: "https://cdn.test/h.jpg", crop: null, alt: "" } }} />));
+    expect(screen.getByTestId("profile-header-picture").style.height).toBe("170px");
+    expect(screen.getByTestId("profile-header-picture").querySelector("img")).toBeTruthy();
+  });
+
+  it("the name is the h1 at 24/28, and each count is a link", () => {
+    phone();
+    render(wrap(<ProfileView {...profileFixture("populated", false)} />));
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.style.fontSize).toBe("24px");
+    expect(h1.style.lineHeight).toBe("28px");
+    const counts = within(screen.getByTestId("profile-counts")).getAllByRole("link");
+    expect(counts.length).toBeGreaterThan(0);
   });
 });

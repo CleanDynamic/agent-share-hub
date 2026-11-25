@@ -55,6 +55,7 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
   { file: "src/pages/site/openbuilds/PhoneReplyBar.tsx", has: "fontSize: 16,", why: "prompt 21: the phone reply field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/pages/site/openbuilds/NewPostWindow.tsx", has: "fontSize: phone ? 16 : 15", why: "prompt 21: the New post box on a phone is 16 so the phone does not zoom in on it" },
   { file: "src/pages/site/openbuilds/SpaceView.tsx", has: "fontSize: 24,", why: "prompt 20 Part C: a phone space's name is its visible page title, 24/28 600" },
+  { file: "src/pages/site/profile/ProfilePhone.tsx", has: "fontSize: 24,", why: "mobile prompt 26 Part A: a phone profile's name is its visible page title, 24/28 600" },
   { file: "src/pages/site/builds/BuildsFiltersPhone.tsx", has: "fontSize: 16,", why: "the phone filter search's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/shell/PhoneSearchPage.tsx", has: "fontSize: 16,", why: "prompt 19: the phone search field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontSize: 17,", why: "the build editor's bar: the lockup word, a logo (and the build editor is outside the type prompt)" },

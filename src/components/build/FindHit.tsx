@@ -4,6 +4,8 @@
 
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { findRanges } from "@/lib/build/findInBuild";
 import { t } from "@/lib/theme/tokens";
 
@@ -26,9 +28,14 @@ export const FOUND_WORD: CSSProperties = { backgroundColor: t.findFill, boxShado
 /** The ring on the tile (or head) the find is on: 1px, `--selected-edge`. */
 export const FOUND_RING: CSSProperties = { boxShadow: `0 0 0 1px ${t.selectedEdge}` };
 
+/** Prompt 23: on a phone a found word is filled in Mint, at 30% on Dusk and 18% on Noon (the light Mint, #1F6A24). */
+export const phoneFoundWord = (dark: boolean): CSSProperties => ({ ...FOUND_WORD, backgroundColor: `color-mix(in srgb, ${t.brandAccent} ${dark ? 30 : 18}%, transparent)`, boxShadow: "none" });
+
 /** `text` with the found words marked. */
 export function FindHit({ text }: { text: string }) {
   const { query } = useFindView();
+  const phone = useIsPhone();
+  const dark = useResolvedTheme() === "dusk";
   if (!query) return <>{text}</>;
   const ranges = findRanges(text, query);
   if (ranges.length === 0) return <>{text}</>;
@@ -37,7 +44,7 @@ export function FindHit({ text }: { text: string }) {
   ranges.forEach(([from, to], index) => {
     if (from > at) parts.push(text.slice(at, from));
     parts.push(
-      <mark key={index} data-testid="find-hit" style={FOUND_WORD}>
+      <mark key={index} data-testid="find-hit" style={phone ? phoneFoundWord(dark) : FOUND_WORD}>
         {text.slice(from, to)}
       </mark>,
     );

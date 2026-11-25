@@ -37,12 +37,11 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
-import { BottomSheet } from "@/components/shell/BottomSheet";
 import { headerHeight } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { PANEL_GAP } from "@/components/shell/pageGrid";
 import { elevation, elevationFill } from "@/lib/theme/elevation";
-import { useIsPhone, useShortWindow } from "@/components/shell/useMinWidth";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -50,6 +49,8 @@ import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { FindButton, FindField } from "./FindField";
+import { RoundPostButton } from "@/components/phone/RoundPostButton";
+import { PhoneEditor, PHONE_EDITOR_FOOTER, type PhoneEditorExtras } from "./phone/PhoneEditor";
 import { SaveLine } from "./SaveLine";
 import type { BuildFind } from "./useBuildFind";
 import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
@@ -58,7 +59,7 @@ import { addMenuLayout } from "./addMenuGroups";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
 import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_ROW, tabStyle } from "./tabRowRecipes";
-import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
+import { DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
@@ -68,9 +69,7 @@ import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
-import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
-import { ComposerBarMore } from "./ComposerBarMore";
 import { PublishChecklist } from "./PublishChecklist";
 import { PublishConfirmWindow as PublishConfirm } from "./composerWindows";
 import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
@@ -250,6 +249,8 @@ export interface SandboxViewProps extends CardProps {
   /** CA-18 P5: the selected tile's key, and the way to its window: the overlay and the sheet open the window from a click on their content. */
   selectedKey?: string | null;
   onEditSelected?: () => void;
+  /** Prompt 23: what only the phone editor needs from the page. Absent on a computer. */
+  phoneExtras?: PhoneEditorExtras;
 }
 
 export type AddKey = "prompt" | "agent" | "decision" | "retrieval" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "approval" | "code" | "check" | "result" | "library";
@@ -296,6 +297,8 @@ export function notSavedLine(problem: SaveFailure): string {
 
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. UX-02 P5: a computer has no hint line (double-click is not a command). */
 export const LIST_HINT_PHONE = "Tap a step to see its details";
+/** Prompt 23: the phone editor's round Add button. */
+export const ADD_ROUND_LABEL = "Add";
 export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PHONE : null);
 
 /** The columns start this far under the title row. */
@@ -466,8 +469,11 @@ export const ADD_MORE_COPY = { row: "More types" } as const;
 /** Synth 09: the title row's Add, the same menu as a session's Add step row, for the current session. */
 export const TITLE_ADD_COPY = { label: "Add" } as const;
 
-export function AddMenu({ phone, targets, fixedSession, variant = "row", ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; fixedSession?: string; /** Synth 09: "title" draws the trigger as the title row's secondary Add with a chevron. */ variant?: "row" | "title" }) {
+export function AddMenu({ phone, targets, fixedSession, variant = "row", openRequest, ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; fixedSession?: string; /** Synth 09: "title" draws the trigger as the title row's secondary Add with a chevron. Prompt 23: "round" is the phone editor's round Add button. */ variant?: "row" | "title" | "round"; /** Prompt 23: a new value opens the sheet (Sources' "Add Session 1 at the end"). */ openRequest?: number }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openRequest) setOpen(true);
+  }, [openRequest]);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
@@ -524,7 +530,9 @@ export function AddMenu({ phone, targets, fixedSession, variant = "row", ...prop
     </Menu.Item>
   );
 
-  const trigger = variant === "title" ? (
+  const trigger = variant === "round" ? (
+      <RoundPostButton label={ADD_ROUND_LABEL} icon="new" buttonRef={addButton} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} bottom={`calc(${PHONE_EDITOR_FOOTER}px + env(safe-area-inset-bottom))`} />
+  ) : variant === "title" ? (
       <button
         ref={addButton}
         type="button"
@@ -1113,7 +1121,6 @@ export function SandboxView(props: SandboxViewProps) {
 
 function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
-  const short = useShortWindow();
   const win = useWindowSize();
   /* Synth 09: on a computer the editor draws its own panels (the title row, Sources, Build, Details) on the page shade. */
   useColumnPanels(!phone);
@@ -1122,8 +1129,6 @@ function SandboxBody(props: SandboxViewProps) {
 
   const [cardOpen, setCardOpen] = useState(false);
   const [cardField, setCardField] = useState<CardField | null>(null);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   /** Map: the Sources rail has been opened out over the map. */
   const [railOpen, setRailOpen] = useState(false);
   /** CA-25: the Publish checklist is open; `latest` is what an action sees after a window has closed or an await has passed. */
@@ -1354,19 +1359,6 @@ function SandboxBody(props: SandboxViewProps) {
         <span data-testid="sandbox-counts" style={{ ...text(textStep.meta, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
           {countsLine(props.counts)}
         </span>
-        {phone ? (
-          /* A phone puts Sources, Details and Add on a line of their own under the title, at touch size. */
-          <span style={{ flexBasis: "100%", display: "flex", gap: 8 }}>
-            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setSourcesOpen(true)}>
-              Sources
-            </Button>
-            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setDetailsOpen(true)}>
-              Details
-            </Button>
-            <span style={{ flexGrow: 1 }} />
-            {props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
-          </span>
-        ) : null}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
       </div>
       {lens === "list" ? props.sessionList : null}
@@ -1431,74 +1423,45 @@ function SandboxBody(props: SandboxViewProps) {
   const card = <SandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} onEditPost={openPost} />;
 
   if (phone) {
+    /* Prompt 23: the editor on a phone is one screen, the build list (`phone/PhoneEditor.tsx`). */
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
-            {heading}
-            {statusLine}
-          </div>
-          <BuildTitleActions phone />
-          <ComposerBarMore />
-        </div>
-        {banner}
-        {props.strips}
-        {buildColumn}
-        <div
-          role="group"
-          aria-label="Actions"
-          style={{
-            /* G22: pinned to the foot unless the window is short (zoomed), where it would cover the page. */
-            position: short ? "static" : "sticky",
-            bottom: `calc(${ACTION_BAR_BOTTOM}px + env(safe-area-inset-bottom))`,
-            zIndex: 5,
-            display: "flex",
-            /* G8: at 320 Publish goes to a row of its own rather than push the page sideways; where all three fit, one row. */
-            flexWrap: "wrap",
-            gap: 8,
-            padding: 8,
-            borderRadius: 12,
-            background: t.window,
-            border: `1px solid ${t.windowBorder}`,
-            boxShadow: t.windowShadow,
-            boxSizing: "border-box",
-          }}
-        >
-          <Button variant="ghost" size={48} fontSize={textStep.body} onClick={() => openCard(null)}>
-            Classification
-          </Button>
-          {published ? (
-            <>
-              <LinkButton to={`/b2/${published.slug}`} phone>
-                {PUBLISHED_COPY.viewLive}
-              </LinkButton>
-              {publishedOptions}
-            </>
-          ) : (
-            <>
-              <LinkButton to={previewTo} phone>
-                Preview
-              </LinkButton>
-              <div style={{ flexGrow: 1 }}>
-                <Button size={48} fontSize={textStep.body} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
-                  {publishLabel}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-        <BottomSheet open={sourcesOpen} onOpenChange={setSourcesOpen} title="Sources">
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{sourcesBody}</div>
-        </BottomSheet>
-        <BottomSheet open={detailsOpen} onOpenChange={setDetailsOpen} title="Details">
-          <ClickToEdit onEdit={props.onEditSelected ? () => { setDetailsOpen(false); props.onEditSelected?.(); } : undefined} phone>
-            {detailsBody}
-          </ClickToEdit>
-        </BottomSheet>
-        {card}
-        {checklistWindow}
-        {confirmWindow}
-      </div>
+      <PhoneEditor
+        title={props.title}
+        onTitle={props.onTitle}
+        save={save}
+        lastSavedAt={props.lastSavedAt}
+        pendingWrites={props.pendingWrites}
+        saveDetail={props.saveProblem ? notSavedLine(props.saveProblem) : undefined}
+        onRetrySave={props.onRetrySave}
+        threadNote={props.threadNote}
+        counts={props.counts}
+        published={Boolean(published)}
+        publishedSlug={published?.slug ?? null}
+        publishedWords={publishedWords(props.publishedAt)}
+        publishing={props.publishing}
+        checklist={props.publish?.checklist ?? null}
+        prepare={props.publish?.prepare}
+        onPublish={() => (props.publish ? props.onPublish() : latest.current.onPublish())}
+        onChecklistAction={(item) => onChecklistAction(item)}
+        previewTo={previewTo}
+        publishedOptions={publishedOptions}
+        find={props.find}
+        hint={props.list ? null : listHint(phone)}
+        banner={banner}
+        strips={props.strips}
+        list={guard("Build", props.list ?? null)}
+        emptyBuild={props.emptyBuild ? guard("Build", <EmptyBuild {...props.emptyBuild} />) : null}
+        post={postSection}
+        sessionList={props.sessionList}
+        viewMenu={props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
+        detailsBody={detailsBody}
+        onEditSelected={props.onEditSelected}
+        selectedKey={props.selectedKey ?? null}
+        addMenu={props.addMenu}
+        card={card}
+        onCard={() => openCard(null)}
+        extras={props.phoneExtras}
+      />
     );
   }
 

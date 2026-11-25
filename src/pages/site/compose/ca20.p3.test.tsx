@@ -193,10 +193,13 @@ describe("on the page", () => {
     expect(ids()).not.toContain(IDS.file);
   });
 
-  it("on a phone a long press starts choosing, taps then add and take off, and the bar sits above the action bar", async () => {
+  /* Prompt 23: on a phone the choosing bar takes the footer's place from the first tile chosen: "1 chosen", then Move, Group,
+     Colour, Duplicate and Remove. */
+  it("on a phone a long press starts choosing, taps then add and take off, and the choosing bar replaces the footer", async () => {
     stubWidth(390);
     await mountCa20(seedCa20);
     const touch = (type: string, element: Element) => element.dispatchEvent(Object.assign(new Event(type, { bubbles: true, cancelable: true }), { pointerType: "touch", clientX: 5, clientY: 5 }));
+    const chooseBar = () => screen.queryByTestId("phone-choose-bar");
     touch("pointerdown", card(1));
     await new Promise((resolve) => setTimeout(resolve, 650));
     touch("pointerup", card(1));
@@ -204,12 +207,14 @@ describe("on the page", () => {
     fireEvent.click(card(1));
     expect(card(1).getAttribute("data-selected")).toBe("true");
     expect(bar()).toBeNull();
+    expect(count()).toBe("1 chosen");
+    expect(screen.queryByTestId("phone-editor-footer")).toBeNull();
     // Now a tap adds.
     fireEvent.click(card(2));
-    expect(count()).toBe("2 selected");
-    expect((bar() as HTMLElement).getAttribute("data-phone")).toBe("true");
+    expect(count()).toBe("2 chosen");
+    expect(within(chooseBar() as HTMLElement).getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual(["Clear selection", "Move", "Group", "Colour", "Duplicate", "Remove"]);
     // A press that moves is a scroll, not a press.
-    fireEvent.click(within(bar() as HTMLElement).getByRole("button", { name: "Clear selection" }));
+    fireEvent.click(within(chooseBar() as HTMLElement).getByRole("button", { name: "Clear selection" }));
     touch("pointerdown", card(2));
     document.dispatchEvent(Object.assign(new Event("pointermove", { bubbles: true }), { pointerType: "touch", clientX: 80, clientY: 90 }));
     await new Promise((resolve) => setTimeout(resolve, 650));

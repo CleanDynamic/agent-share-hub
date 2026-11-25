@@ -12,6 +12,9 @@ import { motion, PanInfo } from "framer-motion";
 import { MessageInputBar } from "./MessageInputBar";
 import { displayContentType } from "@/lib/content-types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useKeyboardOpen } from "@/components/phone/useKeyboardInset";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { shortAgo } from "@/pages/site/home/homeModel";
 import { ContentShareBubble, type ContentShareValue, type ReadState } from "@/components/messages/ContentShareBubble";
 import { BuildShareCard } from "@/components/messages/BuildShareCard";
 import { TopicShareCard } from "@/components/messages/TopicShareCard";
@@ -412,6 +415,9 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  /* Mobile prompt 26 Part E: below 768 the bubbles, the groups, "Seen" and the input bar take the phone's sizes. */
+  const phone = useIsPhone();
+  const keyboardOpen = useKeyboardOpen();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [replyTo, setReplyTo] = useState<any>(null);
@@ -916,7 +922,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             </div>
           )}
           <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-1.5`}>
-            {!isMine && (
+            {!isMine && !phone && (
               <div className="w-7 shrink-0 mr-1.5 self-end">
                 {showAvatar && (
                   <Avatar className="h-6 w-6">
@@ -1037,7 +1043,9 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
      * `bg-primary` was the old fill and it is a Tailwind palette colour, not a
      * theme token, so it took neither room's action hue.
      */
+    const phoneBuildCard = phone && msg.message_type !== "image" && msg.message_type !== "voice" && msg.message_type !== "post_share" && msg.message_type !== "like" && Boolean(msg.shared_build_id && sharedBuilds?.get(msg.shared_build_id)) && !(msg.shared_post_id && sharedTopics?.get(msg.shared_post_id));
     const bubbleSurface = (): React.CSSProperties => {
+      if (phoneBuildCard) return {};
       if (msg.message_type === "like") return {};
       if (msg.message_type === "image" || msg.message_type === "post_share") return {};
       return {
@@ -1056,6 +1064,8 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
      */
     const bubbleRadiusStyle: React.CSSProperties = {
       borderRadius: 18,
+      ...(phoneBuildCard ? { padding: 0 } : null),
+      ...(phone && !phoneBuildCard && msg.message_type !== "image" && msg.message_type !== "post_share" && msg.message_type !== "like" ? (isMine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }) : null),
       ...(msg.message_type === "image" || msg.message_type === "post_share" || msg.message_type === "like" ? null : { padding: "10px 14px" }),
     };
 
@@ -1099,8 +1109,8 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
           </div>
         )}
 
-        <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-0.5 group`}>
-          {!isMine && (
+        <div className={`flex ${isMine ? "justify-end" : "justify-start"} ${phone ? "mb-1" : "mb-0.5"} group`}>
+          {!isMine && !phone && (
             <div className="w-7 shrink-0 mr-1.5 self-end">
               {showAvatar && (
                 <Avatar className="h-6 w-6">
@@ -1113,7 +1123,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             </div>
           )}
 
-          <div className="max-w-[70%] relative">
+          <div className={phone ? "relative" : "max-w-[70%] relative"} style={phone ? { maxWidth: 280 } : undefined}>
             {repliedMsg && (
               <div className="mb-1 pl-2 border-l-2 border-muted-foreground/30 text-[12px] text-muted-foreground truncate max-w-full">
                 ↩ {repliedMsg.sender_id === user?.id ? "You" : displayName}: {repliedMsg.text_content?.slice(0, 60) || "Media"}
@@ -1167,7 +1177,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
               </p>
             )}
 
-            {isLastSent && msg.read_at && (
+            {isLastSent && msg.read_at && phone ? (
+              <p data-testid="message-seen" className="text-right mt-1" style={{ fontSize: 13, lineHeight: "16px", ...tabular, color: t.label }}>
+                {`Seen ${shortAgo(msg.read_at, Date.now())}`}
+              </p>
+            ) : null}
+            {isLastSent && msg.read_at && !phone && (
               <div className="flex justify-end mt-0.5">
                 <Avatar className="h-3.5 w-3.5">
                   {otherUser.avatar_url && <AvatarImage src={otherUser.avatar_url} />}
@@ -1350,7 +1365,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       )}
 
       {/* Input bar with safe area */}
-      <div style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div style={{ paddingBottom: keyboardOpen ? 0 : "env(safe-area-inset-bottom)" }}>
         <MessageInputBar
           threadId={threadId}
           otherDisplayName={displayName}

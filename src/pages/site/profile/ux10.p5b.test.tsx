@@ -157,3 +157,26 @@ describe("the addresses", () => {
     expect(trailFor("/profile/maya/followers", "@maya").slice(1)).toEqual([{ label: "@maya", href: "/profile/maya" }, { label: "Followers" }]);
   });
 });
+
+describe("the view on a phone (mobile prompt 26 Part B)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const onPhone = () => vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined }));
+
+  it("two equal tabs that are the facts, then rows with Follow, Following and You; no panels", () => {
+    onPhone();
+    const onFollow = vi.fn();
+    view({ onFollow, owner: { id: "u-maya", name: "Maya", avatarUrl: null, otherCount: 4 } });
+    const tabs = within(screen.getByRole("tablist", { name: "Followers and following" })).getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["31 followers", "4 following"]);
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(screen.queryByTestId("follow-owner")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "31 followers" }).className).toBe("sr-only");
+    const rows = within(screen.getByRole("list", { name: "@maya's followers" })).getAllByRole("listitem");
+    expect(within(rows[0]).getByRole("button", { name: "Follow" })).toBeInTheDocument();
+    expect(within(rows[1]).getByRole("button", { name: "Following" })).toHaveAttribute("aria-pressed", "true");
+    expect(rows[2].textContent).toContain("You");
+    fireEvent.click(within(rows[0]).getByRole("button", { name: "Follow" }));
+    expect(onFollow).toHaveBeenCalledWith("p1", true);
+  });
+});
+

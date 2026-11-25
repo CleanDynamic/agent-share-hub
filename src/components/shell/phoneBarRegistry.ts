@@ -5,6 +5,8 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
+import type { MobileIconName } from "@/components/brand/mobileIcons";
+
 /** One row of the More sheet. Give `to` for a link or `onSelect` for an action. */
 export interface MoreItem {
   label: string;
@@ -12,6 +14,8 @@ export interface MoreItem {
   onSelect?: () => void;
   tone?: "danger";
   disabled?: boolean;
+  /** Prompt 23: the editor's rows carry their icon at 22 (and are drawn 15/500). */
+  icon?: MobileIconName;
 }
 
 export interface PageBar {
@@ -31,6 +35,8 @@ export interface PageBar {
   skip?: () => void;
   /** Onboarding's place: the bar draws "1 of 3" in mono and a segment each, the done ones Mint. */
   progress?: { step: number; of: number };
+  /** Prompt 23: the More sheet holds only the page's rows, in its order (the editor has no Copy link or Share). */
+  bare?: boolean;
 }
 
 let current: PageBar = {};
@@ -52,7 +58,7 @@ export function useRegisterPageBar(bar: PageBar | null): void {
   const latest = useRef(bar);
   latest.current = bar;
   const key = bar
-    ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, bar.more?.map((item) => [item.label, item.to, item.tone, item.disabled, !!item.onSelect]), !!bar.settings, bar.markAll?.disabled, !!bar.markAll, !!bar.skip, bar.progress?.step, bar.progress?.of])
+    ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, bar.more?.map((item) => [item.label, item.to, item.tone, item.disabled, !!item.onSelect, item.icon]), !!bar.settings, bar.markAll?.disabled, !!bar.markAll, !!bar.skip, !!bar.bare, bar.progress?.step, bar.progress?.of])
     : "";
   useEffect(() => {
     if (!latest.current) return;
@@ -65,6 +71,7 @@ export function useRegisterPageBar(bar: PageBar | null): void {
       markAll: latest.current.markAll ? { disabled: latest.current.markAll.disabled, run: () => latest.current?.markAll?.run() } : undefined,
       skip: latest.current.skip ? () => latest.current?.skip?.() : undefined,
       progress: latest.current.progress,
+      bare: latest.current.bare,
     };
     current = { ...current, ...own };
     emit();

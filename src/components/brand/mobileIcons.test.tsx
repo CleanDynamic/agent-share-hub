@@ -7,8 +7,8 @@ import { MOBILE_ICONS, type MobileIconName } from "./mobileIcons";
 const names = Object.keys(MOBILE_ICONS) as MobileIconName[];
 
 describe("the mobile icon set", () => {
-  it("holds 79 icons", () => {
-    expect(names).toHaveLength(79);
+  it("holds 81 icons (prompt 22 added Play and Pause for the replay)", () => {
+    expect(names).toHaveLength(81);
   });
 
   it("has a filled version for Home, Builds, OpenBuilds, Activity, Like, Save and Search heavier", () => {

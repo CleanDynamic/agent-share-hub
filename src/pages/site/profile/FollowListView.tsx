@@ -19,10 +19,12 @@ import { Avatar } from "@/components/brand/Avatar";
 import { PostControl } from "@/components/post/postControls";
 import { PANEL_GAP } from "@/components/shell/pageGrid";
 import { useColumnPanels } from "@/components/shell/frameChrome";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, SENTIENT } from "@/lib/theme/type";
+
+import { FollowListPhone } from "./FollowListPhone";
 
 /** The page's container. */
 export const FEED_WIDTH = 980;
@@ -122,7 +124,7 @@ function Owner({ owner, handle, which, row }: { owner: FollowOwnerView | null | 
 /** Two panels from 1101; 761 to 1100 the person is a row above the list; 760 and below, one column. */
 const TWO_PANELS_MIN = 1101;
 
-export function FollowListView(props: FollowListViewProps) {
+function FollowListDesktop(props: FollowListViewProps) {
   useColumnPanels(true);
   const two = useMinWidth(TWO_PANELS_MIN);
   const between = useMinWidth(761);
@@ -193,6 +195,12 @@ export function FollowListView(props: FollowListViewProps) {
       {main}
     </div>
   );
+}
+
+/** Below 768 the list is the phone's own page (`FollowListPhone`); from 768 up it is the two panels above. */
+export function FollowListView(props: FollowListViewProps) {
+  const phone = useIsPhone();
+  return phone ? <FollowListPhone {...props} /> : <FollowListDesktop {...props} />;
 }
 
 export default FollowListView;

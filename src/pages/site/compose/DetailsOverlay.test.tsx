@@ -93,9 +93,11 @@ describe("a window from 768 to where Details fits", () => {
 });
 
 describe("a phone", () => {
-  it("shows Details in its sheet with the foot Tap to edit", () => {
-    const onEdit = view(390);
-    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+  /* Prompt 23: the sheet a step opens. A tap on the step's tile opens it (there is no Details button on a phone any more). */
+  it("shows Details in its sheet with the foot Tap to edit", async () => {
+    const onEdit = view(390, { list: <div data-node-id="p1" role="group" aria-label="Prompt 1: Homepage copy" tabIndex={0}>Homepage copy</div> });
+    fireEvent.click(screen.getByRole("group", { name: "Prompt 1: Homepage copy" }));
+    await screen.findByRole("dialog", { name: "Details" });
     expect(screen.getByTestId("details-foot").textContent).toBe("Tap to edit");
     fireEvent.click(screen.getByText("The text of it"));
     expect(onEdit).toHaveBeenCalledTimes(1);

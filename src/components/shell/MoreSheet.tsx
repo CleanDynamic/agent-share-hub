@@ -4,6 +4,7 @@
 
 import { useState, type CSSProperties } from "react";
 
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { useToast } from "@/hooks/use-toast";
 import { DONE, COPY_LINK_FAILED } from "@/lib/copy/copy";
 import { copyToClipboard } from "@/lib/deepLink";
@@ -36,12 +37,16 @@ const ROW: CSSProperties = {
   cursor: "pointer",
 };
 
+/** Prompt 23: a row with its icon: 52 tall, the icon at 22, the name 15/500, 12 between. */
+const ICON_ROW: CSSProperties = { gap: 12, fontSize: 15, lineHeight: "20px" };
+
 function Row({ item, onDone }: { item: MoreItem; onDone: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement & HTMLAnchorElement>();
-  const style: CSSProperties = { ...ROW, ...(item.tone === "danger" ? { color: t.dangerText } : null), ...(item.disabled ? { color: t.label, cursor: "default" } : null), ...ring(state.focusVisible) };
+  const style: CSSProperties = { ...ROW, ...(item.icon ? ICON_ROW : null), ...(item.tone === "danger" ? { color: t.dangerText } : null), ...(item.disabled ? { color: t.label, cursor: "default" } : null), ...ring(state.focusVisible) };
   if (item.to && !item.disabled) {
     return (
       <PageLink to={item.to} onClick={onDone} {...handlers} style={style}>
+        {item.icon ? <MobileIcon name={item.icon} size={22} /> : null}
         {item.label}
       </PageLink>
     );
@@ -58,25 +63,27 @@ function Row({ item, onDone }: { item: MoreItem; onDone: () => void }) {
       {...handlers}
       style={style}
     >
+      {item.icon ? <MobileIcon name={item.icon} size={22} /> : null}
       {item.label}
     </button>
   );
 }
 
-/** `link` and `name`: what Copy link and Share carry when the sheet belongs to one post in a list (absent: the page). */
-export function MoreSheet({ open, onOpenChange, items, link, name }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[]; link?: string; name?: string }) {
+/** `link` and `name`: what Copy link and Share carry when the sheet belongs to one post in a list (absent: the page). `bare`: only the page's rows (prompt 23). */
+export function MoreSheet({ open, onOpenChange, items, link, name, bare = false }: { open: boolean; onOpenChange: (open: boolean) => void; items: readonly MoreItem[]; link?: string; name?: string; bare?: boolean }) {
   const { toast } = useToast();
   const [shareable] = useState(() => typeof navigator !== "undefined" && typeof navigator.share === "function");
   const close = () => onOpenChange(false);
-  const own: MoreItem[] = [
+  const own: MoreItem[] = bare ? [] : [
     {
       label: "Copy link",
       onSelect: () => void copyToClipboard(link ?? window.location.href).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED })),
     },
     ...(shareable ? [{ label: "Share", onSelect: () => void navigator.share({ url: link ?? window.location.href, title: name ?? document.title }).catch(() => undefined) }] : []),
   ];
-  const danger = items.filter((item) => item.tone === "danger");
-  const rest = items.filter((item) => item.tone !== "danger");
+  /* A bare sheet keeps the page's order (the editor puts Clear the build last itself). */
+  const danger = bare ? [] : items.filter((item) => item.tone === "danger");
+  const rest = bare ? items : items.filter((item) => item.tone !== "danger");
   return (
     <LazyBottomSheet open={open} onOpenChange={onOpenChange} title="More" hideTitle>
       <div role="group" aria-label="More" data-testid="more-sheet" style={{ paddingBottom: 8 }}>

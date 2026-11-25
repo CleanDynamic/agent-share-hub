@@ -34,6 +34,9 @@ import { FIGTREE } from "@/lib/theme/type";
 import { MapCard, type MapCardView } from "@/pages/site/builds/BuildsMapsView";
 import type { HomeReproNote } from "@/pages/site/home/homeModel";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
+
+import { ProfileFeedPhone } from "./ProfilePhone";
 import type { EmptyFeed } from "./profileFeedModel";
 
 export type FeedFilterValue = "all" | "builds" | "topics" | "replies" | "notes";
@@ -177,6 +180,8 @@ function Card({ entry, now }: { entry: FeedEntry; now: number }) {
 }
 
 export function ProfileFeed(props: ProfileFeedProps) {
+  const phone = useIsPhone();
+  if (phone) return <ProfileFeedPhone {...props} />;
   const { isOwn } = props;
   const entries = props.entries.filter((entry) => entry.kind !== "repro_note");
   return (

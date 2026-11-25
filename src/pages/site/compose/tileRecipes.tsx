@@ -36,15 +36,16 @@ export const RUN: CSSProperties = { display: "flex", flexDirection: "column", ga
 
 /** Synth 09: a tile is a Card (`--module`), radius 12, padded 12 14, a column 8 apart; its edge is clear until a maker's
     colour takes it. Chosen: the Mint ring outside a 2px gap (`SELECT_RING`). */
-export const tileStyle = (selected = false): CSSProperties => ({
+export const tileStyle = (selected = false, phone = false): CSSProperties => ({
   background: t.module,
   border: `1px solid ${t.moduleBorder}`,
   borderRadius: r.panel,
-  padding: `${space[3]}px 14px`,
+  /* Prompt 23: on a phone, padded 10 12 12 14 with 4 between its parts. */
+  padding: phone ? `10px ${space[3]}px ${space[3]}px 14px` : `${space[3]}px 14px`,
   boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",
-  gap: space[2],
+  gap: phone ? space[1] : space[2],
   minWidth: 0,
   ...(selected ? { boxShadow: SELECT_RING } : null),
 });

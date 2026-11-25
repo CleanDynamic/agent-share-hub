@@ -11,6 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ShellHeader } from "@/components/shell/ShellHeader";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { useKeyboardInset } from "@/components/phone/useKeyboardInset";
+import { PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -151,6 +154,9 @@ export default function MessagesPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const phone = useIsPhone();
+  /* Mobile prompt 26 Parts D and E: on a phone the list and the conversation are the Page shade, with no panel. */
+  useColumnPanels(phone);
+  const keyboard = useKeyboardInset();
   const listWidth = useMinWidth(1101) ? 340 : 300;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -219,8 +225,6 @@ export default function MessagesPage() {
   // pinned content lookup. Powers ConversationHeader.
   const activeThreadId = routeThreadId ?? null;
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Prompt 19: in an open conversation the phone's top bar draws a gear that opens its settings.
-  useRegisterPageBar(activeThreadId ? { settings: () => setSettingsOpen(true) } : null);
   /* UX-15 P5: Block in a direct thread's menu. */
   const [blocking, setBlocking] = useState<BlockTarget | null>(null);
   const [searchInThreadOpen, setSearchInThreadOpen] = useState(false);
@@ -372,6 +376,26 @@ export default function MessagesPage() {
     else navigate(`/content/${pinned.id}`);
   }, [activeThreadInfo, navigate]);
 
+  // Mobile prompt 26 Part E: in an open conversation the phone's top bar names the person and its More holds the thread's own
+  // actions (the desktop's settings drawer, as rows).
+  const direct = activeThreadInfo?.type === "direct";
+  const otherHandle = activeThreadInfo?.otherUser?.username as string | undefined;
+  const pinned = activeThreadInfo?.headerThread.pinnedContent ?? null;
+  useRegisterPageBar(
+    activeThreadId && activeThreadInfo
+      ? {
+          title: activeThreadInfo.headerThread.title,
+          more: [
+            { label: activeThreadInfo.isPinnedForMe ? "Unpin thread" : "Pin thread", onSelect: () => void togglePin() },
+            { label: activeThreadInfo.isMutedForMe ? "Unmute" : "Mute notifications", onSelect: () => void toggleMute() },
+            ...(direct && activeThreadInfo.otherUser?.id && otherHandle ? [{ label: BLOCK_COPY.action(otherHandle), tone: "danger" as const, onSelect: () => setBlocking({ id: activeThreadInfo.otherUser.id, handle: otherHandle }) }] : []),
+            ...(pinned ? [{ label: `Open pinned ${pinned.type}`, onSelect: openPinnedContent }] : []),
+            ...(!direct ? [{ label: "Leave thread", tone: "danger" as const, onSelect: () => void leaveThread() }] : []),
+          ],
+        }
+      : null,
+  );
+
   // Map ThreadSummary → list-item shape expected by MessagesThreadList
   const threadItems = useMemo(() => {
     const items = (tabData?.threads ?? []) as ThreadSummary[];
@@ -436,11 +460,13 @@ export default function MessagesPage() {
       <SeoHead title="Messages" description={`Your conversations on ${SITE_NAME}.`} path="/messages" />
       {/* G8: the page's h1 is the list panel's "Messages"; while the list cannot be drawn it is here, for assistive technology. */}
       {threadsFailed || (phone && activeThreadId) ? <h1 style={VISUALLY_HIDDEN}>Messages</h1> : null}
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
-        <ShellHeader
-          onBack={() => navigate(-1)}
-          title={activeThreadInfo?.headerThread.title || "Messages"}
-        />
+      <div style={phone ? { display: "flex", flexDirection: "column", margin: "0 -8px", width: "calc(100% + 16px)", minWidth: 0 } : { display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
+        {phone ? null : (
+          <ShellHeader
+            onBack={() => navigate(-1)}
+            title={activeThreadInfo?.headerThread.title || "Messages"}
+          />
+        )}
         {/* Synth 12 Part D: two panels, the list (340 from 1101, 300 from 761) and the conversation, 8 apart. At 760 and
             below the list and the conversation are separate views; the conversation's head has the back button. */}
         <div
@@ -450,14 +476,14 @@ export default function MessagesPage() {
             minHeight: 0,
             width: "100%",
             position: "relative",
-            overflow: "hidden",
+            overflow: phone ? "visible" : "hidden",
             background: "transparent",
             gap: 8,
           }}
         >
 
         {phone && activeThreadId ? null : threadsFailed ? (
-          <div style={{ width: phone ? "100%" : listWidth, flexShrink: 0, padding: 16, background: tok.surface, borderRadius: 12 }}>
+          <div style={{ width: phone ? "100%" : listWidth, flexShrink: 0, padding: 16, background: phone ? "transparent" : tok.surface, borderRadius: phone ? 0 : 12 }}>
             <PageState read={threadsRead} thing="your messages" region="Conversations" skeleton={null}>
               {() => null}
             </PageState>
@@ -479,9 +505,18 @@ export default function MessagesPage() {
         )}
 
         {phone && !activeThreadId ? null : (
-        <div className="flex-1 min-w-0 h-full flex flex-col" style={{ background: tok.surface, borderRadius: 12, overflow: "hidden" }}>
+        <div
+          className="flex-1 min-w-0 h-full flex flex-col"
+          data-testid={phone ? "conversation-phone" : undefined}
+          style={
+            phone
+              ? { position: "fixed", left: 0, right: 0, top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, bottom: keyboard, zIndex: 10, background: tok.bg, overflow: "hidden" }
+              : { background: tok.surface, borderRadius: 12, overflow: "hidden" }
+          }
+        >
           {activeThreadId && activeThreadInfo ? (
             <>
+              {phone ? null : (
               <ConversationHeader
                 thread={activeThreadInfo.headerThread}
                 onBack={() => navigate("/messages")}
@@ -489,7 +524,8 @@ export default function MessagesPage() {
                 onSettings={() => setSettingsOpen(true)}
                 onOpenPinnedContent={openPinnedContent}
               />
-              {searchInThreadOpen && (
+              )}
+              {searchInThreadOpen && !phone && (
                 <div
                   className="flex items-center gap-2 flex-shrink-0"
                   style={{

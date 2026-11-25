@@ -19,7 +19,10 @@
    PURE. The page hands the steps, the markers and the drawing of a produced
    part; this file holds only where the reader is and whether it is playing. */
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+
+import { BigButton } from "@/components/phone/BigButton";
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { Pause, Play, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
@@ -247,6 +250,180 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
 
 /* ── the body ── */
 
+
+/* ── on a phone (prompt 22) ── */
+
+/** The phone's scrubber: a 4px track on Raised, the played part Mint, a 16 thumb in Text, a 28 tall hit area. */
+const PHONE_TRACK = 4;
+const PHONE_THUMB = 16;
+const PHONE_SCRUB_HIT = 28;
+
+function PhoneScrubber({ events, position, markers, onMove, onPointMarker }: { events: readonly ReplayEventView[]; position: number; markers: ReplayView["markers"]; onMove: (index: number) => void; onPointMarker: (index: number | null, open?: boolean) => void }) {
+  const { state, handlers } = useInteractive<HTMLInputElement>();
+  const last = Math.max(events.length - 1, 0);
+  const current = events[Math.min(position, last)];
+  const percent = last === 0 ? 100 : (position / last) * 100;
+  const at = (index: number) => (last === 0 ? 0 : (index / last) * 100);
+  return (
+    <div data-testid="build-replay-scrubber" style={{ position: "relative", flex: "1 1 0", minWidth: 0, height: PHONE_SCRUB_HIT }}>
+      <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: (PHONE_SCRUB_HIT - PHONE_TRACK) / 2, height: PHONE_TRACK, borderRadius: PHONE_TRACK / 2, background: t.control }}>
+        <div style={{ width: `${percent}%`, height: "100%", borderRadius: PHONE_TRACK / 2, background: t.brandAccent }} />
+      </div>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: (PHONE_SCRUB_HIT - PHONE_THUMB) / 2,
+          left: `calc(${percent}% - ${(percent / 100) * PHONE_THUMB}px)`,
+          width: PHONE_THUMB,
+          height: PHONE_THUMB,
+          borderRadius: r.full,
+          background: t.text,
+          ...ring(state.focusVisible),
+        }}
+      />
+      <input
+        type="range"
+        data-testid="build-replay-slider"
+        min={0}
+        max={last}
+        step={1}
+        value={Math.min(position, last)}
+        onChange={(event) => onMove(Number(event.currentTarget.value))}
+        aria-label="Where the replay is"
+        aria-valuetext={`Step ${current.ordinal} of ${events[last].ordinal}: ${current.kind}, ${current.text}`}
+        {...handlers}
+        style={{ position: "absolute", inset: 0, width: "100%", height: PHONE_SCRUB_HIT, margin: 0, opacity: 0, cursor: "pointer" }}
+      />
+      {markers.map((marker) => (
+        <button
+          key={marker.index}
+          type="button"
+          data-testid="divergence-marker"
+          data-divergence-ordinal={events[marker.index]?.ordinal}
+          aria-label={marker.label}
+          onFocus={() => onPointMarker(marker.index)}
+          onBlur={() => onPointMarker(null)}
+          onClick={() => onPointMarker(marker.index, true)}
+          style={{ position: "absolute", zIndex: 1, left: `calc(${at(marker.index)}% - 8px)`, top: -12, width: 16, height: 16, padding: 0, border: 0, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: r.full }}
+        >
+          <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: r.full, background: t.evidence }} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PhoneReplay({
+  events,
+  position,
+  playing,
+  made,
+  markers,
+  pointed,
+  onToggle,
+  onMove,
+  onPointMarker,
+  onOpenRebuild,
+  onFork,
+  forkPending,
+}: {
+  events: readonly ReplayEventView[];
+  position: number;
+  playing: boolean;
+  made: { ordinal: number; node: ReactNode } | null;
+  markers: ReplayView["markers"];
+  pointed: ReplayView["markers"][number] | undefined;
+  onToggle: () => void;
+  onMove: (index: number) => void;
+  onPointMarker: (index: number | null, open?: boolean) => void;
+  onOpenRebuild?: (id: string) => void;
+  onFork?: (ordinal: number) => void;
+  forkPending: boolean;
+}) {
+  const play = useInteractive<HTMLButtonElement>();
+  const last = Math.max(events.length - 1, 0);
+  const current = events[Math.min(position, last)];
+  return (
+    <section data-testid="build-replay" aria-label="Watch it get built" style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: FIGTREE }}>
+      {/* The frame of the result, on Card with the dot grid behind it. */}
+      <div
+        data-testid="build-replay-frame"
+        style={{
+          height: 240,
+          borderRadius: 16,
+          background: t.module,
+          backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
+          backgroundSize: "16px 16px",
+          overflow: "auto",
+          padding: 16,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: made ? "flex-start" : "center",
+          justifyContent: "center",
+        }}
+      >
+        {made ? (
+          <div data-testid="build-replay-produced" data-produced-by-ordinal={made.ordinal} style={{ width: "100%", minWidth: 0, borderRadius: 12, background: t.surface, padding: 12, boxSizing: "border-box" }}>
+            {made.node}
+          </div>
+        ) : (
+          <p style={{ margin: 0, fontSize: 15, lineHeight: "20px", color: t.text2, textAlign: "center" }}>Nothing had been made yet at this point.</p>
+        )}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: markers.length > 0 ? 8 : 0 }}>
+        <button
+          type="button"
+          aria-label={playing ? "Pause the build" : "Play the build"}
+          aria-pressed={playing}
+          onClick={onToggle}
+          {...play.handlers}
+          style={{ flexShrink: 0, width: 48, height: 48, padding: 0, border: 0, borderRadius: r.full, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(play.state.focusVisible) }}
+        >
+          <MobileIcon name={playing ? "pause" : "play"} size={22} />
+        </button>
+        <PhoneScrubber events={events} position={position} markers={markers} onMove={onMove} onPointMarker={onPointMarker} />
+        <span style={{ flexShrink: 0, fontFamily: DM_MONO, fontSize: 13, color: t.label, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+          {position + 1} / {events.length}
+        </span>
+      </div>
+
+      {markers.length > 0 ? (
+        <p data-testid="divergence-names" style={{ margin: 0, fontSize: 13, lineHeight: "16px", color: t.text2 }}>
+          {pointed
+            ? pointed.rebuilds.map((rebuild, index) => (
+                <span key={rebuild.id}>
+                  {index > 0 ? ", " : null}
+                  <button type="button" onClick={() => onOpenRebuild?.(rebuild.id)} style={{ padding: 0, minHeight: 44, border: 0, background: "transparent", fontFamily: FIGTREE, fontSize: 13, color: t.text, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer" }}>
+                    {rebuild.label}
+                  </button>
+                </span>
+              ))
+            : divergenceSummary(markers)}
+        </p>
+      ) : null}
+
+      <div data-testid="build-replay-current" style={{ display: "flex", flexDirection: "column", gap: 4, padding: 16, borderRadius: 12, background: t.surface }}>
+        <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{[`Event ${current.ordinal}`, current.kind.charAt(0).toUpperCase() + current.kind.slice(1), current.when ?? current.at].join(" · ")}</span>
+        {current.phaseTitle ? <span style={{ fontSize: 15, lineHeight: "20px", color: t.text }}>{current.phaseTitle}</span> : null}
+        <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{current.text}</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: onFork ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)", gap: 8 }}>
+        <BigButton full disabled={position >= last} onClick={() => onMove(position + 1)} style={{ padding: "0 12px", whiteSpace: "normal", lineHeight: "18px", textAlign: "center" }}>
+          Step through the build
+        </BigButton>
+        {onFork ? (
+          <BigButton full disabled={forkPending} onClick={() => onFork(current.ordinal)} style={{ padding: "0 12px", whiteSpace: "normal", lineHeight: "18px", textAlign: "center" }}>
+            {forkPending ? "Rebuilding…" : "Rebuild from here"}
+          </BigButton>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phone?: boolean }) {
   const { events, markers, focusOrdinal, produced, onFork, forkPending = false, onOpenRebuild } = replay;
   const [position, setPosition] = useState(0);
@@ -312,6 +489,30 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
     setPlaying(false);
     go(index);
   };
+
+  if (phone) {
+    return (
+      <PhoneReplay
+        events={events}
+        position={position}
+        playing={playing}
+        made={made}
+        markers={markers}
+        pointed={pointed}
+        onToggle={toggle}
+        onMove={move}
+        onPointMarker={(index, open) => {
+          setNamed(index);
+          if (!open || index === null) return;
+          const marker = markers.find((candidate) => candidate.index === index);
+          if (marker && marker.rebuilds.length === 1) onOpenRebuild?.(marker.rebuilds[0].id);
+        }}
+        onOpenRebuild={onOpenRebuild}
+        onFork={onFork}
+        forkPending={forkPending}
+      />
+    );
+  }
 
   return (
     <section data-testid="build-replay" aria-label="Watch it get built" style={{ display: "flex", flexDirection: "column", gap: 10 }}>

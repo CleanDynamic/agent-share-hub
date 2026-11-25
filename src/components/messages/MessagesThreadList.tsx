@@ -42,6 +42,10 @@ import { categoryFill } from "@/lib/theme/category";
 import { label as labelType, tabular } from "@/lib/theme/type";
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { RoundPostButton } from "@/components/phone/RoundPostButton";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 
 type ThreadType = "direct" | "group" | "blueprint";
 type ContentType = "blueprint" | "stage" | "block";
@@ -117,7 +121,7 @@ function ThreadListSkeleton() {
   );
 }
 
-function TypePill({ type }: { type: ThreadType }) {
+function TypePill({ type, phone = false }: { type: ThreadType; phone?: boolean }) {
   if (type === "direct") return null;
 
   // The three legacy badge hues are retired. Each type resolves into a part
@@ -133,7 +137,7 @@ function TypePill({ type }: { type: ThreadType }) {
   return (
     <span
       style={{
-        fontSize: "9px",
+        fontSize: phone ? "13px" : "9px",
         fontWeight: 500,
         letterSpacing: "0.04em",
         color: config.color,
@@ -245,10 +249,12 @@ function ThreadItem({
   thread,
   isActive,
   onClick,
+  phone = false,
 }: {
   thread: Thread;
   isActive: boolean;
   onClick: () => void;
+  phone?: boolean;
 }) {
   const [isHovered, setIsHovered] = React.useState(false);
   const unread = thread.unreadCount > 0;
@@ -264,10 +270,10 @@ function ThreadItem({
       style={{
         gap: 12,
         minHeight: 72,
-        padding: "12px",
-        borderRadius: 12,
+        padding: phone ? "12px 16px" : "12px",
+        borderRadius: phone ? 0 : 12,
         boxSizing: "border-box",
-        background: isActive || isHovered ? t.module : "transparent",
+        background: !phone && (isActive || isHovered) ? t.module : "transparent",
         transition: uiTransition(),
       }}
     >
@@ -277,7 +283,7 @@ function ThreadItem({
           <span className="truncate" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 600, color: t.text }}>
             {thread.title}
           </span>
-          <TypePill type={thread.type} />
+          <TypePill type={thread.type} phone={phone} />
           {thread.isPinned && <Pin size={12} aria-label="Pinned" style={{ color: t.label, flexShrink: 0 }} />}
           <span className="flex-shrink-0" style={{ marginLeft: "auto", fontSize: 13, lineHeight: "16px", fontWeight: 400, color: t.label, ...tabular }}>
             {thread.lastMessage.timestamp}
@@ -326,6 +332,56 @@ export function MessagesThreadList({
       return 0;
     });
   }, [threads]);
+
+  const phone = useIsPhone();
+
+  /* Mobile prompt 26 Part D: on a phone the list is its own screen on the Page shade: the pills, a search pill (40 tall, radius
+     20, Card, the icon at 18), the thread rows (12 16) and the round "New message" button. The top bar names the page. */
+  if (phone) {
+    return (
+      <div data-testid="messages-list-phone" className="flex flex-col" style={{ width: "100%", minWidth: 0, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", fontFamily: labelType.fontFamily }}>
+        <h1 className="sr-only">Messages</h1>
+        <PhonePills<"primary" | "requests">
+          label="Show"
+          value={activeTab}
+          onChange={onTabChange}
+          pills={[
+            { value: "primary", label: "Primary" },
+            { value: "requests", label: "Requests", ...(counts.requests > 0 ? { count: counts.requests > 99 ? "99+" : counts.requests } : null) },
+          ]}
+        />
+        <div style={{ padding: "0 16px 8px" }}>
+          <div className="flex items-center gap-2" style={{ height: 40, padding: "0 14px", background: t.module, borderRadius: 20 }}>
+            <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
+              <MobileIcon name="search" size={18} />
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="Search conversations"
+              aria-label="Search conversations"
+              className="flex-1 bg-transparent outline-none placeholder:text-[var(--label)]"
+              style={{ fontFamily: labelType.fontFamily, fontSize: 16, fontWeight: 400, color: t.text, minWidth: 0 }}
+            />
+          </div>
+        </div>
+        {loading && sortedThreads.length === 0 ? (
+          <ThreadListSkeleton />
+        ) : sortedThreads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 px-4 text-center" style={{ minHeight: 240 }}>
+            <span style={{ fontFamily: labelType.fontFamily, fontSize: 15, fontWeight: 600, color: t.text }}>
+              {threads.length === 0 && !query ? "No conversations yet" : "No conversations match"}
+            </span>
+            {threads.length === 0 && !query ? <span style={{ fontFamily: labelType.fontFamily, fontSize: 15, color: t.text2 }}>Start one from any creator&apos;s profile</span> : null}
+          </div>
+        ) : (
+          sortedThreads.map((thread) => <ThreadItem key={thread.id} thread={thread} isActive={false} phone onClick={() => onThreadClick(thread.id)} />)
+        )}
+        <RoundPostButton label="New message" onClick={onCompose} />
+      </div>
+    );
+  }
 
   return (
     <div
