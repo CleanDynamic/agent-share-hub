@@ -115,16 +115,18 @@ describe("what a page tells the bar", () => {
     expect(skip).toHaveBeenCalledTimes(1);
   });
 
-  it("Messages draws a gear only in an open conversation, and it opens that conversation's settings", () => {
-    const settings = vi.fn();
-    barWith("/messages/t1", { settings });
-    fireEvent.click(screen.getByRole("button", { name: "Conversation settings" }));
-    expect(settings).toHaveBeenCalledTimes(1);
+  it("a Messages conversation names the person and More holds the thread's actions", () => {
+    const pin = vi.fn();
+    barWith("/messages/t1", { title: "Maya Chen", more: [{ label: "Pin thread", onSelect: pin }] });
+    expect(screen.getByText("Maya Chen")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    fireEvent.click(screen.getByText("Pin thread"));
+    expect(pin).toHaveBeenCalledTimes(1);
   });
 
-  it("the Messages list has no gear", () => {
+  it("the Messages list has the settings gear, linking to Settings", () => {
     bar("/messages");
-    expect(screen.queryByRole("button", { name: "Conversation settings" })).toBeNull();
+    expect((screen.getByRole("link", { name: "Messages settings" }) as HTMLAnchorElement).getAttribute("href")).toBe("/settings");
   });
 });
 

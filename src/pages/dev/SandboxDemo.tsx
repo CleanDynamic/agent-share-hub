@@ -42,13 +42,16 @@ import { useSearchParams } from "react-router-dom";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 
 import { SHAPES, SHAPE_KEYS, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeKey } from "@/dev/fixtures/shapes";
-import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
+import { sandboxDetailsProps, sandboxGroups, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { useDevMap } from "./DevMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel, type DetailsPanelProps } from "@/pages/site/compose/DetailsPanel";
 import { PostTab } from "@/pages/site/compose/PostTab";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
+import { phoneExtrasOf } from "@/pages/site/compose/phone/phoneExtrasOf";
+import { BuildSelectionContext, useBuildSelection } from "@/pages/site/compose/useBuildSelection";
+import { BuildActionsContext, type BuildActions } from "@/pages/site/compose/useBuildActions";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
 
 import type { ThreadDoc } from "@/lib/build/thread";
@@ -162,15 +165,21 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   });
   const postDoc = params.get("post") === "thread" ? THREAD_POST : EMPTY_POST;
   const thread = useMemo(() => demoThread(postDoc), [postDoc]);
+  /* Prompt 23: on a phone the page's selection is real (a long press chooses) and the actions write nothing. */
+  const groupsShown = team ? [] : sandboxGroups(which);
+  const drawn = useMemo(() => ({ sessions: groupsShown.map((group) => ({ key: group.sessionId, tiles: list.steps.filter((step) => group.stepNumbers.includes(step.number)).map((step) => step.id) })) }), [groupsShown, list.steps]);
+  const selection = useBuildSelection({ drawn, onSelect: () => undefined, phone });
+  const devActions = useMemo(() => devBuildActions(), []);
   return (
-    <>
+    <BuildSelectionContext.Provider value={phone ? selection : null}>
+    <BuildActionsContext.Provider value={phone ? devActions : null}>
       <SandboxView
         fit={fit}
         {...sandboxViewProps(which, state)}
         {...(shape ? { title: SHAPES[shape].title } : null)}
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
-        list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
+        list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} onSelect={phone ? selection.selectTile : list.onSelect} />}
         map={devMap.column}
         mapPanel={devMap.panel}
         selectedKey={picked?.id ?? null}
@@ -183,6 +192,7 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
         checkable={canCheck(list.steps)}
         summary={list.steps.length > 1 ? buildSummary(list.steps) || undefined : undefined}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
+        phoneExtras={phone ? phoneExtrasOf(list.steps, team ? [] : sandboxGroups(which)) : undefined}
         post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />
       <AddAgentDialog open={dialog === "agent"} onOpenChange={(next) => setDialog(next ? "agent" : null)} nextNumber={list.steps.length + 1} teamsAvailable onAdd={() => undefined} />
@@ -191,6 +201,29 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
       <AddCodeDialog open={dialog === "code"} onOpenChange={(next) => setDialog(next ? "code" : null)} onAdd={() => undefined} />
       <AddCheckDialog open={dialog === "check"} onOpenChange={(next) => setDialog(next ? "check" : null)} onAdd={() => undefined} />
       <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onChanges={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
-    </>
+    </BuildActionsContext.Provider>
+    </BuildSelectionContext.Provider>
   );
+}
+
+/** Prompt 23: the build's actions on the dev page: each does nothing, so the phone's bars and sheets can be seen. */
+function devBuildActions(): BuildActions {
+  const none = () => undefined;
+  return {
+    removeTile: none,
+    removeTiles: none,
+    removeFile: none,
+    askRemoveSessions: none,
+    removeSelection: none,
+    duplicate: none,
+    insertFromLibrary: async () => [],
+    convertTargets: () => [],
+    convert: none,
+    group: none,
+    ungroup: none,
+    grouped: () => false,
+    shortcuts: { open: none },
+    recentlyRemoved: { count: 0, open: none },
+    clear: { counts: { sessions: 0, tiles: 0, files: 0, parts: 0 }, ask: none },
+  } as unknown as BuildActions;
 }

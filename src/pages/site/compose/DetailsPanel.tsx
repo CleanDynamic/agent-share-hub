@@ -39,6 +39,7 @@ import type { GoesRow, InputOption, UseRow, ChecklistRow, MakesRow } from "./det
 import { LoadingBlocks } from "./LoadingBlocks";
 import { DETAILS_WIDTHS as DETAILS_LINES, LINE_GAP } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { text } from "./refinedStyles";
 import {
   BADGE,
@@ -500,9 +501,11 @@ export const DETAILS_COPY = {
 const kindOf = (item: ListItem): string | null => (item.kind ? `· ${item.kind}` : null);
 
 function ItemBody({ item }: { item: ListItem }) {
+  /* Prompt 23: no tool or harness mark beside a name on a phone. */
+  const phone = useIsPhone();
   return (
     <>
-      {item.tool ? (
+      {item.tool && !phone ? (
         <span style={{ width: TOOL_MARK_SIZE, display: "inline-flex", justifyContent: "center", flexShrink: 0 }}>
           <ToolMark tool={item.tool} size={20} />
         </span>
@@ -675,9 +678,11 @@ function MemberGroupLine({ to }: { to: string }) {
 /** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Add details and Edit at the right. */
 export function DetailsHead({ view, colour, onEdit, onAddDetails }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void; /** F71: beside Edit, when something is not set. */ onAddDetails?: () => void }) {
   const head = headOf(view);
+  /* Prompt 23: no tool or harness mark beside the name on a phone; the tool stays as plain text in the line under it. */
+  const phone = useIsPhone();
   return (
     <header data-testid="details-head" style={{ ...HEAD_ROW, marginBottom: HEAD_BELOW }}>
-      {head.tool || view.kind === "prompt" || view.kind === "session" ? (
+      {(head.tool || view.kind === "prompt" || view.kind === "session") && !phone ? (
         <span style={HEAD_MARK}>
           <ToolMark tool={head.tool} model={head.model} size={24} />
         </span>

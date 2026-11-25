@@ -6,6 +6,8 @@ import type { KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { FilterChip } from "@/components/brand/FilterChip";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { PHONE_PILL } from "@/components/shell/chromeSize";
 import { ring } from "@/lib/theme/controls";
@@ -22,6 +24,8 @@ export interface PhonePill<V extends string = string> {
   href?: string;
   /** Pointing at or focusing a link pill (to start fetching what it opens). */
   onIntent?: () => void;
+  /** An icon at 16 before the label (the editor's List, Map and Sources). */
+  icon?: MobileIconName;
 }
 
 export interface PhonePillsProps<V extends string = string> {
@@ -120,6 +124,7 @@ export function PhonePills<V extends string = string>({ pills, value, onChange, 
           key={pill.value}
           label={pill.label}
           count={pill.count}
+          leading={pill.icon ? <MobileIcon name={pill.icon} size={16} /> : undefined}
           on={pill.value === value}
           onClick={() => onChange(pill.value)}
           tab={tabs ? { id: tabs.idOf(pill.value), controls: tabs.controls } : undefined}

@@ -21,6 +21,7 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { ProfileHeadPhone } from "./ProfilePhone";
 import { linkHostOf, type MetaPart, type RecordPart } from "./profileFeedModel";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
 import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
@@ -144,6 +145,8 @@ export function ProfileHead(props: ProfileHeadProps) {
           ...(props.onBlock && !props.blocked ? [{ label: `${HEAD_COPY.block} @${props.handle}`, tone: "danger" as const, onSelect: props.onBlock }] : []),
         ],
   });
+
+  if (phone) return <ProfileHeadPhone {...props} />;
 
   const actions = isOwn ? (
     <PostControl onClick={props.onEdit}>{HEAD_COPY.edit}</PostControl>

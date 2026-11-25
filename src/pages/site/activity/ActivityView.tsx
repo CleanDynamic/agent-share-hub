@@ -21,9 +21,9 @@ import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
-import { BottomSheet } from "@/components/brand/BottomSheet";
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PhonePills, type PhonePill } from "@/components/phone/PhonePills";
 import type { PanelFailure } from "@/components/pagestate/PageState";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { useColumnPanels } from "@/components/shell/frameChrome";
@@ -154,24 +154,24 @@ function WriteFailed({ failure }: { failure: PanelFailure }) {
 }
 
 /** A kind's square: 10, radius 2, ringed in the Panel shade where it sits on an avatar. */
-function Square({ square, ring = false, style }: { square: ActivitySquare; ring?: boolean; style?: CSSProperties }) {
+function Square({ square, ring = false, ringColour = t.surface, style }: { square: ActivitySquare; ring?: boolean; ringColour?: string; style?: CSSProperties }) {
   return (
     <span
       aria-hidden="true"
-      style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: SQUARE[square], flexShrink: 0, ...(ring ? { boxShadow: `0 0 0 2px ${t.surface}` } : null), ...style }}
+      style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: SQUARE[square], flexShrink: 0, ...(ring ? { boxShadow: `0 0 0 2px ${ringColour}` } : null), ...style }}
     />
   );
 }
 
 /** The actor, with the kind's square on their top right shoulder. Hidden from assistive tech: the row's words name both. */
-function Who({ row }: { row: ActivityRow }) {
+function Who({ row, phone = false }: { row: ActivityRow; phone?: boolean }) {
   const square = squareOf(row);
   return (
     <span aria-hidden="true" style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
       <Avatar size={40} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
       {square ? (
         <span data-testid="activity-badge" data-kind={row.kind ?? square} style={{ position: "absolute", right: -1, top: -1, display: "inline-flex" }}>
-          <Square square={square} ring />
+          <Square square={square} ring ringColour={phone ? t.bg : t.surface} />
         </span>
       ) : null}
     </span>
@@ -231,11 +231,11 @@ const rowStyle: CSSProperties = {
   boxSizing: "border-box",
 };
 
-function Row({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
+function Row({ row, now, onOpen, phone = false }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void; phone?: boolean }) {
   return (
     <RowFrame row={row} onOpen={onOpen} style={rowStyle}>
-      {row.unread ? <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} /> : null}
-      <Who row={row} />
+      {row.unread ? <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: phone ? 14 : 12, bottom: phone ? 14 : 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} /> : null}
+      <Who row={row} phone={phone} />
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Line row={row} />
         {row.detail ? <span style={text(13, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
@@ -248,8 +248,8 @@ function Row({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row
 }
 
 /** A day's heading, 13/500 Text 3. */
-function DayHeading({ day }: { day: ReactNode }) {
-  return <h2 style={text(13, 500, t.label, { margin: 0, padding: `8px ${PAD}px 4px` })}>{day}</h2>;
+function DayHeading({ day, phone = false }: { day: ReactNode; phone?: boolean }) {
+  return <h2 style={text(13, 500, t.label, { margin: 0, padding: phone ? `12px ${PAD}px 2px` : `8px ${PAD}px 4px` })}>{day}</h2>;
 }
 
 function RowSkeleton() {
@@ -315,11 +315,11 @@ function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: Activi
           <div data-testid="activity-list" style={column}>
             {groups.map((group) => (
               <section key={group.day} data-testid="activity-day" style={day}>
-                <DayHeading day={group.day} />
+                <DayHeading day={group.day} phone={phone} />
                 <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
                   {group.rows.map((row) => (
                     <li key={row.id}>
-                      <Row row={row} now={now} onOpen={onOpen} />
+                      <Row row={row} now={now} onOpen={onOpen} phone={phone} />
                     </li>
                   ))}
                 </ol>
@@ -344,9 +344,9 @@ function LiveState({ live }: { live: boolean }) {
   );
 }
 
-function Head({ unread, live, onMarkAllRead, phone, onShowMe }: { unread: number | null; live: boolean; onMarkAllRead: () => void; phone: boolean; onShowMe?: () => void }) {
+function Head({ unread, live, onMarkAllRead, phone }: { unread: number | null; live: boolean; onMarkAllRead: () => void; phone: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `0 ${PAD}px 8px`, minHeight: 40, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? `4px ${PAD}px 0` : `0 ${PAD}px 8px`, minHeight: phone ? 24 : 40, flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
         {/* Prompt 19: on a phone the top bar names the page, so the heading is for screen readers only. */}
         <h1 className={phone ? "sr-only" : undefined} style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
@@ -359,11 +359,6 @@ function Head({ unread, live, onMarkAllRead, phone, onShowMe }: { unread: number
         )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {onShowMe ? (
-          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onShowMe}>
-            Show me
-          </Button>
-        ) : null}
         {/* On a phone "Mark all read" is the top bar's right slot (the page registers it). */}
         {phone ? null : (
           <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
@@ -446,33 +441,42 @@ function NotificationSettingsLink() {
 
 /* ── the page ── */
 
+/** The phone's pills: each is a set of kinds. "Comments and replies" is two kinds under one pill. */
+const PHONE_PILLS: readonly { value: string; label: string; kinds: readonly ActivityKind[] }[] = [
+  { value: "all", label: "All", kinds: [] },
+  { value: "rebuilds", label: "Rebuilds", kinds: ["rebuilt"] },
+  { value: "comments", label: "Comments and replies", kinds: ["comment", "reply"] },
+  { value: "likes", label: "Likes", kinds: ["like"] },
+  { value: "follows", label: "Follows", kinds: ["follow"] },
+];
+
 function Layout(props: ActivityViewProps) {
   const { now, list, unread, live, kindCounts, writeError, onOpen, onMarkAllRead } = props;
   useColumnPanels(true);
   const phone = useIsPhone();
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
-  const [sheet, setSheet] = useState(false);
+  const [pill, setPill] = useState("all");
   const toggle = (kind: ActivityKind) => setChosen((current) => switchKind(current, kind));
+  const shown: ReadonlySet<ActivityKind> = phone ? new Set(PHONE_PILLS.find((p) => p.value === pill)?.kinds ?? []) : chosen;
+  const pills: PhonePill[] = PHONE_PILLS.map(({ value, label }) => ({ value, label }));
 
   const main = (
-    <section aria-label="Activity" style={{ ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
-      <Head unread={unread} live={live} onMarkAllRead={onMarkAllRead} phone={phone} onShowMe={phone ? () => setSheet(true) : undefined} />
+    <section aria-label="Activity" style={phone ? { display: "flex", flexDirection: "column", minWidth: 0 } : { ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
+      <Head unread={unread} live={live} onMarkAllRead={onMarkAllRead} phone={phone} />
+      {phone ? <PhonePills label="Show" pills={pills} value={pill} onChange={setPill} /> : null}
       {writeError ? (
         <div style={{ padding: `0 ${PAD}px` }}>
           <WriteFailed failure={writeError} />
         </div>
       ) : null}
-      <ActivityList list={list} chosen={chosen} now={now} phone={phone} onOpen={onOpen} live={live} />
+      <ActivityList list={list} chosen={shown} now={now} phone={phone} onOpen={onOpen} live={live} />
     </section>
   );
 
   if (phone) {
     return (
-      <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0, fontFamily: FIGTREE }}>
+      <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0, margin: `0 -${PANEL_GAP}px`, paddingBottom: 24, fontFamily: FIGTREE }}>
         {main}
-        <BottomSheet open={sheet} onOpenChange={setSheet} title="Show me">
-          <ShowMe kindCounts={kindCounts} listStatus={list.status} chosen={chosen} onToggle={toggle} titled={false} />
-        </BottomSheet>
       </div>
     );
   }

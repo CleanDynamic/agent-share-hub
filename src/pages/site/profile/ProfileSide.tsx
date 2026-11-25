@@ -21,6 +21,9 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
+
+import { ProfileSidePhone } from "./ProfilePhone";
 import type { OthersLine } from "./profileFeedModel";
 
 export const SIDE_WIDTH = 340;
@@ -226,7 +229,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
   }
 }
 
-function Progress({ progress }: { progress: ProgressView }) {
+export function Progress({ progress }: { progress: ProgressView }) {
   return (
     <section aria-label={PROGRESS_TITLE} data-testid="profile-progress" style={MODULE}>
       <h2 style={HEAD}>{PROGRESS_TITLE}</h2>
@@ -242,6 +245,8 @@ function Progress({ progress }: { progress: ProgressView }) {
 }
 
 export function ProfileSide(props: ProfileSideProps) {
+  const phone = useIsPhone();
+  if (phone) return <ProfileSidePhone {...props} />;
   const sections = props.order.filter((section) => !section.hidden && sectionHasContent(section.key, props));
   if (!props.progress && sections.length === 0) return null;
   return (

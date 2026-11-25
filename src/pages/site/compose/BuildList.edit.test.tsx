@@ -110,10 +110,14 @@ describe("a tile's own window, from its visible controls (CA-18, UX-02 P5)", () 
     expect(props.onEditTile).not.toHaveBeenCalled();
   });
 
-  it("a phone opens a tile from the same visible link", () => {
+  /* Prompt 23: a phone tile has no Open link (the whole tile opens its sheet); its window opens from Edit… in its menu, as on a computer. */
+  it("a phone opens a tile from Edit… in its menu, with no Open link", () => {
     phone = true;
     const props = list([make({ id: "x1", number: "1", kind: "code", text: "x", title: "Code" })]);
-    fireEvent.click(within(screen.getAllByTestId("step-card")[0]).getByRole("button", { name: "Open code" }));
+    const card = screen.getAllByTestId("step-card")[0];
+    expect(within(card).queryByRole("button", { name: "Open code" })).toBeNull();
+    fireEvent.keyDown(within(card).getByRole("button", { name: /options$/ }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Edit…" }));
     expect(props.onEditTile).toHaveBeenCalledWith("x1");
   });
 

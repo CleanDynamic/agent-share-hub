@@ -47,6 +47,8 @@ function rightAction(
       return { icon: "new", label: "New build", to: SITE_NAV.create };
     case "settings":
       return page.settings ? { icon: "gear", label: "Conversation settings", onClick: page.settings } : null;
+    case "messageSettings":
+      return { icon: "gear", label: "Messages settings", to: SITE_NAV.settings };
     case "skip":
       return page.skip ? { text: "Skip", label: "Skip", onClick: page.skip } : null;
     default:
@@ -107,7 +109,7 @@ function MobileHeaderContainer() {
         unread={unread > 0}
         theme={resolved}
       />
-      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} />
+      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} bare={page.bare} />
       {searchEver ? (
         <Suspense fallback={null}>
           <SearchPage open={searchOpen} onOpenChange={setSearchOpen} />
