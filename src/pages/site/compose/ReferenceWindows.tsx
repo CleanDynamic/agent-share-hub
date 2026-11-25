@@ -10,6 +10,10 @@ import { groupTo } from "@/lib/build/referenceGroups";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
 
 import { showWords } from "./showWords";
+import { SLIDE_ATTR } from "./flip";
+import { parseRefTo } from "@/lib/build/thread";
+import { pulseColour } from "@/lib/theme/shake";
+import { BASE } from "@/lib/theme/motion";
 import { ColoursWindow } from "./ColoursWindow";
 import { ReferenceGroupWindow } from "./ReferenceGroupWindow";
 import type { useReferenceActions } from "./useReferenceActions";
@@ -25,6 +29,19 @@ export interface ReferenceWindowsProps {
 }
 
 export { showWords };
+
+/** Prompt 24: the tile or session a reference names, on the page: scrolled to the middle, its colour pulsed once. */
+function goToTile(to: string, colour: string) {
+  const target = parseRefTo(to);
+  if (!target) return;
+  const slide = target.kind === "node" ? [`tile:${target.id}`, `nested:${target.id}`] : target.kind === "session" ? [`session:${target.id}`] : [];
+  window.setTimeout(() => {
+    const el = slide.map((id) => document.querySelector<HTMLElement>(`[${SLIDE_ATTR}="${CSS.escape(id)}"]`)).find(Boolean) ?? document.querySelector<HTMLElement>(`[data-ref="${CSS.escape(to)}"]`);
+    if (!el) return;
+    centre(el);
+    window.setTimeout(() => pulseColour(el, colour), BASE);
+  }, 0);
+}
 
 export function ReferenceWindows({ references, actions, refGroups, lookup, phone }: ReferenceWindowsProps) {
   const [swatches, setSwatches] = useColourSwatches();
@@ -49,7 +66,8 @@ export function ReferenceWindows({ references, actions, refGroups, lookup, phone
       onSwatches={setSwatches}
       history={actions.history}
       onOpenGroup={(groupId) => {
-        actions.setColoursOpen(false);
+        /* Prompt 24: on a phone the group is pushed inside the Colours sheet, which stays under it; Back returns to it. */
+        if (!phone) actions.setColoursOpen(false);
         actions.openGroup(groupId);
       }}
       onMerge={actions.merge}
@@ -96,6 +114,15 @@ export function ReferenceWindows({ references, actions, refGroups, lookup, phone
       onSave={(draft) => actions.saveDraft(draft, open.isNew)}
       onDelete={() => actions.deleteGroup(open.draft.id)}
       onClose={close}
+      onGoToMember={
+        phone
+          ? (target, colour) => {
+              close();
+              actions.setColoursOpen(false);
+              goToTile(target, colour);
+            }
+          : undefined
+      }
       />
     </>
   );

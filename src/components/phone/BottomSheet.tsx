@@ -115,11 +115,20 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
   };
 
   const full = height === "full" || (height === "half" && expanded);
+  /* Prompt 24: with the keyboard open the sheet ends at the keyboard's top and is that much shorter, so its top stays put. */
   const size: CSSProperties = full
-    ? { height: `calc(100dvh - ${SHEET_TOP_GAP}px)` }
+    ? { height: `calc(100dvh - ${SHEET_TOP_GAP + keyboard}px)` }
     : height === "half"
-      ? { height: "50dvh" }
-      : { maxHeight: "90dvh" };
+      ? { height: `min(50dvh, calc(100dvh - ${SHEET_TOP_GAP + keyboard}px))` }
+      : { maxHeight: `calc(90dvh - ${keyboard}px)` };
+
+  /* And the field being typed in stays in sight above the footer. */
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!keyboard) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (active && body.current?.contains(active)) active.scrollIntoView?.({ block: "center" });
+  }, [keyboard]);
 
   const close = useInteractive<HTMLButtonElement>();
 
@@ -197,7 +206,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
                 <MobileIcon name="close" size={24} />
               </button>
             </div>
-            <div data-sheet-body="" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
+            <div ref={body} data-sheet-body="" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
               {children}
             </div>
             {footer ? (

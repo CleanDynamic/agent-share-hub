@@ -75,11 +75,11 @@ export function SmallWindow({ open, onClose, title, body, buttons, testId, width
   const focus = useWindowFocus(open);
   if (phone) {
     return (
-      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
-        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: GAP.column }}>
+      /* Prompt 24: the shared frame on a phone: the words 16 in, the buttons in the pinned footer. */
+      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title} footer={{ actions: buttons }}>
+        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: GAP.column, padding: "4px 16px 16px" }}>
           {body ? <p style={{ ...LABEL, margin: 0 }}>{body}</p> : null}
           {children}
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 }}>{buttons}</div>
         </div>
       </BottomSheet>
     );

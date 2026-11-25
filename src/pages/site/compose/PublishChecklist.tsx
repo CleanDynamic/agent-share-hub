@@ -51,7 +51,7 @@ export function PublishFrame({
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
-        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", minWidth: 0, padding: "0 16px" }}>
           {body}
           <div style={footerStyle(true)}>{footer}</div>
         </div>

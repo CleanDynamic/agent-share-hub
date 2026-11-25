@@ -26,6 +26,7 @@ import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
+import { PhonePickList } from "@/components/phone/PhonePickList";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
@@ -224,6 +225,44 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     ...(pickable.indexOf(row) === current ? { background: hoverFill() } : null),
     ...(isChosen(row) ? SELECTED : null),
   });
+
+  /* Prompt 24: on a phone the field pushes a full-screen searchable list inside the sheet; names as plain text, no marks. */
+  if (phone) {
+    const valueOf = (row: PickerRow, at: number): string => (row.kind === "tool" ? `tool:${row.tool.id}` : row.kind === "use" ? `use:${row.name}` : row.kind === "note" ? `note:${at}` : row.kind);
+    const groups: { head?: string; items: { value: string; label: string; line?: string; disabled?: boolean }[] }[] = [{ items: [] }];
+    rows.forEach((row, at) => {
+      if (row.kind === "heading") {
+        groups.push({ head: row.label, items: [] });
+        return;
+      }
+      groups[groups.length - 1].items.push({ value: valueOf(row, at), label: rowName(row, noneLabel, list, code?.label), line: row.kind === "tool" ? row.line : undefined, disabled: row.kind === "note" || isDisabled(row) });
+    });
+    const chosenRow = rows.find((row) => isPickable(row) && isChosen(row));
+    return (
+      <>
+        <button type="button" aria-label={typeof shown === "string" && shown ? `${shown}, ${label}` : label} aria-haspopup="dialog" {...trigger.handlers} onClick={() => openChange(true)} style={triggerStyle}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{shown}</span>
+          {asField ? <PickerChevron /> : null}
+        </button>
+        <PhonePickList
+          open={open}
+          onClose={() => setOpen(false)}
+          title={label}
+          findLabel={list === "app" ? "Find an app" : "Find a tool"}
+          none={list === "app" ? "No apps match." : "No tools match."}
+          query={query}
+          onQuery={(next) => {
+            setQuery(next);
+            setExpanded(false);
+          }}
+          value={chosenRow ? valueOf(chosenRow, rows.indexOf(chosenRow)) : null}
+          groups={groups.filter((group) => group.items.length > 0)}
+          stay={(picked) => picked === "showAll" || picked === "showMore"}
+          onPick={(picked) => pick(rows.find((row, at) => valueOf(row, at) === picked))}
+        />
+      </>
+    );
+  }
 
   return (
     <Popover.Root open={open} onOpenChange={openChange}>

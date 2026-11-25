@@ -391,7 +391,18 @@ function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boo
 /* ── a block's head with a line under its title ── */
 
 /** "Components" at 13.5/500 with "3 · drag to set the order" under it at 12.5 `--text2`; what goes at the right after. */
-export function BlockTitle({ title, sub, id, children }: { title: string; sub?: ReactNode; id?: string; children?: ReactNode }) {
+export function BlockTitle({ title, sub, id, children, small = false }: { title: string; sub?: ReactNode; id?: string; children?: ReactNode; /** Prompt 24: the phone's Colours sheet: the head 13 Text 3, the note at the right. */ small?: boolean }) {
+  if (small) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <span id={id} style={{ ...words(13, 400, t.label, 16), flexGrow: 1, minWidth: 0 }}>
+          {title}
+        </span>
+        {sub ? <span style={words(13, 400, t.label, 16)}>{sub}</span> : null}
+        {children}
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
       <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>

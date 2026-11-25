@@ -205,15 +205,18 @@ function Body(props: AddFromLibraryWindowProps) {
 
   return (
     <>
+      {/* Prompt 24: on a phone the sheet's own header carries the title, its line and the close button. */}
+      {phone ? null : (
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: "20px 20px 0" }}>
         <div style={{ minWidth: 0 }}>
-          {phone ? <h2 style={TITLE_STYLE}>{copy.title}</h2> : <Dialog.Title style={TITLE_STYLE}>{copy.title}</Dialog.Title>}
-          {phone ? <p style={SUB_STYLE}>{copy.inside(place, fits)}</p> : <Dialog.Description style={SUB_STYLE}>{copy.inside(place, fits)}</Dialog.Description>}
+          <Dialog.Title style={TITLE_STYLE}>{copy.title}</Dialog.Title>
+          <Dialog.Description style={SUB_STYLE}>{copy.inside(place, fits)}</Dialog.Description>
         </div>
         <IconSquare glyph="x" label={copy.close} phone={phone} onClick={onClose} style={{ borderRadius: 6 }} />
       </div>
+      )}
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 16, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: phone ? 4 : 16, padding: phone ? "0 16px" : "0 20px", borderBottom: phone ? 0 : `1px solid ${t.hairline}` }}>
         <div style={{ marginBottom: -1 }}>
           <UnderlineTabs<LibraryTab>
             label={copy.tabs}
@@ -228,11 +231,11 @@ function Body(props: AddFromLibraryWindowProps) {
         {missing ? <span style={{ ...line(textStep.meta, 400, t.label), paddingBottom: 8, textAlign: "right" }}>{missing}</span> : null}
       </div>
 
-      <div style={{ padding: "12px 20px 0" }}>
+      <div style={{ padding: phone ? "12px 16px 0" : "12px 20px 0" }}>
         <SearchField label={copy.find(what)} value={query} phone={phone} onChange={onQuery} />
       </div>
 
-      <div style={{ padding: "8px 20px 0", overflowY: "auto", minHeight: 0, flex: "1 1 auto" }}>
+      <div style={{ padding: phone ? "8px 16px 0" : "8px 20px 0", overflowY: phone ? "visible" : "auto", minHeight: 0, flex: "1 1 auto" }}>
         {status === "loading" ? (
           <p data-testid="library-status" style={{ ...line(textStep.meta, 400, t.label, 17), margin: "12px 0" }}>
             {copy.loading}
@@ -274,7 +277,7 @@ function Body(props: AddFromLibraryWindowProps) {
         )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, padding: "16px 20px", borderTop: `1px solid ${t.hairline}`, flexWrap: phone ? "wrap" : "nowrap" }}>
+      <div style={phone ? { display: "flex", alignItems: "center", gap: 8, position: "sticky", bottom: 0, zIndex: 1, marginTop: 8, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", background: t.surface } : { display: "flex", alignItems: "center", gap: 12, marginTop: 8, padding: "16px 20px", borderTop: `1px solid ${t.hairline}`, flexWrap: "nowrap" }}>
         <p style={{ ...line(textStep.meta, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
           {selectedShown ? footer : ""}
         </p>
@@ -294,8 +297,8 @@ export function AddFromLibraryWindow(props: AddFromLibraryWindowProps) {
   const focus = useWindowFocus(open, onCloseFocus);
   if (phone) {
     return (
-      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={LIBRARY_WINDOW_COPY.title}>
-        {open ? <Body {...props} /> : null}
+      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={LIBRARY_WINDOW_COPY.title} line={LIBRARY_WINDOW_COPY.inside(props.place, props.fits)} height="full">
+        {open ? <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}><Body {...props} /></div> : null}
       </BottomSheet>
     );
   }

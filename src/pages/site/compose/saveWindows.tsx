@@ -59,12 +59,12 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
   const noteStyle = small ? { ...NOTE, color: t.text2, margin: 0 } : { ...LABEL, margin: 0 };
   if (phone) {
     return (
-      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
-        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      /* Prompt 24: the shared frame on a phone: the words 16 in, the buttons in the pinned footer. */
+      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title} footer={{ actions: buttons }}>
+        <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 16px 16px" }}>
           {note ? <p style={noteStyle}>{note}</p> : null}
           {body}
           {children}
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 }}>{buttons}</div>
         </div>
       </BottomSheet>
     );

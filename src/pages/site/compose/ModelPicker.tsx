@@ -29,6 +29,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
+import { PhonePickList } from "@/components/phone/PhonePickList";
 import { size, space } from "@/lib/theme/space";
 
 import { textStep } from "@/lib/theme/type";
@@ -133,6 +134,28 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
     onChange(typed);
     openChange(false);
   };
+
+  /* Prompt 24: on a phone a 44 tall field with a chevron pushes the models as a searchable list inside the sheet. */
+  if (phone) {
+    const groups =
+      menu.state === "tiers"
+        ? [{ items: menu.tiers.map((tier) => ({ value: tier, label: tier })) }]
+        : menu.groups.map((group) => ({ head: group.lab, items: group.models.map((version) => ({ value: version.name, label: version.name })) }));
+    return (
+      <>
+        <PickerFieldButton aria-label={value ? `${word} ${value}` : word} aria-haspopup="dialog" value={value} placeholder={placeholder} phone open={open} onClick={() => setOpen(true)} style={field || block ? undefined : { width: "auto", maxWidth: "100%" }} />
+        <PhonePickList
+          open={open}
+          onClose={() => setOpen(false)}
+          title={MODEL_PICKER_COPY.label}
+          value={value ?? (allowNone ? "" : null)}
+          groups={allowNone ? [{ items: [{ value: "", label: MODEL_PICKER_COPY.noModel }] }, ...groups] : groups}
+          onPick={(next) => onChange(next || null)}
+          other={menu.state === "options" && menu.other ? { label: MODEL_PICKER_COPY.other, field: MODEL_PICKER_COPY.otherField, max: MODEL_TYPED_MAX, save: MODEL_PICKER_COPY.save, onSave: (typed) => onChange(typed) } : undefined}
+        />
+      </>
+    );
+  }
 
   const item = (key: string, saved: string, label: string = saved) => (
     <Menu.RadioItem key={key} value={saved} style={{ ...menuItem(true, phone), gap: 6 }}>

@@ -6,6 +6,7 @@
 
 import type { CSSProperties } from "react";
 
+import { ActionSheet } from "@/components/phone/ActionSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CONFIRM_COPY, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { t } from "@/lib/theme/tokens";
@@ -30,6 +31,45 @@ export interface PublishConfirmProps {
 
 export function PublishConfirm({ open, title, rows, onCancel, onPublish }: PublishConfirmProps) {
   const phone = useIsPhone();
+  /* Prompt 24: on a phone, an action sheet: the line, what goes public (each "name · value") and what stays private, then
+     Publish and Cancel. */
+  if (phone) {
+    return (
+      <ActionSheet
+        open={open}
+        onOpenChange={(next) => !next && onCancel()}
+        title={CONFIRM_COPY.title(title)}
+        explanation={CONFIRM_COPY.line}
+        action={{
+          label: CONFIRM_COPY.publish,
+          onSelect: () => {
+            onCancel();
+            onPublish();
+          },
+        }}
+        cancelLabel={CONFIRM_COPY.cancel}
+        data-testid="publish-confirm"
+        actionTestId="confirm-publish"
+        cancelTestId="confirm-cancel"
+      >
+        <section aria-label={CONFIRM_COPY.public} style={{ margin: "0 0 8px" }}>
+          <h3 style={{ ...text(textStep.meta, 400, t.label), margin: "0 0 4px" }}>{CONFIRM_COPY.public}</h3>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {rows.map((row) => (
+              <li key={row.key} data-testid={`confirm-${row.key}`} style={{ ...text(15, 400, t.text), padding: "4px 0", overflowWrap: "anywhere" }}>
+                {row.name}
+                <span data-testid={`confirm-${row.key}-value`} style={{ color: t.text2 }}>{` · ${row.value}`}</span>
+              </li>
+            ))}
+          </ul>
+          <h3 style={{ ...text(textStep.meta, 400, t.label), margin: "12px 0 4px" }}>{CONFIRM_COPY.private}</h3>
+          <p data-testid="confirm-private" style={{ ...text(textStep.meta, 400, t.text2), margin: 0 }}>
+            {CONFIRM_COPY.privateRow}
+          </p>
+        </section>
+      </ActionSheet>
+    );
+  }
   return (
     <PublishFrame
       open={open}

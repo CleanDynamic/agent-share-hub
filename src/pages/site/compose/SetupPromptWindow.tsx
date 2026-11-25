@@ -51,9 +51,10 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
   const vendor = isVendorHosted(own);
   return (
     <ModalShell open onOpenChange={(next) => !next && onClose()} title={SETUP_PROMPT_COPY.title} subtitle={name ?? flat(tree).find((node) => node.id === id)?.title ?? SETUP_PROMPT_COPY.title} testId="setup-prompt-window">
-      <div style={{ ...bodyStyle(phone), display: "flex", flexDirection: "column", gap: 12, padding: 20 }}>
+      <div style={{ ...bodyStyle(phone), display: "flex", flexDirection: "column", gap: 12, padding: phone ? "4px 0 12px" : 20 }}>
         {vendor ? null : (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          /* Prompt 24: on a phone the label sits above its picker field. */
+          <div style={phone ? { display: "flex", flexDirection: "column", gap: 6 } : { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span id="setup-prompt-rebuild" style={LABEL}>
               {REBUILD_COPY.label}
             </span>
@@ -62,6 +63,7 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
               options={[{ value: OWN, label: "As the maker set it up" }, ...mappedHarnesses().map((entry) => ({ value: entry.harness, label: entry.name }))]}
               value={target}
               phone={phone}
+              field={phone}
               onChange={setTarget}
             />
           </div>
@@ -76,7 +78,7 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
             ))}
           </section>
         ) : null}
-        <pre data-testid="setup-prompt-text" tabIndex={0} aria-label={SETUP_PROMPT_COPY.title} style={{ margin: 0, padding: 12, maxHeight: phone ? "50vh" : 420, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "18px", color: t.text, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6 }}>
+        <pre data-testid="setup-prompt-text" tabIndex={0} aria-label={SETUP_PROMPT_COPY.title} style={{ margin: 0, padding: 12, maxHeight: phone ? "50vh" : 420, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "18px", color: t.text, background: t.well, border: phone ? 0 : `1px solid ${t.wellBorder}`, borderRadius: phone ? 12 : 6 }}>
           {prompt.text}
         </pre>
       </div>

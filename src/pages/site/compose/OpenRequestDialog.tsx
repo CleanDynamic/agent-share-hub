@@ -49,6 +49,7 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
         missing={null}
         addLabel={OPEN_REQUEST_COPY.submit}
         status=""
+        note={OPEN_REQUEST_COPY.topicNote}
         alert={tried && empty ? OPEN_REQUEST_COPY.empty : null}
         onCancel={onClose}
         onSubmit={() => {
@@ -58,7 +59,7 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
       >
         <Block noRule>
           <BlockHead label={OPEN_REQUEST_COPY.label} htmlFor={`${id}-problem`} />
-          <FieldArea id={`${id}-problem`} phone={phone} rows={3} value={problem} maxLength={OPEN_PROBLEM_MAX} aria-invalid={tried && empty} onChange={(event) => setProblem(event.target.value)} />
+          <FieldArea id={`${id}-problem`} phone={phone} tapOpens rows={3} value={problem} maxLength={OPEN_PROBLEM_MAX} aria-invalid={tried && empty} onChange={(event) => setProblem(event.target.value)} />
         </Block>
       </ModalForm>
     </ModalShell>
