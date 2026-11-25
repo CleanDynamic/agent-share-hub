@@ -12,8 +12,9 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { PageLink } from "@/lib/routing/PageLink";
 import { settingsPath } from "@/lib/settings/sections";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -33,23 +34,33 @@ export const sectionTitle: CSSProperties = {
     the page's "Settings" on a desktop, and the page's `h1` on a phone, where the section is a page of its own. */
 export function SectionPage({ title, children }: { title: string; children: ReactNode }) {
   const phone = useIsPhone();
+  /* Mobile prompt 27 Part A: a section is a page pushed on the list. The top bar carries Back and the section's name, so the h1 is
+     read aloud and not drawn a second time. */
+  useRegisterPageBar(phone ? { title, backLabel: "Back to settings", backTo: settingsPath() } : null);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: phone ? 16 : 0, fontFamily: FIGTREE, maxWidth: 720 }}>
-      {phone ? (
-        <PageLink to={settingsPath()} style={{ alignSelf: "flex-start", fontSize: 13, lineHeight: "16px", color: t.label, textDecoration: "underline", textUnderlineOffset: 3 }}>
-          Back to settings
-        </PageLink>
-      ) : null}
-      <h1 className={phone ? undefined : "sr-only"} style={{ ...sectionTitle, fontSize: 20, fontWeight: 600, lineHeight: "24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: phone ? 16 : 0, fontFamily: FIGTREE, maxWidth: 720, paddingBottom: phone ? 24 : undefined }}>
+      <h1 className="sr-only" style={{ ...sectionTitle, fontSize: 20, fontWeight: 600, lineHeight: "24px" }}>
         {title}
       </h1>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>{children}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 24 : 32 }}>{children}</div>
     </div>
   );
 }
 
-/** A group: its 17/600 heading and its rows, with no box. */
+/** A group: its 17/600 heading and its rows, with no box. On a phone it is a Panel module (radius 12, margin 0 16) under a 13/500 Text 3 label. */
 export function Group({ title, meta, children, testId }: { title: string; meta?: ReactNode; children: ReactNode; testId?: string }) {
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <section aria-label={title} data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: `0 ${PHONE_MARGIN}px` }}>
+          <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.label }}>{title}</h2>
+          {meta ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{meta}</span> : null}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", margin: `0 ${PHONE_MARGIN}px`, padding: `4px ${PHONE_MARGIN}px`, borderRadius: 12, background: t.surface }}>{children}</div>
+      </section>
+    );
+  }
   return (
     <section aria-label={title} data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
@@ -77,13 +88,13 @@ export interface SettingRowProps {
 export function SettingRow({ label, hint, control, last = false, below, id }: SettingRowProps) {
   const phone = useIsPhone();
   return (
-    <div style={{ padding: "12px 0" }} data-ui="setting-row" data-last={last ? "" : undefined}>
-      <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", gap: phone ? 8 : 16, minHeight: 32 }}>
+    <div style={{ padding: phone ? "8px 0" : "12px 0" }} data-ui="setting-row" data-last={last ? "" : undefined}>
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: phone ? 12 : 16, minHeight: phone ? 40 : 32 }}>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <div id={id} style={{ fontSize: 15, fontWeight: 400, lineHeight: "20px", color: t.text }}>{label}</div>
+          <div id={id} style={{ fontSize: 15, fontWeight: phone ? 500 : 400, lineHeight: "20px", color: t.text }}>{label}</div>
           {hint ? <div style={{ fontSize: 13, fontWeight: 400, lineHeight: "16px", color: t.label, marginTop: 2 }}>{hint}</div> : null}
         </div>
-        {control ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: phone ? "flex-start" : "flex-end" }}>{control}</div> : null}
+        {control ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>{control}</div> : null}
       </div>
       {below ? <div style={{ marginTop: 12 }}>{below}</div> : null}
     </div>

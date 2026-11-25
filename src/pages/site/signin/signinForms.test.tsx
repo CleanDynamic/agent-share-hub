@@ -431,13 +431,24 @@ describe("LoginForm", () => {
     expect(screen.getAllByText("Wrong email or password")).toHaveLength(1);
   });
 
-  it("is the same column on a desktop and on a phone (Synth 13)", () => {
+  it("is the same column on a desktop and on a phone, 14 between its parts on a desktop and 10 on a phone (mobile prompt 27)", () => {
     const { container, unmount } = show(<LoginForm {...login()} />);
     const desktop = container.querySelector("form")!.getAttribute("style");
     unmount();
     setViewport("phone");
     const phone = show(<LoginForm {...login()} />);
-    expect(phone.container.querySelector("form")!.getAttribute("style")).toBe(desktop);
+    expect(phone.container.querySelector("form")!.getAttribute("style")).toBe(desktop!.replace("gap: 14px", "gap: 10px"));
+  });
+
+  it("on a phone runs the providers first, then the email line, the fields, Sign in and Forgot password? centred (mobile prompt 27)", () => {
+    setViewport("phone");
+    const { container } = show(<LoginForm {...login()} />);
+    const text = container.textContent ?? "";
+    expect(text.indexOf("Continue with Google")).toBeLessThan(text.indexOf("Sign in with your email address."));
+    expect(text.indexOf("Sign in with your email address.")).toBeLessThan(text.indexOf("Email"));
+    expect(text.indexOf("Sign in")).toBeGreaterThan(-1);
+    expect(text.lastIndexOf("Forgot password?")).toBeGreaterThan(text.indexOf("Keep me signed in"));
+    expect(screen.getByPlaceholderText("Email").getAttribute("aria-label")).toBe("Email");
   });
 });
 

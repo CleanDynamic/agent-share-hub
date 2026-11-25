@@ -22,7 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AuthCheck, AuthField, AuthForm, OrRule, PrimaryAction, ProviderButtons, TermsLine } from "./AuthParts";
-import { DIALOG } from "./authSizes";
+import { DIALOG, useAuthSizes } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
 
 export interface LoginFormProps {
@@ -59,6 +59,7 @@ function ResendVerification({ onResend, answer, colour }: { onResend: () => void
       ) : (
         <button
           type="button"
+          data-hit=""
           onClick={onResend}
           style={{
             background: "none",
@@ -100,8 +101,62 @@ export function LoginForm({
   resendAnswer,
 }: LoginFormProps) {
   const room = useRoom();
+  const { phone } = useAuthSizes();
   /* Synth 13: one layout at every width. The line, the two fields, Forgot password and Keep me signed in, the main
      button, then "or", the providers and the terms line. */
+  const forgot = (
+    <FrameLink
+      to={forgotTo}
+      state={forgotState}
+      style={{
+        lineHeight: `${DIALOG.row}px`,
+        fontSize: 13,
+        color: t.label,
+        textDecoration: "underline",
+        textUnderlineOffset: 4,
+        textDecorationThickness: 1,
+        ...(phone ? { display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44 } : null),
+      }}
+    >
+      Forgot password?
+    </FrameLink>
+  );
+  /* Mobile prompt 27 Part B: on a phone the card runs: the providers, the email line, the two fields, Continue, "Forgot password?"
+     centred, then the terms line. */
+  if (phone) {
+    return (
+      <>
+        <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
+        <p style={{ margin: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>Sign in with your email address.</p>
+        <AuthForm onSubmit={onSubmit}>
+          <AuthField label="Email" icon={User} value={emailOrUsername} onChange={onEmailOrUsernameChange} placeholder="Email" quietPlaceholder required autoComplete="email" />
+          <AuthField
+            label="Password"
+            icon={Lock}
+            showPasswordToggle
+            value={password}
+            onChange={onPasswordChange}
+            placeholder="Enter your password"
+            quietPlaceholder
+            required
+            autoComplete="current-password"
+            error={error}
+            notice={notice}
+            reserveMessage
+          />
+          <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
+            Keep me signed in
+          </AuthCheck>
+          {onResendVerification ? <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={SIGNIN_COLOURS[room].link} /> : null}
+          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
+            Sign in
+          </PrimaryAction>
+        </AuthForm>
+        {forgot}
+        <TermsLine />
+      </>
+    );
+  }
   return (
     <>
       <p style={{ margin: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>Sign in with your email address.</p>
@@ -132,20 +187,7 @@ export function LoginForm({
           <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
             Keep me signed in
           </AuthCheck>
-          <FrameLink
-            to={forgotTo}
-            state={forgotState}
-            style={{
-              lineHeight: `${DIALOG.row}px`,
-              fontSize: 13,
-              color: t.label,
-              textDecoration: "underline",
-              textUnderlineOffset: 4,
-              textDecorationThickness: 1,
-            }}
-          >
-            Forgot password?
-          </FrameLink>
+          {forgot}
         </div>
         {onResendVerification ? <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={SIGNIN_COLOURS[room].link} /> : null}
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">

@@ -15,6 +15,9 @@ import { useId, useState } from "react";
 
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { Button } from "@/components/brand/Button";
+import { BigButton } from "@/components/phone/BigButton";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import {
   COPY,
   calculatePasswordStrength,
@@ -254,7 +257,60 @@ function DevicesGroup({ onSignOutEverywhere, devices, onSignOutDevice }: Pick<Ac
   const sessions = (devices.data as readonly DeviceSession[] | undefined) ?? [];
   const [asking, setAsking] = useState(false);
   const action = useAction(onSignOutEverywhere, "settings-signout");
+  const phone = useIsPhone();
+  const confirm = asking ? (
+    <ConfirmInline
+      message={COPY.signOutEverywhere}
+      confirmLabel="Sign out everywhere"
+      busy={action.state.status === "sending"}
+      error={action.state.status === "error" ? action.state.message : null}
+      onConfirm={() => void action.run()}
+      onCancel={() => { setAsking(false); action.reset(); }}
+    />
+  ) : null;
+  const everywhere = (
+    <SettingRow
+      last
+      label="Sign out everywhere"
+      hint="Ends every session, on every device. You will sign in again here."
+      control={
+        asking ? null : (
+          <Button variant="secondary" size={32} fontSize={13} style={{ color: t.dangerText }} onClick={() => setAsking(true)}>
+            Sign out everywhere
+          </Button>
+        )
+      }
+      below={
+        asking ? (
+          <ConfirmInline
+            message={COPY.signOutEverywhere}
+            confirmLabel="Sign out everywhere"
+            busy={action.state.status === "sending"}
+            error={action.state.status === "error" ? action.state.message : null}
+            onConfirm={() => void action.run()}
+            onCancel={() => { setAsking(false); action.reset(); }}
+          />
+        ) : null
+      }
+    />
+  );
+  /* Mobile prompt 27 Part A: on a phone it is a full-width button in Danger text at the foot of the section, its words under it. */
+  const foot = (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 8, margin: `0 ${PHONE_MARGIN}px` }}>
+      {asking ? (
+        confirm
+      ) : (
+        <>
+          <BigButton full style={{ color: t.dangerText }} onClick={() => setAsking(true)}>
+            Sign out everywhere
+          </BigButton>
+          <p style={{ margin: 0, textAlign: "center", fontSize: 13, lineHeight: "16px", color: t.label }}>Ends every session, on every device. You will sign in again here.</p>
+        </>
+      )}
+    </div>
+  );
   return (
+    <>
     <Group title="Devices">
       <PageState
         read={devices}
@@ -275,31 +331,10 @@ function DevicesGroup({ onSignOutEverywhere, devices, onSignOutDevice }: Pick<Ac
           </>
         )}
       </PageState>
-      <SettingRow
-        last
-        label="Sign out everywhere"
-        hint="Ends every session, on every device. You will sign in again here."
-        control={
-          asking ? null : (
-            <Button variant="secondary" size={32} fontSize={13} style={{ color: t.dangerText }} onClick={() => setAsking(true)}>
-              Sign out everywhere
-            </Button>
-          )
-        }
-        below={
-          asking ? (
-            <ConfirmInline
-              message={COPY.signOutEverywhere}
-              confirmLabel="Sign out everywhere"
-              busy={action.state.status === "sending"}
-              error={action.state.status === "error" ? action.state.message : null}
-              onConfirm={() => void action.run()}
-              onCancel={() => { setAsking(false); action.reset(); }}
-            />
-          ) : null
-        }
-      />
+      {phone ? null : everywhere}
     </Group>
+    {phone ? foot : null}
+    </>
   );
 }
 

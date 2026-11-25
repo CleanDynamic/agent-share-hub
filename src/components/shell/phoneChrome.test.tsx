@@ -115,6 +115,15 @@ describe("what a page tells the bar", () => {
     expect(skip).toHaveBeenCalledTimes(1);
   });
 
+  it("onboarding draws its place: the title '2 of 3' in mono and three 4px segments, two of them done (mobile prompt 27 Part C)", () => {
+    barWith("/onboarding", { skip: vi.fn(), title: "2 of 3", progress: { step: 2, of: 3 } });
+    expect(screen.getByText("2 of 3").style.fontFamily).toContain("mono");
+    const segments = screen.getByTestId("phone-progress").querySelectorAll("span");
+    expect(segments).toHaveLength(3);
+    expect([...segments].map((s) => s.hasAttribute("data-done"))).toEqual([true, true, false]);
+    expect((segments[0] as HTMLElement).style.height).toBe("4px");
+  });
+
   it("a Messages conversation names the person and More holds the thread's actions", () => {
     const pin = vi.fn();
     barWith("/messages/t1", { title: "Maya Chen", more: [{ label: "Pin thread", onSelect: pin }] });

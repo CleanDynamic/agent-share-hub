@@ -1,5 +1,5 @@
-// Q4 of the type prompt: a section's title is a section heading (14 / 500) under the page's "Settings" on a desktop, and
-// the page's title (20 / 500) on a phone, where the section is a page of its own.
+// Q4 of the type prompt: a section's title is the page's h1, read aloud and not drawn: on a desktop the chosen row names it, and on a
+// phone the top bar carries its name (mobile prompt 27).
 
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -21,12 +21,11 @@ describe("a settings section's title", () => {
     expect(heading.className).toBe("sr-only");
   });
 
-  it("is the page's h1 at 20 / 600 on a phone, with a way back to the list", () => {
+  it("is the page's h1, visually hidden, on a phone too: the top bar shows the name and carries Back (mobile prompt 27)", () => {
     phone.on = true;
     render(<MemoryRouter><SectionPage title="Account">x</SectionPage></MemoryRouter>);
     const heading = screen.getByRole("heading", { level: 1, name: "Account" });
-    expect(heading.style.fontSize).toBe("20px");
-    expect(heading.style.fontWeight).toBe("600");
-    expect(screen.getByRole("link", { name: "Back to settings" }).getAttribute("href")).toBe("/settings");
+    expect(heading.className).toBe("sr-only");
+    expect(screen.queryByRole("link", { name: "Back to settings" })).toBeNull();
   });
 });

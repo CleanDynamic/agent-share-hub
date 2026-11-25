@@ -52,6 +52,8 @@ export interface PhoneTopBarProps {
   /** Something in Activity is unread: the Mint square on the avatar. */
   unread?: boolean;
   theme?: "dusk" | "noon";
+  /** Onboarding (prompt 27 Part C): the title is "1 of 3" in mono 13 Text 3, and three 4px segments sit at the very top under the inset. */
+  progress?: { step: number; of: number };
 }
 
 const HIT: CSSProperties = {
@@ -166,7 +168,7 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
   );
 }
 
-export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk" }: PhoneTopBarProps) {
+export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk", progress }: PhoneTopBarProps) {
   /* Words in a side slot are wider than 48: the sides then take equal shares and the centre its own width. */
   const wide = Boolean(leftAction?.text || right?.text);
   const Title = titleAs;
@@ -183,6 +185,13 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
         background: t.bg,
       }}
     >
+      {progress ? (
+        <div role="progressbar" aria-label="Onboarding" aria-valuemin={1} aria-valuemax={progress.of} aria-valuenow={progress.step} data-testid="phone-progress" style={{ display: "flex", gap: 6, padding: "0 16px" }}>
+          {Array.from({ length: progress.of }, (_, index) => (
+            <span key={index} data-done={index < progress.step ? "" : undefined} style={{ flex: 1, height: 4, borderRadius: 2, background: index < progress.step ? t.brandAccent : t.control }} />
+          ))}
+        </div>
+      ) : null}
       <div style={{ display: "grid", gridTemplateColumns: wide ? "minmax(48px, 1fr) minmax(0, auto) minmax(48px, 1fr)" : "48px 1fr 48px", alignItems: "center", height: PHONE_TOPBAR, padding: "0 8px", boxSizing: "border-box" }}>
         <div style={{ display: "flex", justifyContent: wide ? "flex-start" : "center" }}>
           {leftAction ? (
@@ -207,11 +216,11 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
               margin: 0,
               minWidth: 0,
               textAlign: "center",
-              fontFamily: FIGTREE,
-              fontSize: 17,
-              fontWeight: 600,
-              lineHeight: "22px",
-              color: t.text,
+              fontFamily: progress ? DM_MONO : FIGTREE,
+              fontSize: progress ? 13 : 17,
+              fontWeight: progress ? 400 : 600,
+              lineHeight: progress ? "16px" : "22px",
+              color: progress ? t.label : t.text,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",

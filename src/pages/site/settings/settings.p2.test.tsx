@@ -110,6 +110,18 @@ describe("on a phone", () => {
     expect(links[2].getAttribute("href")).toBe("/settings/privacy");
   });
 
+  it("groups the six rows on two Panel modules under a label each, 56 tall with a chevron (mobile prompt 27 Part A)", () => {
+    phone.on = true;
+    mount("/settings");
+    const groups = screen.getAllByRole("region");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual(["Account", "More"]);
+    expect(within(groups[0]).getAllByRole("link")).toHaveLength(3);
+    expect(within(groups[1]).getAllByRole("link")).toHaveLength(3);
+    const row = within(groups[0]).getAllByRole("link")[0];
+    expect(row.style.minHeight).toBe("56px");
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" }).className).toBe("sr-only");
+  });
+
   it("is the section alone at /settings/<section>, with no list", () => {
     phone.on = true;
     mount("/settings/data");

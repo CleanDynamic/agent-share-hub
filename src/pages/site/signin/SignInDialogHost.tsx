@@ -7,13 +7,14 @@
    and the halftone layer winds down until it says it is done (G19); then each goes. If the address asks for the dialog
    again meanwhile, it is simply open again.
 
-   THE WATER (Synth 13 Part B) replaces the dim scrim and the halftone layer: a full-screen dot water at a 6px pitch that
+   THE WATER (Synth 13 Part B, mobile prompt 27 Part B) replaces the dim scrim and the halftone layer: a full-screen dot water at a 6px pitch that
    answers the pointer, on every screen size (the dialog is never the whole screen now). It fades out with the dialog.
    Under reduced motion it is a still field, and goes as the dialog closes. */
 
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SCRIM_OUT_MS } from "./signinMotion";
@@ -49,7 +50,8 @@ export function SignInDialogHost() {
     return () => window.clearTimeout(timer);
   }, [closing]);
 
-  const layer = true;
+  /* A phone draws the water inside the dialog's own frame (the whole screen is the water), so it has no layer of its own. */
+  const layer = !useIsPhone();
   useEffect(() => {
     if (closing && dialogDone && (layerDone || !layer)) {
       setLast(null);

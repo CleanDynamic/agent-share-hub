@@ -50,6 +50,8 @@ const AREA = [
 
 /** Lines allowed off the scale, by file and the text on the line, each with its reason. */
 const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
+  { file: "src/pages/site/signin/AuthParts.tsx", has: "fontSize: 16,", why: "mobile prompt 27: the phone sign-in field's text is 16, the size an input needs so the phone does not zoom in on it" },
+  { file: "src/pages/site/signin/AuthParts.tsx", has: "fontSize: sizes.phone ? 16 : 15,", why: "mobile prompt 27: the phone sign-in field's input is 16 so the phone does not zoom in on it" },
   { file: "src/pages/site/openbuilds/PhoneReplyBar.tsx", has: "fontSize: 16,", why: "prompt 21: the phone reply field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/pages/site/openbuilds/NewPostWindow.tsx", has: "fontSize: phone ? 16 : 15", why: "prompt 21: the New post box on a phone is 16 so the phone does not zoom in on it" },
   { file: "src/pages/site/openbuilds/SpaceView.tsx", has: "fontSize: 24,", why: "prompt 20 Part C: a phone space's name is its visible page title, 24/28 600" },
@@ -64,7 +66,7 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
 /** The sign-in dialog is the one design with its own greens, its own 22px tagline and its own mono labels (design/RULES.md, "The sign-in dialog"). */
 const SIGN_IN_DIALOG = new Set([
   "src/pages/site/signin/SignInDialogFrame.tsx",
-  "src/lib/dots/signinWater.ts",
+  "src/lib/dots/signinField.ts",
   "src/pages/site/signin/signinColours.ts",
 ]);
 
