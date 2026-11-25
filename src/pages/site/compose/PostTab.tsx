@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { Avatar } from "@/components/brand/Avatar";
 import { IconButton } from "@/components/brand/IconButton";
 import { PanelFailed } from "./PanelBoundary";
+import { LinkSelection } from "./phone/LinkSelection";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
@@ -629,6 +630,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
         />
       </div>
       <FormatBar editor={editor} controls={controls} phone={phone} />
+      {/* Prompt 23: on a phone, "Link to a step" beside the selected words (the phone's own menu cannot take a row). */}
+      {phone && references ? <LinkSelection editor={editor} onLink={() => void openRefs(false)} /> : null}
       <SlashMenu editor={editor} controls={controls} onInsertPicture={insertPicture} notice={setNotice} say={sayInEditor} phone={phone} />
       {cardOpen && cardEntry ? (
         <RefCard

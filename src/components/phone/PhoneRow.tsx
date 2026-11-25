@@ -18,7 +18,9 @@ import { DM_MONO, FIGTREE, SENTIENT } from "@/lib/theme/type";
 export type PhoneRowLead =
   | { kind: "avatar"; node: ReactNode }
   | { kind: "icon"; icon: MobileIconName }
-  | { kind: "grip" };
+  | { kind: "grip" }
+  /** A 12px swatch in a colour, or an empty outline (`colour` null): a session in the editor's Sources. */
+  | { kind: "swatch"; colour: string | null };
 
 export type PhoneRowTrail =
   | { kind: "chevron" }
@@ -51,6 +53,13 @@ function Lead({ lead }: { lead: PhoneRowLead }) {
     return (
       <span style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: t.control, color: t.text2 }}>
         <MobileIcon name={lead.icon} size={20} />
+      </span>
+    );
+  }
+  if (lead.kind === "swatch") {
+    return (
+      <span aria-hidden="true" style={{ width: 24, height: 40, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ width: 12, height: 12, borderRadius: 3, boxSizing: "border-box", ...(lead.colour ? { background: lead.colour } : { boxShadow: `inset 0 0 0 1.5px ${t.label}` }) }} />
       </span>
     );
   }

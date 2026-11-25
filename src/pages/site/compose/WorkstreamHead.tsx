@@ -279,14 +279,21 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         onKeyDown={onKeyDown}
+        /* Prompt 23: on a phone a tap on the row (not on its name field or a button) folds the part. */
+        onClick={phone ? (event) => {
+          if ((event.target as HTMLElement).closest("button, input, a, [role=menuitem]")) return;
+          onToggle();
+        } : undefined}
         style={{
           position: "relative",
           outline: "none",
           ...itemRing.ring,
           display: "flex",
-          flexWrap: phone ? "wrap" : "nowrap",
+          flexWrap: phone ? "nowrap" : "nowrap",
+          /* Prompt 23: a full-width row on Panel, radius 12, 8 under it. */
+          ...(phone ? { background: t.surface, borderRadius: 12, padding: "0 0 0 8px", marginBottom: 8, cursor: "pointer" } : null),
           alignItems: "center",
-          columnGap: 8,
+          columnGap: phone ? 4 : 8,
           rowGap: 4,
           minHeight: 44,
           minWidth: 0,
@@ -300,9 +307,9 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
             <DragHandle label={`Move ${part.label}`} nest={drag} testId="workstream-drag-handle" />
           </span>
         ) : null}
-        <span data-testid="workstream-label" style={{ ...text(textStep.body, 500, part.nameColour), whiteSpace: "nowrap", ...NO_SHRINK }}>
+        <span data-testid="workstream-label" style={{ ...text(textStep.body, 500, part.nameColour), whiteSpace: "nowrap", ...NO_SHRINK, ...(phone ? { fontFamily: DM_MONO, fontSize: 13, fontWeight: 400, color: t.label } : null) }}>
           {part.label}
-          {part.name || maker ? " ·" : ""}
+          {(part.name || maker) && !phone ? " ·" : ""}
         </span>
         {maker ? (
           <NameField part={part} phone={phone} onSave={(name) => ops?.onName(part.key, name)} />
@@ -313,7 +320,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />
         )}
-        <span ref={countRef} data-testid="workstream-count" style={{ ...quiet, userSelect: "none" }}>
+        <span ref={countRef} data-testid="workstream-count" style={{ ...quiet, userSelect: "none", ...(phone ? { fontFamily: DM_MONO, fontSize: 13, color: t.label } : null) }}>
           {WORKSTREAM_HEAD_COPY.count(part.sessions)}
         </span>
         {/* CA-19 P5: a part in a named group says so, just before its menu. */}

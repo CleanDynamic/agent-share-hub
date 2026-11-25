@@ -187,6 +187,8 @@ export function useBuildSelection({ drawn, onSelect, phone }: { drawn: Drawn; on
     };
     const down = (event: PointerEvent) => {
       if (event.pointerType !== "touch" || !(event.target instanceof HTMLElement) || takesKeys(event.target)) return;
+      /* Prompt 23: a long press on a grip moves the tile; it never starts choosing. */
+      if (event.target.closest("[data-grip]")) return;
       const tile = event.target.closest<HTMLElement>("[data-node-id]");
       const head = event.target.closest<HTMLElement>("[data-session-key]");
       const pick: Chosen | null = tile?.dataset.nodeId ? { kind: "tile", id: tile.dataset.nodeId } : head?.dataset.sessionKey && event.target.closest('[data-testid="session-head"]') ? { kind: "session", id: head.dataset.sessionKey } : null;

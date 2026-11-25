@@ -112,10 +112,15 @@ import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { KIND_ICON } from "./phone/phoneEditorModel";
 import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
-const INDENT = TILE_INDENT;
+/* Prompt 23: a tile's lines stand under its title at TILE_INDENT on a computer; on a phone the title row stands above them and
+   they start at the tile's own edge. */
+const TileIndentContext = createContext<number>(TILE_INDENT);
+const useTileIndent = (): number => useContext(TileIndentContext);
 import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
 import { FramePieces } from "./framePieces";
@@ -783,6 +788,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
  * (leaves it out). With nothing offered, no row.
  */
 function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   if (!props.onKeepSentWith || !props.onIgnoreSentWith) return null;
   const offered = codeInPrompt(step);
   if (offered.length === 0) return null;
@@ -827,7 +833,9 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
 }
 
 /** The tiles sent with a step, under its text, indented as its text is. */
-function SentWithList({ step, props, indent = INDENT }: { step: Step; props: BuildListProps; indent?: number }) {
+function SentWithList({ step, props, indent: givenIndent }: { step: Step; props: BuildListProps; indent?: number }) {
+  const INDENT = useTileIndent();
+  const indent = givenIndent ?? INDENT;
   if (!step.sentWith?.length) return null;
   return (
     <div data-testid="sent-with" style={{ paddingLeft: indent, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1032,6 +1040,7 @@ function StepTitle({ title, isDefault }: { title: string; isDefault: boolean }) 
 
 /** "Makes brand-guide.md", quiet, under a step's text. */
 function MadeLine({ names }: { names: readonly string[] | undefined }) {
+  const INDENT = useTileIndent();
   const line = madeLine(names ?? []);
   return line ? <Quiet style={{ paddingLeft: INDENT, overflowWrap: "anywhere" }}>{line}</Quiet> : null;
 }
@@ -1125,6 +1134,36 @@ function BoxRows({ step, phone }: { step: Step; phone: boolean }) {
  * ellipsis), the colour (only when one is set) and the ⋯ menu. The drag handle is drawn while the tile is hovered or has focus.
  */
 function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, selected = false }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode; selected?: boolean }) {
+  if (phone) {
+    /* Prompt 23: on a phone, a header row (the grip, the number box, the kind's icon at 16 and the kind 13 Text 2, the first
+       titled box's title at the right), then the title 15/600 under it. The boxes themselves open from the step's sheet. */
+    const boxTitle = step.boxes?.[0]?.title;
+    return (
+      <div data-testid="tile-head-phone" style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
+          <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
+          <NumberBadge selected={selected}>{step.number}</NumberBadge>
+          <span aria-hidden="true" style={{ display: "inline-flex", color: t.text2, flexShrink: 0 }}>
+            <MobileIcon name={KIND_ICON[step.kind] ?? "prompt"} size={16} />
+          </span>
+          <span data-testid={typeTestId} style={{ ...text(textStep.meta, 400, t.text2), lineHeight: "16px", flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {typeLine}
+          </span>
+          {boxTitle ? (
+            <span data-testid="tile-box-title" style={{ ...text(textStep.meta, 400, t.text2), lineHeight: "16px", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+              {boxTitle}
+            </span>
+          ) : null}
+          <CardColour step={step} phone={phone} inMenu />
+          {menu}
+        </div>
+        {title}
+        <StillOpenLine step={step} />
+        {step.gate ? <GateLine gate={step.gate} /> : null}
+        {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
+      </div>
+    );
+  }
   return (
     <div style={TILE_HEAD}>
       <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
@@ -1152,7 +1191,8 @@ function TileTitle({ step, rename, noun, phone }: { step: Step; rename: ReturnTy
     <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={rename.draft} placeholder={step.defaultTitle} phone={phone} onDraft={rename.setDraft} onFinish={rename.finish} />
   ) : (
     <h3 data-default-title={isDefault ? "true" : undefined} title={stepTitle(step)} style={{ ...TILE_TITLE, ...(isDefault ? { color: t.text2 } : null) }}>
-      {step.kind === "tool" || step.kind === "repo" ? <MarkedName name={step.kind === "tool" ? (step.tool ?? stepTitle(step)) : "github"}><FindHit text={stepTitle(step)} /></MarkedName> : <FindHit text={stepTitle(step)} />}
+      {/* Prompt 23: no app or harness mark beside a name on a phone; the name stays as plain text. */}
+      {(step.kind === "tool" || step.kind === "repo") && !phone ? <MarkedName name={step.kind === "tool" ? (step.tool ?? stepTitle(step)) : "github"}><FindHit text={stepTitle(step)} /></MarkedName> : <FindHit text={stepTitle(step)} />}
     </h3>
   );
 }
@@ -1176,6 +1216,7 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
 
 /** What stands above a tile's footer: its "Uses" chips. Not drawn when it has none. */
 function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildListProps; withGoes?: boolean }) {
+  const INDENT = useTileIndent();
   if (!usesParts(step, props, withGoes).any) return null;
   return (
     <div style={footRow(INDENT)}>
@@ -1199,6 +1240,7 @@ function numberIn(steps: readonly Step[], id: string): Step["number"] | undefine
  * with the step above" shares that line, so a tile that can take it needs no row of its own.
  */
 function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; props: BuildListProps; link?: ReactNode; facts?: readonly string[]; withGoes?: boolean }) {
+  const INDENT = useTileIndent();
   const nest = useNestAvailable(step);
   return (
     <>
@@ -1212,6 +1254,7 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 /* ── a prompt's card ── */
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   const focus = useItemRing(step.id);
   const { phone, selectedId } = props;
   const can = useCanMove(step.id, index, last);
@@ -1291,7 +1334,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected || over), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected || over, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected || over), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1381,7 +1424,12 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       ) : null}
       <p
         ref={textRef}
-        style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
+        style={
+          phone
+            ? /* Prompt 23: its first line, 13/18 Text 2, cut with an ellipsis. */
+              { ...text(textStep.meta, 400, t.text2), lineHeight: "18px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+            : { ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }
+        }
       >
         {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
         <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
@@ -1398,7 +1446,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         props={props}
         link={
           /* F17 (D8): a prompt tile has no footer link (Edit in the right panel, or a double click, opens it); a Summary tile keeps its one footer action (F44). */
-          open && step.summary ? (
+          open && step.summary && !phone ? (
             <FooterLink phone={phone} onClick={open}>
               {LIST_COPY.openPrompt}
             </FooterLink>
@@ -1541,6 +1589,7 @@ const AGENT_TILE_TOOLS = 3;
 
 /** A team's agents as a compact list: the name at the left, the role and the model in mono at the right. */
 function TeamAgents({ team }: { team: Step }) {
+  const INDENT = useTileIndent();
   return (
     <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
       <ul data-testid="team-agents" style={LIST_BOX}>
@@ -1559,6 +1608,7 @@ function TeamAgents({ team }: { team: Step }) {
 }
 
 function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   const focus = useItemRing(step.id);
   const isTeam = step.kind === "team";
   const noun = isTeam ? "Team" : "Agent";
@@ -1601,7 +1651,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1715,6 +1765,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
 
 /** The keyboard's way to move a tile, on its own row, when there is one. */
 function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
+  const INDENT = useTileIndent();
   const nest = useContext(ListNestContext);
   if (!nest) return null;
   const above = nest.above(step.id);
@@ -1732,6 +1783,7 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
  */
 function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
+  const INDENT = useTileIndent();
   const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
@@ -1758,7 +1810,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1782,7 +1834,8 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
 
 /** UX-02 P5: "Open tool", "Open file": the tile's window, as the double-click opened it. The footer's one link, where it has no other. None where nothing opens. */
 function openLink(step: Step, noun: string, props: BuildListProps): ReactNode {
-  if (!props.onEditTile) return null;
+  /* Prompt 23: no Open link on a phone; the whole tile is the button that opens its sheet. */
+  if (!props.onEditTile || props.phone) return null;
   return (
     <FooterLink phone={props.phone} onClick={() => props.onEditTile?.(step.id)}>
       {LIST_COPY.open(noun)}
@@ -1824,11 +1877,13 @@ function ToolCard({ step, index, last, props }: { step: Step; index: number; las
 
 /** CA-13 P2: a decision as a tile: one line per question, the first two. It runs in the app, which its tile in Details says. */
 function DecisionCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" body={(indent) => <DecisionTileBody step={step} lean indent={indent} />} after={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
 /** SV-29 P2: a Retrieval tile: what it indexes, how many it returns and how well; the index and query are on the build page and in Details. */
 function RetrievalCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   return <PlainCard step={step} index={index} last={last} props={props} noun="Retrieval" body={(indent) => <RetrievalTileBody step={step} lean indent={indent} />} after={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
@@ -1874,6 +1929,7 @@ function FileCard({ step, index, last, props }: { step: Step; index: number; las
 
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
@@ -1901,7 +1957,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -1946,6 +2002,7 @@ export const CODE_TILE_LINES = 3;
 
 /** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const INDENT = useTileIndent();
   const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
@@ -1974,7 +2031,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected, props.phone), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         selected={selected}
@@ -2642,7 +2699,7 @@ export function BuildList(raw: BuildListProps) {
     const neighbour = parts?.parts[at - 1] ?? parts?.parts[at + 1];
     const count = parts?.parts.length ?? 0;
     return (
-      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, paddingLeft: space[4], paddingRight: space[4], ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
+      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, paddingLeft: space[4], paddingRight: space[4], /* Prompt 23: on a phone a part is a full-width row; its sessions follow at the list's own edges. */ ...(props.phone ? { paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0 } : null), ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
         <FramePieces radius={WORKSTREAM_FRAME.radius} colour={WORKSTREAM_FRAME.colour} />
         <WorkstreamHead
           part={view}
@@ -2826,7 +2883,11 @@ export function BuildList(raw: BuildListProps) {
   /* Sessions move once there are two to put in order, even when no tile can move yet. */
   const sessionsMove = (Boolean(props.onDropSession) && headOrder.length > 1) || Boolean(parts?.ops);
   // SV-28: a team's, an agent's, a job's and an Approval step's lines open steps and name tools through this.
-  const lines = <TeamLinesContext.Provider value={{ open: props.onSelect, names: props.names, phone: props.phone, steps: props.steps.flatMap((step) => [step, ...step.children]) }}>{body}</TeamLinesContext.Provider>;
+  const lines = (
+    <TileIndentContext.Provider value={props.phone ? 0 : TILE_INDENT}>
+      <TeamLinesContext.Provider value={{ open: props.onSelect, names: props.names, phone: props.phone, steps: props.steps.flatMap((step) => [step, ...step.children]) }}>{body}</TeamLinesContext.Provider>
+    </TileIndentContext.Provider>
+  );
   if (!nest && !sessionsMove) return <ListRefsContext.Provider value={refs}>{lines}</ListRefsContext.Provider>;
   return (
     <ListRefsContext.Provider value={refs}>

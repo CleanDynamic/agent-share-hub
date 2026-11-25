@@ -38,6 +38,8 @@ import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
+import { phoneToastActionStyle, phoneToastStyle, PHONE_TOAST_MS } from "@/components/phone/PhoneToast";
+import { phoneNoticeWords } from "./phone/phoneEditorModel";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, LAYER, MODAL_WIDTH, scrimAt, windowPlacement } from "./modalRecipes";
 import { size as sizes, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
@@ -228,9 +230,9 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
     if (!given) return;
     // The notice's own `n` goes with it: a timer that fires late (a long step kept the page busy) must not take down the next notice.
     const n = given.n;
-    const timer = window.setTimeout(() => done.current(n), NOTICE_MS);
+    const timer = window.setTimeout(() => done.current(n), phone ? PHONE_TOAST_MS : NOTICE_MS);
     return () => window.clearTimeout(timer);
-  }, [given]);
+  }, [given, phone]);
   if (!notice) return null;
   return createPortal(
     <div
@@ -259,13 +261,19 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
         borderRadius: 10,
         boxShadow: t.windowShadow,
         ...words(textStep.body, 400, t.text),
+        /* Prompt 23: on a phone, the toast: Text on its own fill, radius 12, 48 tall, 16 in from each side, above the footer. */
+        ...(phone ? { ...phoneToastStyle, left: 16, right: 16, width: "auto", maxWidth: "none", marginInline: 0, height: "auto", justifyContent: "space-between", gap: 8 } : null),
         ...(held.leaving ? { pointerEvents: "none" } : null),
       }}
     >
       <span ref={sentence} style={ELLIPSIS}>
-        {notice.sentence}
+        {phone ? phoneNoticeWords(notice.sentence) : notice.sentence}
       </span>
-      {notice.noUndo ? null : (
+      {notice.noUndo ? null : phone ? (
+        <button type="button" onClick={onUndo} data-testid="notice-undo" style={{ ...phoneToastActionStyle, border: 0, cursor: "pointer", flexShrink: 0, fontFamily: FIGTREE }}>
+          {NOTICE_COPY.undo}
+        </button>
+      ) : (
         <RecipeButton small onClick={onUndo} data-testid="notice-undo">
           {NOTICE_COPY.undo}
         </RecipeButton>

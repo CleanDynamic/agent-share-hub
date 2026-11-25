@@ -140,13 +140,17 @@ describe("SandboxView frame", () => {
 });
 
 describe("SandboxView on a phone", () => {
-  it("is one column with Sources and Details behind buttons, and never Map", () => {
+  /* Prompt 23: one screen, the build list. List, Map and Sources are pills (Sources opens its sheet), Details is the sheet a tile
+     opens, and Publish sits in the sticky footer. The page's own lens is never the computer's Map. */
+  it("is the build list with List, Map and Sources pills, Details behind a tile, and Publish in the footer", () => {
     stubWidth(390);
     view({ lens: "map" });
-    expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Sources" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Details" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
+    const views = screen.getByRole("group", { name: "Build view" });
+    expect(within(views).getByRole("button", { name: "List" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(views).getByRole("button", { name: "Map" })).toBeTruthy();
+    expect(within(views).getByRole("button", { name: "Sources" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Build" })).toBeTruthy();
+    expect(within(screen.getByRole("group", { name: "Actions" })).getByRole("button", { name: "Publish" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Details" })).toBeNull();
   });
 });
@@ -461,11 +465,12 @@ describe("the Card and the post", () => {
 });
 
 describe("the post on a phone", () => {
-  it("heads the Build column too, with no tabs, and the action bar stays", () => {
+  /* Prompt 23: the phone is the build list first; the post follows the build on the same page, with no tabs. */
+  it("follows the build on the same page, with no tabs, and the footer stays", () => {
     stubWidth(390);
     viewAt("/compose/x");
     const post = screen.getByRole("region", { name: "Post" });
-    expect(post.compareDocumentPosition(screen.getByRole("region", { name: "Build" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Build" }).compareDocumentPosition(post) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole("group", { name: "Upload steps" })).toBeNull();
     expect(screen.getByRole("group", { name: "Actions" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();

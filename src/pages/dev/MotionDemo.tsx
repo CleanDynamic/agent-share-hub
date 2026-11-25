@@ -135,7 +135,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
   /* CA-27 P1: Find in build, as the page holds it. */
   const findTargets = useMemo(() => findTargetsOf({ steps, dividers: heads, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, heads, partsModel]);
   const isFolded = useCallback((key: string) => collapsed.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsed, partsModel]);
-  const find = useBuildFind({ targets: findTargets, isFolded, enabled: !phone });
+  const find = useBuildFind({ targets: findTargets, isFolded, enabled: true });
   const openFind = find.show;
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -332,7 +332,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
         sessionList={params.get("build") === "ca27" && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : undefined}
         selectedKey={selectedId}
         onEditSelected={selectedId ? () => note("Opened the tile's window") : undefined}
-        find={phone ? undefined : find}
+        find={find}
         viewOptions={params.get("build") === "ca27" ? { sessionList: false, sessionCount: sessionKeys.length, onChange: () => undefined } : undefined}
         list={
           <BuildList

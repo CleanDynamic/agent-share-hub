@@ -10,6 +10,7 @@
 // sheet rides above the on-screen keyboard.
 // MOTION. The slide is the `data-motion="sheet"` rule in index.css (BASE up on STANDARD, FAST down; a fade under reduced motion).
 
+import { FAST, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
@@ -53,13 +54,22 @@ export interface PhoneBottomSheetProps {
   dirty?: boolean;
   footer?: { status?: ReactNode; actions?: ReactNode };
   onCloseAutoFocus?: (event: Event) => void;
+  /** Prompt 23: the sheet steps aside (slides down and fades, still mounted) while something picked up in it is dragged onto the page behind. */
+  stepAside?: boolean;
   /** The sheet's shade: Card (the default), or the Notepad tone for the reader's notepad (prompt 22). */
   tone?: "card" | "notepad";
   "data-testid"?: string;
   children?: ReactNode;
 }
 
-export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, tone = "card", children, ...rest }: PhoneBottomSheetProps) {
+/** Prompt 23: a sheet stepping aside goes down in FAST, its scrim fades in FAST; reduced motion fades only. Nothing it holds unmounts. */
+const ASIDE_SCRIM: CSSProperties = { opacity: 0, pointerEvents: "none", transition: `opacity ${FAST}ms ${STANDARD}` };
+const asideSheet = (): CSSProperties =>
+  prefersReducedMotion()
+    ? { opacity: 0, pointerEvents: "none", transition: `opacity ${FAST}ms ${STANDARD}` }
+    : { opacity: 0, pointerEvents: "none", transform: "translateY(100%)", transition: `transform ${FAST}ms ${STANDARD}, opacity ${FAST}ms ${STANDARD}` };
+
+export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, stepAside = false, tone = "card", children, ...rest }: PhoneBottomSheetProps) {
   const focus = useWindowFocus(open, onCloseAutoFocus);
   const keyboard = useKeyboardInset();
   const start = useRef<{ y: number; at: number } | null>(null);
@@ -117,7 +127,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
     <>
       <Dialog.Root open={open} onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}>
         <Dialog.Portal>
-          <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40 }} />
+          <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40, ...(stepAside ? ASIDE_SCRIM : null) }} />
           <Dialog.Content
             data-testid={rest["data-testid"] ?? "bottom-sheet"}
             data-motion="sheet"
@@ -149,6 +159,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               fontFamily: FIGTREE,
               overscrollBehavior: "contain",
               transform: drag ? `translateY(${drag}px)` : undefined,
+              ...(stepAside ? asideSheet() : null),
             }}
           >
             <div data-testid="sheet-grabber" style={{ alignSelf: "stretch", display: "flex", justifyContent: "center", padding: "0 0 8px", margin: "4px 0 0", touchAction: "none", cursor: "grab" }}>

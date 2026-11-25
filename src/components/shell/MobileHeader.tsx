@@ -109,7 +109,7 @@ function MobileHeaderContainer() {
         unread={unread > 0}
         theme={resolved}
       />
-      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} />
+      <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} bare={page.bare} />
       {searchEver ? (
         <Suspense fallback={null}>
           <SearchPage open={searchOpen} onOpenChange={setSearchOpen} />

@@ -23,8 +23,12 @@ export const ACTION_BAR_HEIGHT = 66;
 export const ACTION_BAR_LIFT = 35;
 /** The action bar's `bottom`, without the safe-area inset (92). */
 export const ACTION_BAR_BOTTOM = DOCK_HEIGHT + ACTION_BAR_LIFT;
-/** What covers the foot of a phone's screen in the composer: the dock, the gap and the action bar (158). */
-export const PHONE_BARS_BOTTOM = ACTION_BAR_BOTTOM + ACTION_BAR_HEIGHT;
+/**
+ * Prompt 23: what covers the foot of a phone's screen in the composer. The dock is hidden there, and the old action bar is now
+ * the sticky footer on Panel: 12 + a 48 button + 12 (72), at the foot, plus the inset.
+ */
+export const PHONE_FOOTER = 72;
+export const PHONE_BARS_BOTTOM = PHONE_FOOTER;
 /** Air between a menu or a scrolled-to thing and a bar. */
 export const BAR_AIR = 8;
 
