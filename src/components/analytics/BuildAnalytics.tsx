@@ -124,7 +124,7 @@ function BuildRow({ build }: { build: BuildStatRow }) {
 }
 
 /** Mobile 28 D: a build's numbers on a phone, in table order. */
-export const PHONE_BUILD_NUMBERS = ["Rebuilds", "Likes", "Saved"] as const;
+export const PHONE_BUILD_NUMBERS = ["Views", "Rebuilds", "Likes", "Saved"] as const;
 
 /**
  * Mobile 28 D: the builds on a phone, each a Card: the build's name as its link, then its numbers in a grid (mono 15/500
@@ -135,7 +135,7 @@ function BuildCards({ builds }: { builds: BuildStatRow[] }) {
   return (
     <ul data-testid="build-stats-cards" aria-label="Your builds" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((build) => {
-        const numbers = [build.rebuild_count, build.like_count, build.save_count];
+        const numbers = [build.view_count, build.rebuild_count, build.like_count, build.save_count];
         return (
           <li key={build.id} data-testid="build-stats-row" style={{ background: t.module, borderRadius: 12, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
             <BuildLink build={build} />

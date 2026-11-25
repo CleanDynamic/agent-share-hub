@@ -29,6 +29,7 @@ function row(over: Partial<BuildStatRow>): BuildStatRow {
     like_count: 0,
     comment_count: 0,
     save_count: 0,
+    view_count: 0,
     runs: 1,
     worked: 1,
     failed_last_30_days: 0,

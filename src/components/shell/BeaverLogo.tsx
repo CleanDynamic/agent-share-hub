@@ -9,7 +9,8 @@ import type { CSSProperties } from "react";
 export const BEAVER_RATIO = 587 / 898;
 
 /** `clear` marks the picture as the sign-in water's clear zone: the water fades to the page round it (`data-clear`). */
-export function BeaverLogo({ theme, size = 96, style, clear = false }: { theme: "dusk" | "noon"; size?: number; style?: CSSProperties; clear?: boolean }) {
+/** `loading="lazy"` for a logo below the first screen (the footer's), so it does not compete with what is on screen. */
+export function BeaverLogo({ theme, size = 96, style, clear = false, loading }: { theme: "dusk" | "noon"; size?: number; style?: CSSProperties; clear?: boolean; loading?: "lazy" | "eager" }) {
   const base = `/brand/beaver-${theme === "dusk" ? "dark" : "light"}-logo`;
   return (
     <img
@@ -18,6 +19,7 @@ export function BeaverLogo({ theme, size = 96, style, clear = false }: { theme: 
       width={size}
       height={Math.round(size * BEAVER_RATIO)}
       alt=""
+      loading={loading}
       data-clear={clear ? "" : undefined}
       style={{ display: "block", flexShrink: 0, ...style }}
     />

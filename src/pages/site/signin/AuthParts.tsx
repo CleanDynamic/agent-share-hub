@@ -416,7 +416,7 @@ export interface AuthCheckProps {
  * box ticks it, and the words (which may carry links) are not the target. That
  * is the shape the join form's spec clicks, so it is kept. The label takes a
  * 28px target and gives the 12px back in negative margin, so the row stays the
- * height the reference draws.
+ * height the reference draws. On a phone (mobile 29) the row is a 44 target of its own, 8 below the field above.
  */
 export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
   const [focusVisible, setFocusVisible] = useState(false);
@@ -432,8 +432,11 @@ export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
         display: "flex",
         alignItems: "center",
         gap: phone ? 6 : 8,
-        padding: phone ? "6px 0" : 0,
-        margin: phone ? "-6px 0" : 0,
+        /* Mobile 29 audit: on a phone the row is its own 44 target. It was 31 with its hit area grown past its edges, which
+           reached 6px up over the Password box and took taps meant for it; now the target is the row and 8 sit between. */
+        padding: 0,
+        margin: phone ? "4px 0 0" : 0,
+        minHeight: phone ? 44 : undefined,
         height: phone ? undefined : DIALOG.row,
         cursor: "pointer",
         fontFamily: FIGTREE,

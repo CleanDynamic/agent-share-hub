@@ -37,6 +37,7 @@ export const WRITE_RPCS: ReadonlySet<string> = new Set([
   "increment_download_count",
   "increment_project_view_count",
   "mark_depth_revealed",
+  "record_build_view",
   "record_daily_activity",
   "resolve_report",
   "respec_track",

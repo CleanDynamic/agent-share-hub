@@ -382,6 +382,10 @@ export class FluidRegion {
           tone = 0.42 + 0.58 * arc * arc;
         }
       } else {
+        // The edge: a dot on the shape's rim is half grown, one just outside is gone. Worked out first: a dot with no size
+        // draws nothing, so its rings are not worked out either (mobile 29 audit: the same picture for less work a frame).
+        m = clamp01(0.5 - this.sd[i] / (PITCH * 0.7)) * this.weight[i];
+        if (m <= 0 || shrink <= 0) continue;
         const base = this.base[i];
         jitter = this.jitter[i];
         const wave = rings.length ? waveAt(rings, lx, ly) : 0;
@@ -390,8 +394,6 @@ export class FluidRegion {
           dx = 3 * (waveAt(rings, lx + 3, ly) - wave);
           dy = 1.3 * wave;
         }
-        // The edge: a dot on the shape's rim is half grown, one just outside is gone.
-        m = clamp01(0.5 - this.sd[i] / (PITCH * 0.7)) * this.weight[i];
         /* A thinning last line flickers slowly, and only there. */
         const along = this.tailAt[i];
         if (along >= 0 && !still) m *= 1 - 0.45 * along * (0.5 + 0.5 * Math.sin(t * 1.9 + (jitter + 0.11) * 40));

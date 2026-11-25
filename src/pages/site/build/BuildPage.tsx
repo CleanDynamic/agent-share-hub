@@ -27,6 +27,7 @@ import { usePageReady } from "@/lib/routing/pageReady";
 
 import { useReaderPostLinks, type ReaderFocus } from "./useReaderPostLinks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { recordBuildView } from "@/lib/build/buildViews";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -372,6 +373,13 @@ function BuildPageBody() {
   /* The current crumb: the title, a skeleton while it loads, and words for the two dead ends. */
   useCrumbTitle(build ? build.title : recordQuery.isPending ? null : recordQuery.isError ? "Build" : "Not found");
   usePageReady("build", !recordQuery.isPending);
+
+  /* Mobile 28 D: one view of a published build for its maker's progress, by a signed-in reader (the database counts at most
+     one a reader a day; signed-out visits are not counted, so nothing is stored in their browser). */
+  const viewable = build && (build.status === "published" || build.status === "gallery") && build.creator_id !== user?.id ? build.id : null;
+  useEffect(() => {
+    if (viewable) void recordBuildView(viewable, { signedIn: isLoggedIn });
+  }, [viewable, isLoggedIn]);
 
   const media = useQuery<BuildMedia[]>({
     queryKey: ["build", "getMediaForBuild", buildId],

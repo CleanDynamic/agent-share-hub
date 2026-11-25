@@ -183,13 +183,130 @@ export interface StubLog {
   urls: Map<string, string[]>;
 }
 
+/* ── signed in (mobile 29: the pages behind a session) ──
+   A session for Maya, seeded where supabase-js keeps it, before the app loads. The access token is an unsigned JWT that
+   never expires: it never leaves the browser, since every request is answered here. Opt in with `{ signedIn: {...} }`;
+   without it the stub is signed out, as before. */
+
+/** The project ref in VITE_SUPABASE_URL: supabase-js keeps the session under `sb-<ref>-auth-token`. */
+const PROJECT_REF = "zybdotagjwektucfdkri";
+
+const base64url = (value: string) => Buffer.from(value).toString("base64").replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+
+export const SIGNED_IN_USER = {
+  id: PEOPLE.maya.id,
+  aud: "authenticated",
+  role: "authenticated",
+  email: "maya@example.test",
+  email_confirmed_at: "2026-01-01T00:00:00.000Z",
+  app_metadata: { provider: "email" },
+  user_metadata: {},
+  created_at: "2026-01-01T00:00:00.000Z",
+};
+
+function sessionFor(user: typeof SIGNED_IN_USER) {
+  const exp = 4102444800; // 2100-01-01
+  const token = [base64url(JSON.stringify({ alg: "HS256", typ: "JWT" })), base64url(JSON.stringify({ sub: user.id, role: "authenticated", aud: "authenticated", exp, email: user.email })), "stub"].join(".");
+  return { access_token: token, refresh_token: "stub-refresh", token_type: "bearer", expires_in: exp - Math.floor(NOW / 1000), expires_at: exp, user };
+}
+
+/** Maya's draft rebuild of Sam's "Invoice chaser". */
+const REBUILD_DRAFT_ID = "d-invoice-rebuild";
+
+export interface SignedInOptions {
+  /** profiles.is_admin, for /admin. */
+  admin?: boolean;
+}
+
+/** What the signed-in pages read, answered for Maya. Null: the default answer. */
+function signedInAnswer(name: string, query: string, single: boolean, options: SignedInOptions): unknown | null {
+  const maya = PEOPLE.maya;
+  if (name === "profiles" && query.includes(`id=eq.${maya.id}`)) {
+    const row = { ...maya, banner_url: null, bio: null, website_url: null, twitter_handle: null, is_admin: Boolean(options.admin), is_creator: true, is_curator: false, curator_application_status: null, account_type: "creator", user_interests: [], follower_count: 12, following_count: 4, joined_at: "2026-01-01T00:00:00.000Z", onboarding_completed: true, terms_accepted_at: "2026-01-01T00:00:00.000Z" };
+    return single ? row : [row];
+  }
+  if (name === "user_progress") {
+    const row = { xp_total: 1240, level: 6, track: null, streak_days: 0, streak_best: 0, last_respec_at: null };
+    return single ? row : [row];
+  }
+  /* Your progress: the maker's published builds (the draft read filters on creator too, but on status=eq.draft). */
+  if (name === "builds" && query.includes(`creator_id=eq.${maya.id}`) && query.includes("status=in.")) {
+    return BUILDS.filter((b) => b.who.id === maya.id).map((b, index) => ({
+      ...buildRow(b),
+      last_confirmed_at: null,
+      last_confirmed_model: null,
+      save_count: 3 + index,
+      still_open_topics: 0,
+      views: { views: [1530, 212][index] ?? 0 },
+    }));
+  }
+  /* Rebuild: Maya's draft of Sam's "Invoice chaser" (/rebuild/b-invoice). */
+  if (name === "builds") {
+    const source = BUILDS.find((b) => b.id === "b-invoice");
+    const header = source ? { ...buildRow(source), root_build_id: null, forked_from_event_id: null, source_content_item_id: null, monetisation_type: null, price_gbp: null, donation_enabled: false, cost_setup: null, cost_monthly: null, currency: null, time_to_first_result: null, created_at: new Date(NOW - 300 * 60_000).toISOString(), updated_at: new Date(NOW - 300 * 60_000).toISOString(), solves_node_id: null, making: null } : null;
+    const draft = header ? { ...header, id: REBUILD_DRAFT_ID, slug: REBUILD_DRAFT_ID, title: "Invoice chaser, with a weekly summary", status: "draft", creator_id: maya.id, creator: maya, published_at: null, parent_build_id: "b-invoice", root_build_id: "b-invoice", source_title_at_fork: "Invoice chaser", source_handle_at_fork: "sam", rebuild_count: 0 } : null;
+    if (query.includes("slug=eq.b-invoice")) return single ? header : [header];
+    if (query.includes("parent_build_id=eq.b-invoice") && query.includes("status=eq.draft")) return single ? draft : [draft];
+    if (query.includes(`id=eq.${REBUILD_DRAFT_ID}`)) return single ? draft : [draft];
+    if (query.includes("id=eq.b-invoice")) return single ? header : [header];
+  }
+  if (name === "rpc/rebuild_tree") {
+    const sam = PEOPLE.sam;
+    return [{ id: "b-invoice", parent_build_id: null, depth: 0, slug: "b-invoice", title: "Invoice chaser", creator_id: sam.id, published_at: new Date(NOW - 300 * 60_000).toISOString(), reproduction_count: 0, rebuild_note: null }];
+  }
+  if (name === "content_reports") {
+    return [{ id: "rep-1", target_type: "openbuild_post", target_id: "t-two", reason: "spam", note: null, created_at: new Date(NOW - 2 * 3600_000).toISOString(), reporter: { username: "newuser1", display_name: null } }];
+  }
+  return null;
+}
+
 /** Routes the page's Supabase traffic to the fixtures. Returns what was asked for, so a spec can see what an empty answer covered. */
-export async function installPhoneStub(page: Page): Promise<StubLog> {
+export async function installPhoneStub(page: Page, options: { signedIn?: SignedInOptions } = {}): Promise<StubLog> {
   const log: StubLog = { tables: new Map(), urls: new Map() };
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", headers: { "access-control-allow-origin": "*", "content-range": "0-0/*" }, body: JSON.stringify(body) });
+  const signedIn = options.signedIn;
 
-  await page.route("**/auth/v1/**", (route) => (route.request().url().includes("/user") ? json(route, { message: "no session" }, 401) : json(route, { session: null, user: null })));
+  if (signedIn) {
+    const session = sessionFor(SIGNED_IN_USER);
+    await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [`sb-${PROJECT_REF}-auth-token`, JSON.stringify(session)] as const);
+    await page.route("**/auth/v1/**", (route) => {
+      const url = route.request().url();
+      if (url.includes("/user")) return json(route, SIGNED_IN_USER);
+      if (url.includes("/token")) return json(route, session);
+      if (url.includes("/logout")) return route.fulfill({ status: 204 });
+      return json(route, {});
+    });
+    /* A live channel that joins and stays quiet, so a page that waits for its channel (Activity's "All caught up." is
+       said only while live) can show its live state. Realtime's protocol 2.0.0 sends [join_ref, ref, topic, event,
+       payload]; 1.0.0 sent an object. Joins are answered ok with the postgres changes echoed back with ids, as the server
+       does; heartbeats and anything else are answered ok. Nothing is ever pushed. */
+    await page.routeWebSocket(/\/realtime\/v1\/websocket/, (ws) => {
+      ws.onMessage((message) => {
+        if (typeof message !== "string") return;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message);
+        } catch {
+          return;
+        }
+        const array = Array.isArray(parsed);
+        const [joinRef, ref, topic, event, payload] = array
+          ? (parsed as [string | null, string | null, string, string, Record<string, unknown>])
+          : (() => {
+              const o = parsed as { join_ref?: string; ref?: string; topic: string; event: string; payload: Record<string, unknown> };
+              return [o.join_ref ?? null, o.ref ?? null, o.topic, o.event, o.payload] as const;
+            })();
+        if (event === "phx_leave") return;
+        const changes = ((payload?.config as { postgres_changes?: Record<string, unknown>[] } | undefined)?.postgres_changes ?? []).map((change, index) => ({ ...change, id: index + 1 }));
+        const response = event === "phx_join" ? { postgres_changes: changes } : {};
+        const reply = { status: "ok", response };
+        ws.send(JSON.stringify(array ? [joinRef, ref, topic, "phx_reply", reply] : { join_ref: joinRef, ref, topic, event: "phx_reply", payload: reply }));
+      });
+    });
+  } else {
+    await page.route("**/auth/v1/**", (route) => (route.request().url().includes("/user") ? json(route, { message: "no session" }, 401) : json(route, { session: null, user: null })));
+  }
   await page.route("**/realtime/v1/**", (route) => route.abort());
   await page.route("**/storage/v1/**", (route) => route.abort());
   await page.route("**/functions/v1/**", (route) => json(route, {}));
@@ -201,8 +318,19 @@ export async function installPhoneStub(page: Page): Promise<StubLog> {
     log.tables.set(name, (log.tables.get(name) ?? 0) + 1);
     log.urls.set(name, [...(log.urls.get(name) ?? []), decodeURIComponent(url.search)]);
     const single = (request.headers()["accept"] ?? "").includes("vnd.pgrst.object");
+    if (signedIn) {
+      const answer = signedInAnswer(name, decodeURIComponent(url.search), single, signedIn);
+      if (answer !== null) return json(route, answer);
+    }
     if (name === "rpc/get_build_feed") return json(route, feedRows);
     if (name === "builds") {
+      /* A build by its address (the build page reads it by slug). */
+      const slug = /[?&]slug=eq\.([^&]+)/.exec(decodeURIComponent(url.search))?.[1];
+      if (slug) {
+        const found = BUILDS.find((b) => b.id === slug);
+        const row = found ? { ...buildRow(found), root_build_id: null, created_at: new Date(NOW - found.minutes * 60_000).toISOString(), updated_at: new Date(NOW - found.minutes * 60_000).toISOString(), making: null } : null;
+        return json(route, single ? row : row ? [row] : []);
+      }
       const ids = /[?&]id=in\.\(([^)]*)\)/.exec(decodeURIComponent(url.search))?.[1]?.split(",").map((id) => id.replace(/"/g, "")) ?? [];
       const rows = BUILDS.filter((b) => ids.includes(b.id)).map(buildRow);
       return json(route, single ? (rows[0] ?? null) : rows);

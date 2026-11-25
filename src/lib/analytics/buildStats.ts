@@ -32,6 +32,16 @@ export const BUILD_STATS_LIMIT = 50;
 const BUILD_STATS_COLUMNS =
   "id, slug, title, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, like_count, comment_count, save_count, still_open_topics:still_open_topic_count";
 
+/**
+ * Mobile 28 D: the views, embedded on the same request along build_view_counts.build_id -> builds.id
+ * (supabase/migrations/20261125120000_m28_build_views.sql). The table is readable by the build's maker only, which is who
+ * reads this page.
+ */
+const BUILD_STATS_COLUMNS_WITH_VIEWS = `${BUILD_STATS_COLUMNS}, views:build_view_counts(views)`;
+
+/** PostgREST's answer when an embedded relationship is not in its schema cache: the views migration is not applied yet. */
+const NO_RELATIONSHIP = "PGRST200";
+
 /** One published build, with everything the analytics page says about it. */
 export interface BuildStatRow {
   id: string;
@@ -45,6 +55,8 @@ export interface BuildStatRow {
   like_count: number;
   comment_count: number;
   save_count: number;
+  /** Mobile 28 D: views, one per viewer per day, the maker's own left out (0 before the views migration is applied). */
+  view_count: number;
   /** Runs other people reported, worked or not. */
   runs: number;
   /** Of those, the runs that worked: the table's "Got working". */
@@ -73,6 +85,8 @@ interface BuildRow {
   comment_count: number | null;
   save_count: number | null;
   still_open_topics: number | null;
+  /** One-to-one embed: an object, or null when nobody has viewed it; some PostgREST versions answer a one-row array. */
+  views?: { views: number | string | null } | { views: number | string | null }[] | null;
 }
 
 interface MetricsRow {
@@ -127,20 +141,24 @@ export async function getMyBuildStats(): Promise<MyBuildStats> {
   // STATES.md row 21: nobody signed in is a refusal, never an empty table.
   if (!userId) throw new BuildStatsError("getMyBuildStats", null, null, 401);
 
-  const [builds, metrics, figures] = await Promise.all([
+  const readBuilds = (columns: string) =>
     db
       .from("builds")
-      .select(BUILD_STATS_COLUMNS)
+      .select(columns)
       .eq("creator_id", userId)
       .in("status", ["published", "gallery"])
       .order("reproduction_count", { ascending: false })
       .order("last_confirmed_at", { ascending: false, nullsFirst: false })
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("id", { ascending: false })
-      .limit(BUILD_STATS_LIMIT),
+      .limit(BUILD_STATS_LIMIT);
+  const [first, metrics, figures] = await Promise.all([
+    readBuilds(BUILD_STATS_COLUMNS_WITH_VIEWS),
     db.rpc("maker_build_metrics", { uid: userId }),
     getMakerStats(userId),
   ]);
+  /* Before the views migration is applied the embed is refused; the builds are read again without it and Views are 0. */
+  const builds = first.error && (first.error as { code?: unknown }).code === NO_RELATIONSHIP ? await readBuilds(BUILD_STATS_COLUMNS) : first;
 
   if (builds.error) throw failure("getMyBuildStats (builds)", userId, builds);
   if (metrics.error) throw failure("getMyBuildStats (metrics)", userId, metrics);
@@ -149,7 +167,7 @@ export async function getMyBuildStats(): Promise<MyBuildStats> {
 
   return {
     figures,
-    builds: ((builds.data ?? []) as BuildRow[]).map((row) => {
+    builds: ((builds.data ?? []) as unknown as BuildRow[]).map((row) => {
       const m = byBuild.get(row.id);
       return {
         id: row.id,
@@ -163,6 +181,7 @@ export async function getMyBuildStats(): Promise<MyBuildStats> {
         like_count: count(row.like_count),
         comment_count: count(row.comment_count),
         save_count: count(row.save_count),
+        view_count: count((Array.isArray(row.views) ? row.views[0] : row.views)?.views),
         runs: count(m?.runs),
         worked: count(m?.worked),
         failed_last_30_days: count(m?.failed_last_30_days),

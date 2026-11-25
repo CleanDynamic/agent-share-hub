@@ -162,7 +162,8 @@ export function ReportsQueue() {
             data-testid="report-row"
             data-selected={selected === report.id ? "true" : undefined}
             onClick={(event) => ((event.target as HTMLElement).closest("button, a") ? undefined : setSelected(report.id))}
-            style={{ margin: "8px 16px 0", padding: 16, borderRadius: 12, background: t.surface, display: "flex", flexDirection: "column", gap: 4, cursor: "pointer" }}
+            /* On Card: on a phone the frame's panel is the Panel shade, and a Panel module on it would not show. */
+            style={{ margin: "8px 16px 0", padding: 16, borderRadius: 12, background: t.module, display: "flex", flexDirection: "column", gap: 4, cursor: "pointer" }}
           >
             <button
               type="button"

@@ -2,8 +2,9 @@
 //
 // The claims: /analytics draws, under the h1, Needs you (only when something
 // needs the maker), the builds table headed by its fact, This week and the
-// badges, in that order; XP and "Level" are nowhere on it, and nothing stands in
-// their place; no text on it is drawn in --lit, while the progress fills are;
+// badges, in that order; on a desktop XP and "Level" are nowhere on it, and
+// nothing stands in their place (mobile 28 D opens the PHONE layout on a Level
+// module read from the reader's own user_progress row, tested at the end); no text on it is drawn in --lit, while the progress fills are;
 // it asks for five things and none is a parked feature's table or function;
 // THIS WEEK is at most three challenges, each "n of m" in DM Mono with the same
 // bar and no XP reward; BADGES is the six that are not about runs, earned first.
@@ -19,7 +20,7 @@ import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const USER = "maker-1";
 
@@ -69,6 +70,7 @@ vi.mock("@/integrations/supabase/client", () => {
 
 import Analytics from "@/pages/Analytics";
 import { MY_BUILD_STATS_KEY } from "@/components/analytics/BuildAnalytics";
+import { levelOf, xpForLevel } from "@/lib/progress/level";
 
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
@@ -236,7 +238,7 @@ describe("the sections", () => {
     expect([...page.children].map(sectionName)).toEqual(["2 builds", "This week", "3 of 6 badges"]);
   });
 
-  it("draws no XP and no level anywhere", async () => {
+  it("draws no XP and no level anywhere on a desktop", async () => {
     renderPage();
     await settled();
 
@@ -330,3 +332,42 @@ describe("BADGES", () => {
     expect(screen.getByRole("heading", { level: 2, name: "3 of 6 badges" })).toBeTruthy();
   });
 });
+
+describe("on a phone (mobile 28 D)", () => {
+  const original = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((query: string) => ({ ...original(query), matches: query.includes("max-width") })) as typeof window.matchMedia;
+    stand.answers["user_progress"] = { data: { xp_total: 1240, level: 6 }, error: null, status: 200 };
+  });
+  afterEach(() => {
+    window.matchMedia = original;
+  });
+
+  it("opens on the Level module: the level, the XP line, the bar and the line about XP", async () => {
+    renderPage();
+    const module = await screen.findByTestId("progress-level");
+    await within(module).findByRole("heading", { level: 2, name: /^Level \d+$/ });
+    const level = levelOf(1240);
+    expect(within(module).getByRole("heading", { level: 2 }).textContent).toBe(`Level ${level}`);
+    expect(within(module).getByTestId("progress-level-line").textContent).toBe(`1,240 XP · ${(xpForLevel(level + 1) - 1240).toLocaleString("en-GB")} to level ${level + 1}`);
+    const bar = within(module).getByRole("progressbar", { name: `Level ${level}` });
+    expect(Number(bar.getAttribute("aria-valuenow"))).toBeGreaterThan(0);
+    expect(within(module).getByText("Nobody can award XP to themselves.")).toBeTruthy();
+    expect(screen.getByTestId("progress-page").firstElementChild).toBe(module);
+  });
+
+  it("reads the reader's own progress row once, and no parked feature's table", async () => {
+    renderPage();
+    await screen.findByRole("heading", { level: 2, name: /^Level / });
+    expect(stand.requests.filter((request) => request === "user_progress")).toHaveLength(1);
+    expect(stand.requests.filter((request) => PARKED.includes(request))).toEqual([]);
+  });
+
+  it("says a failed read in the module, never a level nobody measured", async () => {
+    stand.answers["user_progress"] = { data: null, error: { message: "boom", code: "XX000" }, status: 500 };
+    renderPage();
+    expect(await screen.findByTestId("progress-level-error")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: /^Level / })).toBeNull();
+  });
+});
+

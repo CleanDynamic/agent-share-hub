@@ -17,6 +17,8 @@ interface Recorded {
 let calls: Recorded[] = [];
 let session: { user: { id: string } } | null = { user: { id: "maker-1" } };
 let buildsAnswer: { data: unknown; error: unknown; status?: number } = { data: [], error: null, status: 200 };
+/** Answers for successive builds requests, before buildsAnswer (mobile 28 D: the views embed, then the read without it). */
+let buildsQueue: { data: unknown; error: unknown; status?: number }[] = [];
 const rpcAnswers: Record<string, { data: unknown; error: unknown; status?: number }> = {};
 
 function builder(table: string) {
@@ -29,7 +31,7 @@ function builder(table: string) {
   }
   self.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
     calls.push({ target: table, method: "request", args: [] });
-    return Promise.resolve(buildsAnswer).then(resolve, reject);
+    return Promise.resolve(buildsQueue.shift() ?? buildsAnswer).then(resolve, reject);
   };
   return self;
 }
@@ -72,6 +74,7 @@ beforeEach(() => {
   calls = [];
   session = { user: { id: "maker-1" } };
   buildsAnswer = { data: [], error: null, status: 200 };
+  buildsQueue = [];
   for (const key of Object.keys(rpcAnswers)) delete rpcAnswers[key];
   rpcAnswers.maker_stats = {
     data: [{ builds: 2, reproductions_received: 7, rebuilds_of_their_work: 1 }],
@@ -135,5 +138,29 @@ describe("getMyBuildStats", () => {
     const error = await getMyBuildStats().catch((caught: unknown) => caught);
     expect(isPermissionError(error)).toBe(true);
     expect(requests()).toEqual([]);
+  });
+
+  it("reads each build's views on the same request, as an embed, and 0 for a build nobody has viewed (mobile 28 D)", async () => {
+    buildsAnswer = { data: [buildRow("a", { views: { views: 1530 } }), buildRow("b", { views: null }), buildRow("c", { views: [{ views: "12" }] })], error: null, status: 200 };
+    const stats = await getMyBuildStats();
+    expect(String(calls.find((call) => call.target === "builds" && call.method === "select")?.args[0])).toContain("views:build_view_counts(views)");
+    expect(stats.builds.map((row) => row.view_count)).toEqual([1530, 0, 12]);
+    expect(requests().filter((target) => target === "builds")).toHaveLength(1);
+  });
+
+  it("reads the builds again without the views when the views migration is not applied yet, and says 0", async () => {
+    buildsQueue = [{ data: null, error: { code: "PGRST200", message: "Could not find a relationship" }, status: 400 }];
+    buildsAnswer = { data: [buildRow("a")], error: null, status: 200 };
+    const stats = await getMyBuildStats();
+    const selects = calls.filter((call) => call.target === "builds" && call.method === "select").map((call) => String(call.args[0]));
+    expect(selects[0]).toContain("build_view_counts");
+    expect(selects[1]).not.toContain("build_view_counts");
+    expect(stats.builds[0]).toMatchObject({ id: "a", view_count: 0, like_count: 4 });
+  });
+
+  it("does not hide any other refusal behind the second read", async () => {
+    buildsQueue = [{ data: null, error: { code: "42501", message: "denied" }, status: 403 }];
+    await expect(getMyBuildStats()).rejects.toBeInstanceOf(BuildStatsError);
+    expect(requests().filter((target) => target === "builds")).toHaveLength(1);
   });
 });

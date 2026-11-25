@@ -295,13 +295,14 @@ describe("AuthCheck", () => {
     expect(html).toContain("background:#77FC49");
   });
 
-  it("takes a 28px target and gives the 12px back, so the row stays as tall as the reference's 19", () => {
+  it("keeps the dialog's 24 row, and on a phone is a 44 target of its own, 8 below the field above (mobile 29)", () => {
     const { container } = render(
       <AuthCheck id="remember" checked onChange={() => {}}>
         Keep me signed in
       </AuthCheck>,
     );
-    // The sign-in dialog: the row is 24 high and the label fills it; a phone keeps the 28px target in a 19px line.
+    // The sign-in dialog: the row is 24 high and the label fills it. A phone's row is 44 tall with no negative margin: its old
+    // 31 row grew its hit area past its edges and took taps meant for the Password box above (e2e phone-signin-fields-29).
     const style = container.querySelector("label")!.getAttribute("style")!;
     expect(style).toContain("height: 24px");
     expect(style).toContain("line-height: 24px");
@@ -311,8 +312,9 @@ describe("AuthCheck", () => {
         Keep me signed in
       </AuthCheck>,
     ).container.querySelector("label")!.getAttribute("style")!;
-    expect(phone).toContain("padding: 6px 0px");
-    expect(phone).toContain("margin: -6px 0px");
+    expect(phone).toContain("min-height: 44px");
+    expect(phone).toContain("margin: 4px 0px 0px");
+    expect(phone).not.toContain("margin: -");
     expect(phone).toContain("line-height: 19px");
   });
 });

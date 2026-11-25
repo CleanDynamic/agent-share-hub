@@ -73,7 +73,7 @@ export function SiteFooterView({ signedIn = false, onSignOut, onSignIn, showPriv
       }}
     >
       <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} data-hit="" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-        <BeaverLogo theme={theme} size={FOOTER_LOGO_WIDTH} />
+        <BeaverLogo theme={theme} size={FOOTER_LOGO_WIDTH} loading="lazy" />
       </FrameLink>
       <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", flexGrow: 1 }}>
         {links.map(({ label, href }) => <FrameLink key={href} to={href} aria-current={pathname === href ? "page" : undefined} style={{ ...linkStyle, color: pathname === href ? t.text : t.text2, display: "inline-flex", alignItems: "center", minWidth: phone ? 44 : undefined, textUnderlineOffset: 4, ...touchHit(phone, 44) }} hoverStyle={{ color: t.text, textDecoration: "underline" }}>{label}</FrameLink>)}

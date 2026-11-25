@@ -81,13 +81,13 @@ describe("not found on a phone", () => {
 
 describe("progress on a phone", () => {
   it("draws each build as a Card with its numbers in a grid, no run numbers", () => {
-    const build = { id: "b1", slug: "a", title: "Invoice triage", reproduction_count: 9, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-11-01T00:00:00Z", rebuild_count: 3, like_count: 12, comment_count: 1, save_count: 4, runs: 7, worked: 5, failed_last_30_days: 0, still_open: 0 };
+    const build = { id: "b1", slug: "a", title: "Invoice triage", reproduction_count: 9, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-11-01T00:00:00Z", rebuild_count: 3, like_count: 12, comment_count: 1, save_count: 4, view_count: 1530, runs: 7, worked: 5, failed_last_30_days: 0, still_open: 0 };
     wrap(<YourBuilds stats={{ builds: [build] } as never} loading={false} error={null} onRetry={() => undefined} />);
     expect(screen.getByRole("heading", { name: "1 build" })).toBeTruthy();
     const card = screen.getByTestId("build-stats-row");
     expect(within(card).getByRole("link", { name: "Invoice triage" })).toBeTruthy();
-    expect([...card.querySelectorAll("dt")].map((dt) => dt.textContent)).toEqual(["Rebuilds", "Likes", "Saved"]);
-    expect([...card.querySelectorAll("dd")].map((dd) => dd.textContent)).toEqual(["3", "12", "4"]);
+    expect([...card.querySelectorAll("dt")].map((dt) => dt.textContent)).toEqual(["Views", "Rebuilds", "Likes", "Saved"]);
+    expect([...card.querySelectorAll("dd")].map((dd) => dd.textContent)).toEqual(["1,530", "3", "12", "4"]);
     expect(card.textContent).not.toMatch(/run|reproduc|confirmed/i);
     expect(screen.queryByTestId("build-stats-table")).toBeNull();
   });
