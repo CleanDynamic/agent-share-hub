@@ -32,6 +32,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/brand/Button";
 import { TextTabs } from "@/components/vision/TextTabs";
+import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SITE_NAME } from "@/lib/site";
 import { t } from "@/lib/theme/tokens";
 import { textStep } from "@/lib/theme/type";
@@ -321,6 +323,7 @@ const Admin = () => {
 
   const [tab, setTab] = useState<TabValue>("reports");
   const mode = useAdminMode();
+  const phone = useIsPhone();
 
   const facts = [
     countOf(pendingItems?.length ?? 0, "pending item"),
@@ -335,21 +338,33 @@ const Admin = () => {
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <h1 style={adminText(textStep.headline, t.text, { fontWeight: 600, lineHeight: "24px" })}>Admin</h1>
+          <h1 className={phone ? "sr-only" : undefined} style={phone ? undefined : adminText(textStep.headline, t.text, { fontWeight: 600, lineHeight: "24px" })}>Admin</h1>
           <p data-testid="admin-facts" style={ADMIN_META}>{facts}</p>
         </div>
         <Button variant="secondary" size={mode === "cards" ? 44 : 32} onClick={handleSignOut}>
           Sign Out
         </Button>
       </div>
-      <div style={{ overflowX: "auto", margin: "0 -16px", padding: "0 4px" }}>
-        <TextTabs<TabValue>
-          label="Admin sections"
-          value={tab}
-          onChange={setTab}
-          tabs={TABS.map((entry) => ({ ...entry, id: `admin-tab-${entry.value}`, controls: `admin-panel-${entry.value}` }))}
-        />
-      </div>
+      {phone ? (
+        /* Mobile 28 E: the six tabs as the phone's tabs, scrolling sideways in their own row. */
+        <div style={{ margin: "0 -16px" }}>
+          <PhoneTabs<TabValue>
+            label="Admin sections"
+            value={tab}
+            onChange={setTab}
+            tabs={TABS.map((entry) => ({ ...entry, id: `admin-tab-${entry.value}`, controls: `admin-panel-${entry.value}` }))}
+          />
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto", margin: "0 -16px", padding: "0 4px" }}>
+          <TextTabs<TabValue>
+            label="Admin sections"
+            value={tab}
+            onChange={setTab}
+            tabs={TABS.map((entry) => ({ ...entry, id: `admin-tab-${entry.value}`, controls: `admin-panel-${entry.value}` }))}
+          />
+        </div>
+      )}
     </>
   );
 

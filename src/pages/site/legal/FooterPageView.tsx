@@ -21,7 +21,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, hero, textStep } from "@/lib/theme/type";
 
-import { Inline } from "./LegalView";
+import { Inline, PHONE_SCROLL_MARGIN } from "./LegalView";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { SECTION_HEADING } from "./legalStyles";
 import { anchorOf, formatLastUpdated } from "./legalModel";
 
@@ -69,11 +70,20 @@ function Block({ block, section, caption, phone }: { block: LegalBlock; section:
     return (
       <ol data-testid="footer-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {block.items.map((item, index) => (
-          <li key={index} style={rowStyle}>
-            <span aria-hidden="true" data-testid="footer-number" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums", minWidth: 20, flexShrink: 0 }}>
-              {String(index + 1).padStart(2, "0")}
+          <li key={index} style={phone ? { ...rowStyle, alignItems: "flex-start" } : rowStyle}>
+            <span
+              aria-hidden="true"
+              data-testid="footer-number"
+              style={
+                phone
+                  ? /* Mobile 28 D: the number in a 28 box on Raised, radius 8. */
+                    { width: 28, height: 28, borderRadius: 8, background: t.control, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.text2, fontVariantNumeric: "tabular-nums" }
+                  : { fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums", minWidth: 20, flexShrink: 0 }
+              }
+            >
+              {phone ? String(index + 1) : String(index + 1).padStart(2, "0")}
             </span>
-            <span style={{ ...body, color: t.text }}>
+            <span style={{ ...body, color: t.text, ...(phone ? { paddingTop: 4 } : null) }}>
               <Inline text={item} section={section} />
             </span>
           </li>
@@ -112,8 +122,8 @@ function Block({ block, section, caption, phone }: { block: LegalBlock; section:
 function SectionBlock({ section, phone }: { section: LegalSection; phone: boolean }) {
   const caption = section.id === "report-something" ? "Report reasons" : section.heading;
   return (
-    <section id={section.id} aria-labelledby={`${section.id}-heading`} style={{ scrollMarginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h2 id={`${section.id}-heading`} style={SECTION_HEADING}>{section.heading}</h2>
+    <section id={section.id} aria-labelledby={`${section.id}-heading`} style={{ scrollMarginTop: phone ? PHONE_SCROLL_MARGIN : 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 id={`${section.id}-heading`} style={phone ? { ...SECTION_HEADING, fontSize: 20, lineHeight: "24px", letterSpacing: "-0.01em" } : SECTION_HEADING}>{section.heading}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {section.blocks.map((block, index) => (
           <Block key={index} block={block} section={section.id} caption={caption} phone={phone} />
@@ -125,6 +135,7 @@ function SectionBlock({ section, phone }: { section: LegalSection; phone: boolea
 
 /** A side section: its head (20/600) and what it holds. */
 function SideSection({ title, label, children }: { title: string; label: string; children: ReactNode }) {
+  /* 20/600 at every size: on a phone, the headed group's SectionFact size. */
   return (
     <section aria-label={label} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       <h2 style={{ margin: 0, padding: `0 ${PANEL_PAD}px 8px`, fontFamily: FIGTREE, fontSize: textStep.headline, fontWeight: 600, lineHeight: "24px", color: t.text }}>{title}</h2>
@@ -159,7 +170,7 @@ function AnchorLink({ href, phone, children }: { href: string; phone: boolean; c
 
 function Side({ text, path, phone }: { text: LegalText; path: string; phone: boolean }) {
   return (
-    <aside aria-label="About this page" data-testid="footer-side" style={{ ...panel, padding: `${PANEL_PAD}px 0`, display: "flex", flexDirection: "column", gap: 24 }}>
+    <aside aria-label="About this page" data-testid="footer-side" style={{ ...panel, ...(phone ? { background: "transparent", borderRadius: 0, margin: `0 -${PANEL_PAD}px` } : null), padding: `${PANEL_PAD}px 0`, display: "flex", flexDirection: "column", gap: 24 }}>
       <SideSection title="In this page" label="In this page">
         <nav aria-label="In this page" style={{ display: "flex", flexDirection: "column" }}>
           {text.sections.map((section) => (
@@ -205,10 +216,12 @@ export function FooterPageView({ text, path }: FooterPageViewProps) {
   const phone = useIsPhone();
   const sideBySide = useMinWidth(SIDE_BY_SIDE_MIN);
   useColumnPanels(!phone);
+  /* Mobile 28 D: on a phone the top bar names the page, so the h1 is for screen readers. */
+  useRegisterPageBar(phone ? { title: text.title } : null);
   const main = (
-    <div data-testid="footer-main" style={{ ...(phone ? null : { ...panel, padding: 24 }), display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+    <div data-testid="footer-main" style={{ ...(phone ? null : { ...panel, padding: 24 }), display: "flex", flexDirection: "column", gap: phone ? 24 : 32, minWidth: 0 }}>
       <header style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h1 style={{ ...hero, margin: 0, color: t.text }}>{text.title}</h1>
+        <h1 className={phone ? "sr-only" : undefined} style={phone ? undefined : { ...hero, margin: 0, color: t.text }}>{text.title}</h1>
         <p style={body}>{text.intro}</p>
       </header>
       {text.sections.map((section) => (

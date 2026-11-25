@@ -104,9 +104,11 @@ export interface ChangesPanelProps {
   failure?: PanelFailure;
   /** One quiet control in the section's head (the lineage page's "Open this build"). */
   action?: ReactNode;
+  /** Mobile 28 A: the rebuild page on a phone says "Computed from the source" under the credit, so the list leaves it out. */
+  note?: boolean;
 }
 
-export function ChangesPanel({ groups, phone = false, fill = false, placeholder, about, loading = false, failure, action }: ChangesPanelProps) {
+export function ChangesPanel({ groups, phone = false, fill = false, placeholder, about, loading = false, failure, action, note = true }: ChangesPanelProps) {
   return (
     <section aria-labelledby="changes-title" style={fill ? { minHeight: 0, overflowY: "auto" } : undefined}>
       <div data-testid="changes-panel">
@@ -130,9 +132,9 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         ) : groups && groups.length > 0 ? (
           <>
             <ChangeList groups={groups} phone={phone} />
-            <p data-testid="changes-note" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+            {note ? <p data-testid="changes-note" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
               {COMPUTED_NOTE}
-            </p>
+            </p> : null}
           </>
         ) : placeholder ? (
           <div style={{ marginTop: 9, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{placeholder}</div>

@@ -112,7 +112,7 @@ function ReplyMenu({ reply, actions, onAsk }: { reply: ReplyItem; actions: Reply
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <TextButton aria-label="More for this reply">···</TextButton>
+        <TextButton aria-label="More for this reply" data-hit="">···</TextButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" style={{ zIndex: MENU_Z }}>
         {reply.canPin ? reply.pinnedBy ? <DropdownMenuItem onSelect={() => actions.onUnpin(reply.id)}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={() => actions.onPin(reply.id)}>Pin</DropdownMenuItem> : null}

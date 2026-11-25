@@ -2,11 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { LegalText } from "@/content/legal/types";
 
@@ -95,14 +95,22 @@ describe("LegalView", () => {
     expect(screen.queryByTestId("legal-draft")).toBeNull();
   });
 
-  it("collapses the list under one row on a phone", () => {
+  it("on a phone draws the contents as pills that jump to each section (mobile 28 D)", () => {
     const original = window.matchMedia;
     window.matchMedia = ((query: string) => ({ ...original(query), matches: query.includes("max-width") })) as typeof window.matchMedia;
     try {
       view(fixture(true));
-      const details = screen.getByTestId("legal-contents").querySelector("details");
-      expect(details).not.toBeNull();
-      expect(details).not.toHaveAttribute("open");
+      const nav = screen.getByRole("navigation", { name: "In this page" });
+      expect(nav.querySelector("details")).toBeNull();
+      const pills = within(nav).getAllByRole("button");
+      expect(pills.length).toBeGreaterThan(0);
+      Element.prototype.scrollIntoView = vi.fn();
+      fireEvent.click(pills[0]);
+      const heading = document.getElementById(fixture(true).sections[0].id);
+      expect(document.activeElement).toBe(heading);
+      expect(heading?.style.fontSize).toBe("20px");
+      // The top bar names the page, so the h1 is for screen readers.
+      expect(screen.getByRole("heading", { level: 1 }).className).toBe("sr-only");
     } finally {
       window.matchMedia = original;
     }

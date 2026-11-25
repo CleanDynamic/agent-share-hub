@@ -207,7 +207,7 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
         {centre === "" ? (
           <span />
         ) : centre === "logo" ? (
-          <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
+          <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} data-hit="" style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
             <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH_BAR} />
           </FrameLink>
         ) : (

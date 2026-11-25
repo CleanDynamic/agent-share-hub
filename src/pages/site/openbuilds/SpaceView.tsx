@@ -105,7 +105,7 @@ function PhoneSpace({ view, member }: { view: SpaceViewProps; member: boolean })
             region="Posts"
             skeleton={null}
             style={{ padding: 16 }}
-            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
+            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", phoneList: true, action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
           >
             {() => <PostList items={view.posts.items} more={view.posts.more} phone />}
           </PageState>
@@ -167,7 +167,7 @@ export function SpaceView(view: SpaceViewProps) {
             region="Posts"
             skeleton={null}
             style={{ padding: "16px" }}
-            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
+            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", phoneList: true, action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
           >
             {() => <PostList items={view.posts.items} more={view.posts.more} />}
           </PageState>

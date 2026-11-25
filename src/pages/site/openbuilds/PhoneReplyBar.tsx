@@ -27,7 +27,8 @@ import { attachableKey } from "./AttachPicker";
 /** The bar's own height, published for the page so the last reply is never hidden behind it. */
 export const REPLY_BAR_VAR = "--reply-bar-h";
 
-const FIELD_MIN = 40;
+/** Mobile 29 audit: the field is a 44 touch target (it was 40). */
+const FIELD_MIN = 44;
 const FIELD_MAX_LINES = 5;
 const LINE = 20;
 
@@ -175,7 +176,7 @@ export function PhoneReplyBar(props: PhoneReplyBarProps) {
   const grow = (node: HTMLTextAreaElement | null) => {
     if (!node) return;
     node.style.height = "auto";
-    node.style.height = `${Math.min(Math.max(node.scrollHeight, FIELD_MIN), FIELD_MAX_LINES * LINE + 20)}px`;
+    node.style.height = `${Math.min(Math.max(node.scrollHeight, FIELD_MIN), FIELD_MAX_LINES * LINE + 24)}px`;
   };
   useLayoutEffect(() => grow(props.area.current), [props.body, props.area]);
 
@@ -234,7 +235,7 @@ export function PhoneReplyBar(props: PhoneReplyBarProps) {
             value={props.body}
             placeholder={props.placeholder}
             onChange={(event) => props.onBody(event.target.value)}
-            style={{ display: "block", boxSizing: "border-box", width: "100%", minHeight: FIELD_MIN, padding: "10px 16px", border: 0, borderRadius: 20, background: t.module, color: t.text, fontFamily: FIGTREE, fontSize: 16, lineHeight: `${LINE}px`, resize: "none", outline: "none" }}
+            style={{ display: "block", boxSizing: "border-box", width: "100%", minHeight: FIELD_MIN, padding: "12px 16px", border: 0, borderRadius: 22, background: t.module, color: t.text, fontFamily: FIGTREE, fontSize: 16, lineHeight: `${LINE}px`, resize: "none", outline: "none" }}
           />
         </label>
         {props.viewerId ? (

@@ -60,6 +60,9 @@ export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "to
 /** The default columns, in order. Synth 08: Tools, Reproductions, Confirmed and Runs are no longer drawn or offered. */
 export const DEFAULT_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "steps", "sessions", "rebuilds", "open", "cost"];
 
+/** Synth 08: the run-based columns, no longer drawn or offered. */
+const RETIRED_COLUMNS: ReadonlySet<ColumnId> = new Set<ColumnId>(["tools", "reproductions", "confirmed", "runs"]);
+
 export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
 /** Every column, the extras after the board's twelve (so the footer's groups stay together). BF-12: the list itself is in
@@ -654,7 +657,9 @@ export function BuildsTableView(props: BuildsTableViewProps) {
         onOpenFilters={onOpenFilters}
         setName={setName}
         sort={{
-          current: sortColumn ? COLUMN_NAME[sortColumn.id] : "",
+          /* Mobile 29 audit: the default order still reads a run-based column, which is no longer drawn or offered; the
+             control does not name it (the order itself is unchanged). */
+          current: sortColumn && !RETIRED_COLUMNS.has(sortColumn.id) ? COLUMN_NAME[sortColumn.id] : "",
           choices: columns.filter((id) => sortable.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], on: sortColumn?.id === id })),
           onChoose: (id) => onSortColumn(id as ColumnId, false, true),
         }}

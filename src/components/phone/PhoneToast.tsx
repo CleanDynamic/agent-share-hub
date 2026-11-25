@@ -13,7 +13,7 @@ export const PHONE_TOAST_HEIGHT = 48;
 
 export const phoneToastStyle: CSSProperties = {
   background: t.text,
-  color: t.bg,
+  color: t.toastText,
   border: 0,
   borderRadius: 12,
   minHeight: PHONE_TOAST_HEIGHT,
@@ -28,7 +28,7 @@ export const phoneToastStyle: CSSProperties = {
 /** The action: a ghost button, in the ink that reads on the Text fill in both themes. */
 export const phoneToastActionStyle: CSSProperties = {
   background: "transparent",
-  color: t.onBrandAccent,
+  color: t.toastAction,
   height: 44,
   padding: "0 12px",
   borderRadius: 22,

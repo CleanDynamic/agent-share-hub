@@ -42,10 +42,10 @@ describe("phoneBarFor (prompt 19's table)", () => {
     expect(phoneBarFor("/profile/ada/following")).toMatchObject({ left: "back", centre: title("Following") });
   });
 
-  it("a build: back, nothing, More; Lineage and Compare name themselves", () => {
+  it("a build: back, nothing, More; Lineage and Compare name themselves and have nothing at the right", () => {
     expect(phoneBarFor("/b2/invoice-triage")).toEqual({ left: "back", centre: none, right: "more" });
-    expect(phoneBarFor("/b2/invoice-triage/lineage")).toMatchObject({ centre: title("Lineage"), right: "more" });
-    expect(phoneBarFor("/b2/a/compare/b")).toMatchObject({ centre: title("Compare"), right: "more" });
+    expect(phoneBarFor("/b2/invoice-triage/lineage")).toMatchObject({ centre: title("Lineage"), right: "none" });
+    expect(phoneBarFor("/b2/a/compare/b")).toMatchObject({ centre: title("Compare two builds"), right: "none" });
   });
 
   it("a space and a topic: back, the topic names itself, More", () => {

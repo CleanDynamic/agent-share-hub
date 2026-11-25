@@ -12,7 +12,11 @@
 
 import type { CSSProperties } from "react";
 
+import { PhonePills } from "@/components/phone/PhonePills";
+import { PHONE_MARGIN, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { FrameLink } from "@/components/shell/FrameLink";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
+import { scrollBehavior } from "@/lib/theme/motion";
 import { ReadingPanel } from "@/components/shell/ReadingPanel";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { LegalBlock, LegalLink, LegalText } from "@/content/legal/types";
@@ -135,7 +139,77 @@ export interface LegalViewProps {
   text: LegalText;
 }
 
+/** Mobile 28 D: a section scrolls to just under the phone's top bar (and the status bar above it). */
+export const PHONE_SCROLL_MARGIN = `calc(${PHONE_TOPBAR + 8}px + env(safe-area-inset-top))`;
+/** Mobile 28 D: the reading line on a phone. */
+export const PHONE_READING_LINE = 358;
+
+/** Takes the reader to a section on a phone: scrolled under the top bar, focus on its heading, the address unchanged. */
+function jumpTo(id: string) {
+  const heading = document.getElementById(id);
+  if (!heading) return;
+  heading.scrollIntoView({ block: "start", behavior: scrollBehavior() });
+  heading.focus({ preventScroll: true });
+}
+
+/**
+ * Mobile 28 D: a legal page on a phone. The top bar carries Back and the page's name, so the h1 is for screen readers. "Last
+ * updated" 13 Text 3, the opening line, the contents as pills that jump to each section, then the sections at 15/22 on a 358
+ * reading line under 20/600 heads.
+ */
+function LegalPhone({ text }: LegalViewProps) {
+  useRegisterPageBar({ title: text.title });
+  const para: CSSProperties = { ...body, fontSize: 15, lineHeight: "22px", color: t.text2, maxWidth: PHONE_READING_LINE };
+  return (
+    <article id="legal-top" data-testid="legal-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: FIGTREE, padding: "0 0 32px", scrollMarginTop: PHONE_SCROLL_MARGIN }}>
+      {text.reviewed ? null : (
+        <div role="note" data-testid="legal-draft" style={{ ...CARD_BOX, ...body, color: t.text2 }}>
+          {DRAFT_NOTICE}
+        </div>
+      )}
+      <header style={{ display: "flex", flexDirection: "column", gap: 8, padding: 0 }}>
+        <h1 className="sr-only">{text.title}</h1>
+        <div style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>Last updated {formatLastUpdated(text.lastUpdated)}</div>
+        <p style={para}>{text.intro}</p>
+      </header>
+      {/* The frame's panel pads 16; the pill row runs to its edges and pads itself. */}
+      <nav aria-label="In this page" data-testid="legal-contents" style={{ margin: `0 -${PHONE_MARGIN}px` }}>
+        <PhonePills label="Sections" pills={text.sections.map((section) => ({ value: section.id, label: section.heading }))} value={null} onChange={jumpTo} />
+      </nav>
+      {text.sections.map((section) => (
+        <section key={section.id} aria-label={section.heading} style={{ display: "flex", flexDirection: "column", gap: 12, padding: 0 }}>
+          <h2 id={section.id} tabIndex={-1} style={{ ...SECTION_HEADING, fontSize: 20, lineHeight: "24px", letterSpacing: "-0.01em", outline: "none", scrollMarginTop: PHONE_SCROLL_MARGIN }}>{section.heading}</h2>
+          {section.blocks.map((block, index) =>
+            block.kind === "p" ? (
+              <p key={index} style={para}><Inline text={block.text} links={block.links} section={section.id} touch /></p>
+            ) : block.kind === "list" ? (
+              <ul key={index} style={{ ...para, paddingLeft: 20, listStyle: "disc", display: "flex", flexDirection: "column", gap: 6 }}>
+                {block.items.map((item, i) => (
+                  <li key={i}><Inline text={item} touch /></li>
+                ))}
+              </ul>
+            ) : (
+              <Block key={index} block={block} section={section.heading} id={section.id} />
+            ),
+          )}
+        </section>
+      ))}
+      <div style={{ padding: 0 }}>
+        <a href="#legal-top" style={{ ...quietLink, display: "inline-flex", alignItems: "center", minHeight: 44 }}>Back to top</a>
+      </div>
+    </article>
+  );
+}
+
 export function LegalView({ text }: LegalViewProps) {
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <ReadingPanel>
+        <LegalPhone text={text} />
+      </ReadingPanel>
+    );
+  }
   return (
     <ReadingPanel>
       <article id="legal-top" data-testid="legal-view" style={{ width: "100%", display: "flex", flexDirection: "column", gap: 32, fontFamily: FIGTREE, scrollMarginTop: 24 }}>

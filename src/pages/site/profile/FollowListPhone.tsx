@@ -95,7 +95,7 @@ export function FollowListPhone(props: FollowListViewProps) {
             </LoadingRegion>
           }
           notFound={{ when: ([profile]) => profile === null, kind: "profile", way: WAY_OUT.browseBuilds }}
-          empty={{ when: () => !props.locked && props.people.length === 0, line: followEmpty(which), testId: "follow-empty" }}
+          empty={{ when: () => !props.locked && props.people.length === 0, line: followEmpty(which), testId: "follow-empty", phoneList: true }}
         >
           {() =>
             props.locked ? (

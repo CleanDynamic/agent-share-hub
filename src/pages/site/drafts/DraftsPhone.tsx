@@ -259,7 +259,7 @@ export function DraftsPhone({ ConfirmDialog, now, draftsRead, sessionsRead, sess
             log="[Drafts] sessions read failed"
             style={{ padding: PHONE_MARGIN }}
             skeleton={<RowSkeletons count={SESSION_SKELETON_ROWS} height={SESSION_ROW} what="your sessions" />}
-            empty={{ when: () => sessions.length === 0 && !moreSessions, line: "No new sessions.", action: { label: "Connect a tool", onClick: onConnect } }}
+            empty={{ when: () => sessions.length === 0 && !moreSessions, line: "No new sessions.", phoneList: true, action: { label: "Connect a tool", onClick: onConnect } }}
           >
             {() => (
               <>

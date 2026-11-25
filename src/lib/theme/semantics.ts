@@ -208,6 +208,11 @@ export const TOKEN_NAMES = [
   "bubble-mine",
   "tree-line",
   "tree-node",
+  // Mobile 29: phone-only values the light pack names (dark keeps what the phone drew before).
+  "fab-shadow",
+  "toast-text",
+  "toast-action",
+  "phone-dot-grid",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -380,6 +385,10 @@ export const noon: Record<TokenName, string> = {
   "bubble-mine": "#E7EBE7",
   "tree-line": "#C8D0CA",
   "tree-node": "#F1F3F1",
+  "fab-shadow": "0 8px 24px rgba(11,18,13,.18)",
+  "toast-text": "#FFFFFF",
+  "toast-action": "#77FC49",
+  "phone-dot-grid": "#DCE3DC",
 };
 
 /** Dusk, dark. */
@@ -550,6 +559,10 @@ export const dusk: Record<TokenName, string> = {
   "bubble-mine": "var(--control)",
   "tree-line": "#2F3430",
   "tree-node": "var(--module)",
+  "fab-shadow": "var(--shadow-float)",
+  "toast-text": "var(--bg)",
+  "toast-action": "var(--on-brand-accent)",
+  "phone-dot-grid": "var(--dot-grid)",
 };
 export const themes: Record<ThemeName, Record<TokenName, string>> = {
   noon,

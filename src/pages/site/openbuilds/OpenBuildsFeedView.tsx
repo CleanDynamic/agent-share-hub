@@ -215,6 +215,7 @@ function Posts({ view, phone = false }: { view: OpenBuildsFeedViewProps; phone?:
       style={{ padding: "16px" }}
       empty={{
         when: () => posts.items.length === 0,
+        phoneList: true,
         ...(view.scope === "mine"
           ? { line: "Nothing new in your spaces.", action: { label: "See everyone", onClick: () => view.onScope("everyone") } }
           : { line: "No posts yet.", action: { label: "Post", onClick: view.onPost } }),

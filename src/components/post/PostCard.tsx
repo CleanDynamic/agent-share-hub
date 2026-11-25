@@ -89,7 +89,7 @@ function HeadingLink({ to, level = 3, children }: { to: string; level?: 2 | 3; c
   const Heading = level === 2 ? "h2" : "h3";
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+    <Link to={to} data-testid="post-card-heading-link" data-hit="" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
       <Heading style={{ ...plain, display: "inline", fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{children}</Heading>
     </Link>
   );
@@ -367,6 +367,7 @@ function RepliesStrip({ replies }: { replies: NonNullable<PostCardData["replies"
     <Link
       to={replies.to}
       data-testid="post-card-replies-strip"
+      data-hit=""
       {...handlers}
       style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", background: state.hovered ? t.control : t.module, borderRadius: 12, color: t.text, textDecoration: "none", ...ring(state.focusVisible) }}
     >

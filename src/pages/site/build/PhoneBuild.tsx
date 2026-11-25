@@ -93,7 +93,7 @@ function PhoneHead({ hero, thread }: { hero: BuildHeroView; thread?: BuildThread
   const meta = [handle ? `@${handle}` : null, published ? `published ${published}` : null, withLine || null].filter(Boolean).join(" · ");
   return (
     <div data-testid="build-phone-head" style={{ display: "flex", flexDirection: "column", gap: 4, padding: `4px ${PHONE_MARGIN}px 0`, minWidth: 0 }}>
-      <h1 style={{ margin: 0, fontFamily: SENTIENT, fontSize: 26, fontWeight: 400, lineHeight: "30px", letterSpacing: "-0.02em", color: t.text, overflowWrap: "anywhere" }}>{hero.title}</h1>
+      <h1 style={{ margin: 0, fontFamily: SENTIENT, fontSize: 24, fontWeight: 400, lineHeight: "28px", letterSpacing: "-0.02em", color: t.text, overflowWrap: "anywhere" }}>{hero.title}</h1>
       {name || meta ? (
         <div data-testid="build-author-row" style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, minWidth: 0, whiteSpace: "nowrap" }}>
           {maker ? <Avatar size={20} userId={maker.userId} name={name || "Maker"} src={maker.avatarUrl} /> : null}

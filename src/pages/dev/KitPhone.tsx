@@ -16,6 +16,7 @@ import {
   PhoneTabs,
   PhoneToast,
   PhoneTopBar,
+  PhoneEmpty,
   SectionFact,
   Shelf,
 } from "@/components/phone";
@@ -91,6 +92,9 @@ export default function KitPhone() {
         <PhoneToast action={{ label: "Undo", onClick: () => undefined }}>Draft moved</PhoneToast>
       </section>
       <KitPhoneSheets />
+      <section data-catalogue="phone-empty">
+        <PhoneEmpty line="No builds yet." action={{ label: "New build", href: "#" }} style={{ minHeight: 0, paddingBottom: 24 }} data-testid="kit-phone-empty" />
+      </section>
       <section data-catalogue="icons">
         <SectionFact fact={`${names.length} icons`} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "0 16px" }}>

@@ -34,7 +34,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { HEADER_COMPACT_HEIGHT, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { PhonePushPanel } from "@/components/phone/PushPanel";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { ring, skeletonStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -83,6 +84,8 @@ export function AdminDetail({ fact, onClose, children }: { fact: string; onClose
   const close = useRef(onClose);
   close.current = onClose;
   const register = host?.register;
+  /* Mobile 28 E: the pushed page's title already says the fact, so the heading inside is for screen readers. */
+  const phone = useIsPhone();
   useEffect(() => {
     if (!register) return;
     register({ fact, close: () => close.current() });
@@ -91,7 +94,7 @@ export function AdminDetail({ fact, onClose, children }: { fact: string; onClose
   if (!host?.target) return null;
   return createPortal(
     <div data-testid="admin-detail" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-      <h2 style={{ ...ADMIN_HEAD, overflowWrap: "anywhere" }}>{fact}</h2>
+      <h2 className={phone ? "sr-only" : undefined} style={phone ? undefined : { ...ADMIN_HEAD, overflowWrap: "anywhere" }}>{fact}</h2>
       {children}
     </div>,
     host.target,
@@ -169,6 +172,7 @@ export interface AdminLayoutProps {
 /** The page: the table panel and, from 1101, the detail panel. */
 export function AdminLayout({ head, children }: AdminLayoutProps) {
   const mode = useAdminMode();
+  const phone = useIsPhone();
   useColumnPanels(mode !== "cards");
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [entry, setEntry] = useState<Registered | null>(null);
@@ -199,7 +203,12 @@ export function AdminLayout({ head, children }: AdminLayoutProps) {
         ) : null}
       </div>
       {mode === "overlay" ? <DetailOverlay entry={entry} onTarget={onTarget} /> : null}
-      {mode === "cards" ? (
+      {mode === "cards" && phone ? (
+        /* Mobile 28 E: on a phone the selected row's detail is a page pushed over the list; Back returns to it. */
+        <PhonePushPanel page open={entry !== null} onClose={() => entry?.close()} title={entry?.fact ?? "Selected"} data-testid="admin-detail-page">
+          <div ref={onTarget} style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 8 }} />
+        </PhonePushPanel>
+      ) : mode === "cards" ? (
         <BottomSheet open={entry !== null} onOpenChange={(open) => (!open ? entry?.close() : undefined)} title={entry?.fact ?? "Selected"} hideTitle>
           <div ref={onTarget} style={{ padding: "4px 4px 8px" }} />
         </BottomSheet>

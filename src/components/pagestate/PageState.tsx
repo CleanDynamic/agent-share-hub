@@ -10,6 +10,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { EmptyState, type EmptyStateAction } from "@/components/brand/EmptyState";
+import { PhoneEmpty } from "@/components/phone/PhoneEmpty";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ErrorState, type ErrorStateProps } from "@/components/brand/ErrorState";
 import { errorLine } from "@/lib/errors/code";
 
@@ -27,7 +29,8 @@ export interface PageStateProps {
   /** The region's own skeleton, drawn while its reads are out. */
   skeleton: ReactNode;
   /** G6: the server answered with nothing. `when` is given every read's data, in order. */
-  empty?: { when: (data: unknown[]) => boolean; line: string; action?: EmptyStateAction; testId?: string };
+  /** `phoneList`: a whole list's empty state, drawn on a phone as the drop on still water (`PhoneEmpty`, mobile 28 G). */
+  empty?: { when: (data: unknown[]) => boolean; line: string; action?: EmptyStateAction; testId?: string; phoneList?: boolean; detail?: string };
   /** G7: the server answered that what the address names does not exist. */
   notFound?: { when?: (data: unknown[]) => boolean; kind: MissingKind; way: WayOut };
   /** The console line's prefix for a failure, "[Drafts] drafts read failed"; `[<region>] read failed` when not given. */
@@ -87,6 +90,7 @@ function useSkeletonHeight(state: Shown): { markRef: React.RefObject<HTMLDivElem
 
 export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, frameReady = true, style, children }: PageStateProps) {
   const reads = asList(read);
+  const phone = useIsPhone();
   // G18: drawn again when the session's phase moves (shownState reads it).
   const phase = useSessionPhase();
   useLogEach(phase === "live" ? reads : [], reads.map(() => log ?? `[${region}] read failed`));
@@ -110,7 +114,13 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
       ) : null;
       break;
     case "empty":
-      body = empty ? <EmptyState line={empty.line} action={empty.action} style={style} data-testid={empty.testId} /> : null;
+      body = empty ? (
+        empty.phoneList && phone ? (
+          <PhoneEmpty line={empty.line} detail={empty.detail} action={empty.action ?? null} data-testid={empty.testId} />
+        ) : (
+          <EmptyState line={empty.line} action={empty.action} style={style} data-testid={empty.testId} />
+        )
+      ) : null;
       break;
     case "ready":
       body = children();
@@ -157,10 +167,11 @@ export function PageFailed({ reads, region, logs = [], style }: { reads: readonl
  * G6: the empty state of a part of data that has already loaded (a build with no parts, a timeline with no events): one
  * sentence and at most one action, the same EmptyState PageState draws. Pages use this, never EmptyState itself (G30).
  */
-export function PageEmpty({ line, action, style, testId }: { line: string; action?: EmptyStateAction; style?: CSSProperties; testId?: string }) {
+export function PageEmpty({ line, action, style, testId, phoneList = false, detail }: { line: string; action?: EmptyStateAction; style?: CSSProperties; testId?: string; phoneList?: boolean; detail?: string }) {
+  const phone = useIsPhone();
   return (
     <Mark state="empty" region={testId ?? "empty"}>
-      <EmptyState line={line} action={action} style={style} data-testid={testId} />
+      {phoneList && phone ? <PhoneEmpty line={line} detail={detail} action={action ?? null} data-testid={testId} /> : <EmptyState line={line} detail={detail} action={action} style={style} data-testid={testId} />}
     </Mark>
   );
 }

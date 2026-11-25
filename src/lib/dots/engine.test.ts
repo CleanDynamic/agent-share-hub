@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { WATER_DROPS, WATER_PHRASE_MS } from "@/lib/theme/motion";
 
-import { bayer, CoarseGrid, DROP_POINTS, dropRings, ease, fbm3, hash2, PERM, pn, RING_LIFE_S, ringsOf, swell, unturn, valueNoise, waveAt } from "./engine";
+import { bayer, CoarseGrid, DROP_POINTS, dropRings, ease, fbm3, hash2, PERM, PHONE_DROP_POINTS, PHONE_RINGS, pn, RING_LIFE_S, ringsOf, swell, unturn, valueNoise, waveAt } from "./engine";
 
 /* ── the reference, from the definitions ── */
 
@@ -168,5 +168,33 @@ describe("the water", () => {
     const near = waveAt(rings, rings[0].front, 0);
     expect(Number.isFinite(near)).toBe(true);
     expect(near).toBeGreaterThan(0);
+  });
+});
+
+describe("the water on a phone (mobile 28 F)", () => {
+  it("drops at the phone's six places, at the desktop's moments in the phrase", () => {
+    expect(PHONE_DROP_POINTS.map(([x, y]) => [x, y])).toEqual([
+      [0.18, 0.16],
+      [0.78, 0.36],
+      [0.3, 0.62],
+      [0.88, 0.08],
+      [0.6, 0.9],
+      [0.06, 0.45],
+    ]);
+    expect(PHONE_DROP_POINTS.map(([, , at]) => at)).toEqual(DROP_POINTS.map(([, , at]) => at));
+    const rings = dropRings(0.5, 390, 800, 4.8, true);
+    expect(rings[0].x).toBeCloseTo(0.18 * 390);
+    expect(rings[0].y).toBeCloseTo(0.16 * 800);
+  });
+
+  it("spreads at 120 × age^0.8, width 34 + 26 × age, wavelength 32 + 18 × age, fading over 260", () => {
+    const ring = ringsOf(0, 0, 2, RING_LIFE_S, PHONE_RINGS);
+    expect(ring?.front).toBeCloseTo(120 * Math.pow(2, 0.8));
+    expect(ring?.width).toBe(34 + 26 * 2);
+    expect(ring?.wavelength).toBe(32 + 18 * 2);
+    expect(ring?.falloff).toBe(260);
+    const desk = ringsOf(0, 0, 2);
+    expect(desk?.front).toBeCloseTo(150 * Math.pow(2, 0.8));
+    expect(desk?.falloff).toBeUndefined();
   });
 });

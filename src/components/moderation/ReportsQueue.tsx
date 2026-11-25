@@ -10,6 +10,7 @@
 // never in an error.
 
 import { useState } from "react";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -81,6 +82,7 @@ export function ReportsQueue() {
   const [hiding, setHiding] = useState<OpenReport | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const phone = useIsPhone();
 
   const reports = queue.data?.pages.flatMap((page) => page.reports) ?? [];
   const hidden = useQuery({ queryKey: SITE_HIDDEN_KEY, queryFn: () => listSiteHiddenPosts(), refetchOnWindowFocus: false });
@@ -149,7 +151,40 @@ export function ReportsQueue() {
       </div>
     );
   } else if (reports.length === 0) list = <AdminEmpty testId="reports-empty">Nothing has been reported.</AdminEmpty>;
-  else {
+  else if (phone) {
+    /* Mobile 28 E: each report a Panel module: the reason 13/600 in Warn, what was reported 15/600 ("Topic · How to get 1000
+       followers"), "Reported by @newuser1 · 2h" 13 Text 3, then Hide and Dismiss. Tapping the module pushes its detail page. */
+    list = (
+      <ul aria-label="Open reports" style={{ listStyle: "none", margin: "0 -16px", padding: 0, display: "flex", flexDirection: "column" }}>
+        {reports.map((report) => (
+          <li
+            key={report.id}
+            data-testid="report-row"
+            data-selected={selected === report.id ? "true" : undefined}
+            onClick={(event) => ((event.target as HTMLElement).closest("button, a") ? undefined : setSelected(report.id))}
+            style={{ margin: "8px 16px 0", padding: 16, borderRadius: 12, background: t.surface, display: "flex", flexDirection: "column", gap: 4, cursor: "pointer" }}
+          >
+            <button
+              type="button"
+              data-testid="admin-row-select"
+              aria-label={`${reasonLabel(report.reason)}: ${report.summary.text}`}
+              aria-pressed={selected === report.id}
+              onClick={() => setSelected(report.id)}
+              style={{ ...adminText(13, t.warn, { fontWeight: 600, lineHeight: "16px" }), alignSelf: "flex-start", padding: "14px 0", margin: "-14px 0 -10px", border: 0, background: "transparent", cursor: "pointer", textAlign: "left" }}
+            >
+              {reasonLabel(report.reason)}
+            </button>
+            <p style={{ ...adminText(15, t.text, { fontWeight: 600 }), overflowWrap: "anywhere" }}>{`${kindOf(report)} · ${report.summary.text}`}</p>
+            <p style={ADMIN_META}>
+              {`Reported by ${reporterOf(report)} · `}
+              <time dateTime={report.createdAt}>{commentTime(report.createdAt)}</time>
+            </p>
+            <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>{actions(report)}</div>
+          </li>
+        ))}
+      </ul>
+    );
+  } else {
     list = (
       <AdminTable
         label="Open reports"

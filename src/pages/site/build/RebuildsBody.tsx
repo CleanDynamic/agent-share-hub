@@ -15,6 +15,7 @@
 
    PURE: the cards are drawn by the page (a real `GalleryCard`) or the fixture. */
 
+import { PhoneEmpty } from "@/components/phone/PhoneEmpty";
 import { Network } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -126,7 +127,8 @@ function PhoneRebuilds({ rebuilds }: { rebuilds: RebuildsBodyView }) {
           ))}
         </ul>
       ) : (
-        <p data-testid="build-rebuilds-empty" style={{ margin: 0, fontSize: 15, lineHeight: "20px", color: t.text2 }}>This build has no rebuilds yet.</p>
+        /* Mobile 28 G: the list's empty state, the drop on still water. */
+        <PhoneEmpty line="This build has no rebuilds yet." data-testid="build-rebuilds-empty" style={{ paddingBottom: 24 }} />
       )}
     </section>
   );

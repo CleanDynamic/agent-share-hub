@@ -26,6 +26,7 @@
 // badge take `--r-chip`; the avatar stack keeps `--r-full`, which is what that
 // token is for.
 
+import { PhoneEmpty } from "@/components/phone/PhoneEmpty";
 import * as React from "react";
 import {
   Search,
@@ -368,6 +369,9 @@ export function MessagesThreadList({
         </div>
         {loading && sortedThreads.length === 0 ? (
           <ThreadListSkeleton />
+        ) : threads.length === 0 && !query ? (
+          /* Mobile 28 G: the empty list is the drop on still water, with the list's own words. */
+          <PhoneEmpty line="No conversations yet" detail="Start one from any creator's profile" data-testid="messages-empty" />
         ) : sortedThreads.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-4 text-center" style={{ minHeight: 240 }}>
             <span style={{ fontFamily: labelType.fontFamily, fontSize: 15, fontWeight: 600, color: t.text }}>

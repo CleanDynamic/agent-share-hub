@@ -48,6 +48,8 @@ export interface FamilyNodeView {
   draft: boolean;
   /** The build the page is about (the lineage page's address). */
   current: boolean;
+  /** Mobile 28: when it was made (published, else created), for the phone list's "Rebuilt 21 Nov". */
+  at?: string | null;
   children: FamilyNodeView[];
 }
 
@@ -117,6 +119,7 @@ export function familyView(
       seed: node.id,
       draft: false,
       current: node.id === currentId,
+      at: node.published_at ?? clock?.created_at ?? null,
       children,
     };
   };

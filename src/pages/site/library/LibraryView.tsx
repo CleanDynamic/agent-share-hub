@@ -6,6 +6,7 @@
    preview. Each section is its own component and is drawn only when its prop is given, so the live page draws what has
    a source and the dev page draws the whole board. */
 
+import { PhoneEmpty } from "@/components/phone/PhoneEmpty";
 import type { EmptyStateAction } from "@/components/pagestate/PageState";
 import { PageState } from "@/components/pagestate/PageState";
 import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
@@ -444,22 +445,20 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
 function LibraryEmptyBlock({ empty, onHow }: { empty: LibraryEmpty; onHow: () => void }) {
   const phone = useIsPhone();
   if (phone) {
-    /* A Panel module: the head, the line, then the two actions. No field of dots. */
+    /* Mobile 28 G: the drop on still water, the head as its line, the Library's line under it, Browse builds, and How saving works. */
     return (
-      <div data-testid="library-empty" style={{ padding: PANEL_PAD, borderRadius: 12, background: t.surface, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-        <h2 style={SIDE_HEAD}>{empty.title}</h2>
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{empty.line}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-          {"href" in empty.action ? (
-            <LibraryControl href={empty.action.href}>{empty.action.label}</LibraryControl>
-          ) : (
-            <LibraryControl onClick={empty.action.onClick}>{empty.action.label}</LibraryControl>
-          )}
+      <PhoneEmpty
+        data-testid="library-empty"
+        headingLevel={2}
+        line={empty.title ?? ""}
+        detail={empty.line}
+        action={"href" in empty.action ? { label: empty.action.label, href: empty.action.href } : { label: empty.action.label, onClick: empty.action.onClick }}
+        extra={
           <LibraryControl variant="ghost" onClick={onHow}>
             How saving works
           </LibraryControl>
-        </div>
-      </div>
+        }
+      />
     );
   }
   return (

@@ -16,11 +16,13 @@ import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone, useMinWidth, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, SENTIENT } from "@/lib/theme/type";
 
-import { ChangesPanel } from "./ChangesPanel";
+import { ChangesPanel, COMPUTED_NOTE } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
-import { ReadinessPanel } from "./ReadinessPanel";
+import { CreditLine, ReadinessPanel } from "./ReadinessPanel";
+import { PhoneModule } from "@/components/phone/PhoneModule";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
 import { PANEL_GAP, pageColumns, panelColumns } from "@/components/shell/pageGrid";
 import {
@@ -51,6 +53,8 @@ export interface RebuildViewProps {
   publishing?: boolean;
   /** The publish did not save: the readiness panel says so with a retry. */
   publishFailure?: { onRetry: () => void; error?: unknown } | null;
+  /** Mobile 28 A: the source's sessions and steps, for "@suntzu · 3 sessions · 12 steps". */
+  sourceFacts?: { sessions: number; steps: number } | null;
 }
 
 /** The readiness panel's height on the desktop board (kept for the skeleton). */
@@ -84,6 +88,8 @@ export function RebuildView(props: RebuildViewProps) {
   const phone = useIsPhone();
   const fit = useTierFit(props.fit ?? "content");
 
+  if (phone) return <RebuildPhone {...props} />;
+
   return (
     <FamilyColumns
       testId="rebuild-view"
@@ -111,6 +117,57 @@ export function RebuildView(props: RebuildViewProps) {
         </>
       }
     />
+  );
+}
+
+/** "@suntzu · 3 sessions · 12 steps": the maker and the source's counts, zeros left out. */
+export function sourceLine(maker: string | null, facts: { sessions: number; steps: number } | null | undefined): string {
+  const part = (n: number, one: string, many: string) => (n > 0 ? `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}` : null);
+  return [maker, facts ? part(facts.sessions, "session", "sessions") : null, facts ? part(facts.steps, "step", "steps") : null].filter(Boolean).join(" · ");
+}
+
+/**
+ * Mobile 28 A: the rebuild on a phone. Sections on the Page shade: "Rebuilt from" and a Panel module with the source (Geist
+ * Serif 20, its maker and counts), the family in its own module (the h1, the tree scrolling sideways inside it), "The credit
+ * it will carry", "What changed", then the readiness Card and the pinned footer. The editor bar's top bar carries Back.
+ */
+function RebuildPhone({ draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishFailure, sourceFacts }: RebuildViewProps) {
+  const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label };
+  const meta = sourceLine(source.maker, sourceFacts);
+  /* The frame's panel already pads 16 at the sides, so the sections here keep only their vertical rhythm. The source
+     module is on Card: on a phone the frame's panel is the Panel shade, and a Panel module on it would not show. */
+  return (
+    <div data-testid="rebuild-view" data-viewport="mobile" style={{ fontFamily: FIGTREE, lineHeight: "normal" }}>
+      <p className="sr-only">{`${draftTitle}: ${rebuildingLine(source)}`}</p>
+      <p style={quiet}>Rebuilt from</p>
+      <PhoneModule style={{ gap: 4, margin: "8px 0 0", background: t.module }}>
+        <span data-testid="rebuild-source-title" style={{ fontFamily: SENTIENT, fontSize: 20, fontWeight: 400, lineHeight: "24px", color: t.text, overflowWrap: "anywhere" }}>{source.title}</span>
+        {meta ? <span data-testid="rebuild-source-meta" style={quiet}>{meta}</span> : null}
+      </PhoneModule>
+      <div style={{ paddingTop: 20, minWidth: 0 }}>
+        <FamilyPanel root={family} phone headingLevel={1} reading="tree" />
+      </div>
+      <section aria-labelledby="rebuild-credit-head">
+        <h2 id="rebuild-credit-head" style={{ margin: 0, padding: "20px 0 8px", fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>
+          The credit it will carry
+        </h2>
+        <CreditLine credit={credit} />
+        <p data-testid="changes-note" style={{ ...quiet, marginTop: 8 }}>{COMPUTED_NOTE}</p>
+      </section>
+      <div style={{ padding: "20px 0 8px" }}>
+        <ChangesPanel groups={changes} phone loading={changes === null} note={false} />
+      </div>
+      <ReadinessPanel
+        readiness={readiness}
+        credit={credit}
+        onPublish={onPublish}
+        onKeepDraft={onKeepDraft}
+        workspaceTo={workspaceTo}
+        publishing={publishing}
+        failure={publishFailure}
+        phone
+      />
+    </div>
   );
 }
 

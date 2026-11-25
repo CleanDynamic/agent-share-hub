@@ -224,7 +224,7 @@ function PhoneWell({ drawing, note, words }: { drawing: MapDrawing | null; note?
         boxSizing: "border-box",
         borderRadius: 10,
         background: t.module,
-        backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
+        backgroundImage: `radial-gradient(${t.phoneDotGrid} 1px, transparent 1px)`,
         backgroundSize: "12px 12px",
         overflow: scrolls ? "auto" : "hidden",
         ...(scrolls ? ring(state.focusVisible) : null),

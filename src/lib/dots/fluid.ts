@@ -42,6 +42,13 @@ const room = dotPalette;
 
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const now = () => performance.now() / 1000;
+/** Mobile 28 F: below 768 the loading water takes the phone's drop places and ring scale. Read each frame, so a rotate follows. */
+let phoneQuery: MediaQueryList | null = null;
+export const onPhone = (): boolean => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  phoneQuery ??= window.matchMedia("(max-width: 767px)");
+  return Boolean(phoneQuery?.matches);
+};
 
 /**
  * How a shape is drawn (Synth 06, DotSkeleton):
@@ -325,7 +332,7 @@ export class FluidRegion {
 
   /** The rings alive at `t` over this region: its drops, and any splash that landed on it. */
   private ringsAt(t: number, still: boolean): Rings[] {
-    const rings = dropRings(t, this.width, this.height, PHRASE_S);
+    const rings = dropRings(t, this.width, this.height, PHRASE_S, onPhone());
     if (still || this.mode === "loader") return rings;
     for (const splash of splashes) {
       const own = ringsOf(splash.x - this.viewport.left, splash.y - this.viewport.top, t - splash.at, SPLASH_S);

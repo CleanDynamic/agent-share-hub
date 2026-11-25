@@ -46,8 +46,9 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
 
   // A build, its Lineage and Compare.
   if (path.startsWith("/b2/")) {
-    if (path.includes("/compare/")) return { left: "back", centre: title("Compare"), right: "more" };
-    if (path.endsWith("/lineage")) return { left: "back", centre: title("Lineage"), right: "more" };
+    // Mobile 28: Lineage and Compare have nothing at the right.
+    if (path.includes("/compare/")) return { left: "back", centre: title("Compare two builds"), right: "none" };
+    if (path.endsWith("/lineage")) return { left: "back", centre: title("Lineage"), right: "none" };
     return { left: "back", centre: none, right: "more" };
   }
 
@@ -67,6 +68,9 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
   if (path === "/messages") return { left: "back", centre: title("Messages"), right: "messageSettings", backTo: "/" };
   if (path.startsWith("/messages/")) return { left: "back", centre: title("Messages"), right: "more", backTo: "/messages" };
   if (path === "/search") return { left: "back", centre: title("Search"), right: "none" };
+  // Mobile 28: the admin page and the progress page name themselves.
+  if (path === "/admin") return { left: "back", centre: title("Admin"), right: "none" };
+  if (path === "/analytics") return { left: "back", centre: title("Your progress"), right: "none" };
 
   // Import and Connect are tasks that end: close, and the page's name.
   if (path === "/import") return { left: "close", centre: title("Import"), right: "none" };

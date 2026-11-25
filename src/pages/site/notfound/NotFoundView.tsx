@@ -8,7 +8,10 @@
 import { useEffect, useId, useRef, type CSSProperties } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { BigButton } from "@/components/phone/BigButton";
+import { PHONE_DOCK, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { ReadingPanel } from "@/components/shell/ReadingPanel";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SITE_NAV } from "@/components/shell/siteNav";
 import { PageLink } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
@@ -60,7 +63,77 @@ function DotBand() {
   );
 }
 
-export function NotFoundView({ path, onHome, sentence }: NotFoundViewProps) {
+/**
+ * Mobile 28 D: the dot field behind the phone's not-found page. A still lattice at a pitch of 6 in Deep at 40% strength,
+ * fading out to the edges. It does not move and takes no pointer events.
+ */
+function PhoneDotField() {
+  const id = useId().replace(/:/g, "");
+  return (
+    <svg aria-hidden="true" data-testid="not-found-dots" width="100%" height="100%" style={{ position: "absolute", inset: 0, display: "block", pointerEvents: "none", opacity: 0.4 }}>
+      <defs>
+        <pattern id={`${id}-dot`} width={DOT_PITCH} height={DOT_PITCH} patternUnits="userSpaceOnUse">
+          <circle cx={DOT_PITCH / 2} cy={DOT_PITCH / 2} r={1.2} fill={t.dotDeep} />
+        </pattern>
+        {/* The field is strongest in the middle and gone at the edges. */}
+        <radialGradient id={`${id}-fade`}>
+          <stop offset="0.25" stopColor="white" stopOpacity={1} />
+          <stop offset="1" stopColor="white" stopOpacity={0} />
+        </radialGradient>
+        <mask id={`${id}-mask`}>
+          <rect width="100%" height="100%" fill={`url(#${id}-fade)`} />
+        </mask>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id}-dot)`} mask={`url(#${id}-mask)`} />
+    </svg>
+  );
+}
+
+/** Mobile 28 D: the space between the top bar and the dock, where the phone's not-found page centres itself. */
+export const PHONE_NOT_FOUND_HEIGHT = `calc(100dvh - ${PHONE_TOPBAR + PHONE_DOCK}px - env(safe-area-inset-top) - env(safe-area-inset-bottom))`;
+
+function NotFoundPhone({ path, onHome, sentence }: NotFoundViewProps) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+  const extra = sentence ?? hintFor(path);
+  const link: CSSProperties = { ...quiet, display: "inline-flex", alignItems: "center", minHeight: 44 };
+  return (
+    <div data-ui="reading-panel" data-viewport="mobile" style={{ position: "relative", minHeight: PHONE_NOT_FOUND_HEIGHT, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FIGTREE, overflow: "hidden" }}>
+      <PhoneDotField />
+      <section data-testid="not-found" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "24px 16px", maxWidth: 358, textAlign: "center" }}>
+        <h1 ref={heading} tabIndex={-1} style={{ margin: 0, outline: "none", fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>
+          {NOT_FOUND_TITLE}
+        </h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <p style={text}>{NOT_FOUND_LINE}</p>
+          {extra ? <p style={text} data-testid="not-found-hint">{extra}</p> : null}
+        </div>
+        <BigButton main onClick={onHome}>
+          Go to Home
+        </BigButton>
+        <nav aria-label="Where to go" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: 24 }}>
+          <PageLink to={SITE_NAV.gallery} style={link}>Browse builds</PageLink>
+          <PageLink to={SITE_NAV.openbuilds} style={link}>OpenBuilds</PageLink>
+        </nav>
+        {path ? (
+          <code data-testid="not-found-path" style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", fontWeight: 400, color: t.label, overflowWrap: "anywhere" }}>
+            {shownPath(path)}
+          </code>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+export function NotFoundView(props: NotFoundViewProps) {
+  const phone = useIsPhone();
+  if (phone) return <NotFoundPhone {...props} />;
+  return <NotFoundDesktop {...props} />;
+}
+
+function NotFoundDesktop({ path, onHome, sentence }: NotFoundViewProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();

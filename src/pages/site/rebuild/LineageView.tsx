@@ -4,7 +4,11 @@
    build" as an underlined 13 link in the section head; before a choice, "Pick a build in the family to see what changed."
    At 760 and below the List replaces the tree. */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+
+import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { PageLink } from "@/lib/routing/PageLink";
 import { Link } from "react-router-dom";
 
 import type { PanelFailure } from "@/components/pagestate/PageState";
@@ -138,8 +142,67 @@ function SelectionPanel({
   );
 }
 
-export function LineageView({ title, buildTo, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
+/** "/b2/a" and "/b2/b" make "/b2/a/compare/b"; null when either is not a build's page or they are the same build. */
+export function compareTo(buildTo: string | undefined, otherTo: string | undefined): string | null {
+  const slug = (to: string | undefined) => /^\/b2\/([^/?#]+)$/.exec(to ?? "")?.[1] ?? null;
+  const a = slug(buildTo);
+  const b = slug(otherTo);
+  return a && b && a !== b ? `/b2/${a}/compare/${b}` : null;
+}
+
+/**
+ * Mobile 28 B: the lineage on a phone. The top bar says "Lineage" and carries Back. The family's fact sits under it in 13 Text
+ * 3 (the h1), then the indented tree. Tapping a build chooses it (the 2px Mint ring) and opens "What changed" for it as a
+ * content sheet; "Compare two" at the foot compares the chosen build with the one in the address.
+ */
+function LineagePhone({ title, buildTo, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
+  const [open, setOpen] = useState(false);
+  const choose = (id: string) => {
+    if (id !== selectedId) onSelect(id);
+    setOpen(true);
+  };
+  const compare = compareTo(buildTo, selection?.to);
+  return (
+    <div data-testid="lineage-view" data-viewport="mobile" style={{ fontFamily: FIGTREE, lineHeight: "normal", paddingBottom: 24 }}>
+      <FamilyPanel
+        root={family}
+        phone
+        quietHeading
+        headingLevel={1}
+        reading="list"
+        selectedId={selectedId}
+        onSelect={choose}
+        loading={familyLoading}
+        failure={familyFailure}
+      />
+      {compare ? (
+        <div style={{ marginTop: 16 }}>
+          <PageLink
+            to={compare}
+            data-testid="lineage-compare"
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 16px", borderRadius: 22, background: t.control, color: t.text, fontSize: 13, fontWeight: 600, lineHeight: "16px", textDecoration: "none" }}
+          >
+            Compare two
+          </PageLink>
+        </div>
+      ) : null}
+      <PhoneBottomSheet open={open && Boolean(selection)} onOpenChange={setOpen} title={selection?.title ?? title} height="content" data-testid="lineage-sheet">
+        <div style={{ padding: `0 ${PHONE_MARGIN}px 16px` }}>
+          <SelectionPanel selection={selection} phone fill={false} alone={alone} />
+        </div>
+      </PhoneBottomSheet>
+    </div>
+  );
+}
+
+export function LineageView(props: LineageViewProps) {
   const phone = useIsPhone();
+  if (phone) return <LineagePhone {...props} />;
+  return <LineageDesktop {...props} />;
+}
+
+function LineageDesktop({ title, buildTo, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
+  const phone = false;
   const above = (
     <Link to={buildTo ?? ".."} relative="path" data-testid="lineage-back" style={{ display: "inline-block", marginBottom: 8, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, textDecoration: "none" }}>
       {`Back to ${title}`}

@@ -51,13 +51,21 @@ describe("Compare (CA-13 P9)", () => {
     expect(screen.getAllByTestId("compare-step")).toHaveLength(5);
   });
 
-  it("on a phone shows one build's steps at a time under a switch, with the totals still there", () => {
+  it("on a phone shows both builds' steps side by side, and one at a time under the switch, with the totals still there", () => {
     phone = true;
     mount();
     expect(screen.getByTestId("compare-totals")).toBeTruthy();
+    // Mobile 28 C: two columns by default; a missing step is an empty Panel slot, not a dashed outline.
+    expect(screen.getAllByTestId("compare-step")).toHaveLength(5);
+    expect(screen.getAllByTestId("compare-gap")[0].style.border).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "This one" }));
     expect(screen.getAllByTestId("compare-step")).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "The other" }));
     expect(screen.getAllByTestId("compare-step").length).toBe(3);
+    fireEvent.click(screen.getByRole("button", { name: "The other" }));
+    expect(screen.getAllByTestId("compare-step")).toHaveLength(5);
     expect(screen.getByTestId("compare-totals")).toBeTruthy();
+    // The top bar names the page; the h1 stays for screen readers.
+    expect(screen.getByRole("heading", { level: 1, name: "Compare two builds" }).className).toBe("sr-only");
   });
 });

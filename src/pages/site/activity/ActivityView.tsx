@@ -308,7 +308,7 @@ function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: Activi
       thing="your activity"
       region="Your activity"
       skeleton={skeleton}
-      empty={{ when: () => list.groups.length === 0 && live, line: "All caught up.", testId: "activity-empty" }}
+      empty={{ when: () => list.groups.length === 0 && live, line: "All caught up.", testId: "activity-empty", phoneList: true }}
     >
       {() =>
         list.groups.length === 0 ? null : (

@@ -102,6 +102,33 @@ export const DROP_POINTS: readonly (readonly [number, number, number])[] = [
   [0.05, 0.55, 4.2],
 ];
 
+/**
+ * Mobile 28 F: the six drop points on a phone (390 wide), at the same moments in the phrase as `DROP_POINTS`. The places
+ * suit a tall, narrow area.
+ */
+export const PHONE_DROP_POINTS: readonly (readonly [number, number, number])[] = [
+  [0.18, 0.16, 0],
+  [0.78, 0.36, 1.2],
+  [0.3, 0.62, 1.8],
+  [0.88, 0.08, 3.0],
+  [0.6, 0.9, 3.6],
+  [0.06, 0.45, 4.2],
+];
+
+/**
+ * How a ring train spreads. Desktop: the front at `150 × age^0.8`, width `40 + 30 × age`, wavelength `38 + 20 × age`, fall-off
+ * `1 / √(1 + r / 320)`. Mobile 28 F, a phone: scaled from 150 to 120 so a ring crosses a 390 screen in the time it crosses a
+ * desktop column: `120 × age^0.8`, `34 + 26 × age`, `32 + 18 × age`, `1 / √(1 + r / 260)`.
+ */
+export interface RingScale {
+  speed: number;
+  width: [number, number];
+  wavelength: [number, number];
+  falloff: number;
+}
+export const DESKTOP_RINGS: RingScale = { speed: 150, width: [40, 30], wavelength: [38, 20], falloff: 320 };
+export const PHONE_RINGS: RingScale = { speed: 120, width: [34, 26], wavelength: [32, 18], falloff: 260 };
+
 /** A drop's rings are gone this long after it falls. */
 export const RING_LIFE_S = 5.6;
 
@@ -120,13 +147,15 @@ export interface Rings {
   amplitude: number;
   lo2: number;
   hi2: number;
+  /** The distance over which the rings fade: 320 on a desktop, 260 on a phone. */
+  falloff?: number;
 }
 
 /** The rings of a drop at `x`, `y` that fell `age` seconds ago, or null when they are gone (or not yet fallen). */
-export function ringsOf(x: number, y: number, age: number, life = RING_LIFE_S): Rings | null {
+export function ringsOf(x: number, y: number, age: number, life = RING_LIFE_S, scale: RingScale = DESKTOP_RINGS): Rings | null {
   if (age < 0 || age > life) return null;
-  const front = 150 * Math.pow(age, 0.8);
-  const width = 40 + 30 * age;
+  const front = scale.speed * Math.pow(age, 0.8);
+  const width = scale.width[0] + scale.width[1] * age;
   const lo = Math.max(0, front - 2.5 * width);
   const hi = front + 2.5 * width;
   return {
@@ -134,10 +163,11 @@ export function ringsOf(x: number, y: number, age: number, life = RING_LIFE_S): 
     y,
     front,
     width,
-    wavelength: 38 + 20 * age,
+    wavelength: scale.wavelength[0] + scale.wavelength[1] * age,
     amplitude: ((1 - Math.exp(-5 * age)) * Math.exp(-0.5 * age)) * 1.25,
     lo2: lo * lo,
     hi2: hi * hi,
+    ...(scale.falloff === DESKTOP_RINGS.falloff ? null : { falloff: scale.falloff }),
   };
 }
 
@@ -153,7 +183,7 @@ export function waveAt(rings: readonly Rings[], x: number, y: number): number {
     const r = Math.sqrt(d2);
     const off = r - ring.front;
     const e = off / ring.width;
-    sum += (ring.amplitude / Math.sqrt(1 + r / 320)) * Math.exp(-e * e) * Math.cos((2 * Math.PI * off) / ring.wavelength);
+    sum += (ring.amplitude / Math.sqrt(1 + r / (ring.falloff ?? 320))) * Math.exp(-e * e) * Math.cos((2 * Math.PI * off) / ring.wavelength);
   }
   return sum;
 }
@@ -162,12 +192,14 @@ export function waveAt(rings: readonly Rings[], x: number, y: number): number {
  * Every drop that is alive at `t` for a field `width` by `height`: this phrase's, and the two before it (a drop's rings
  * outlive the phrase, so they keep fading while the next arrive).
  */
-export function dropRings(t: number, width: number, height: number, phraseS: number): Rings[] {
+export function dropRings(t: number, width: number, height: number, phraseS: number, phone = false): Rings[] {
   const out: Rings[] = [];
   const phrase = Math.floor(t / phraseS);
+  const points = phone ? PHONE_DROP_POINTS : DROP_POINTS;
+  const scale = phone ? PHONE_RINGS : DESKTOP_RINGS;
   for (let k = phrase; k >= phrase - 2; k--) {
-    for (const [fx, fy, at] of DROP_POINTS) {
-      const rings = ringsOf(fx * width, fy * height, t - (k * phraseS + at));
+    for (const [fx, fy, at] of points) {
+      const rings = ringsOf(fx * width, fy * height, t - (k * phraseS + at), RING_LIFE_S, scale);
       if (rings) out.push(rings);
     }
   }

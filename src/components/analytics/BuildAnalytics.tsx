@@ -16,6 +16,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMyBuildStats, type BuildStatRow, type MyBuildStats } from "@/lib/analytics/buildStats";
 import { needsYou, orderForTable, reasonText, type NeedsYouLine } from "@/lib/analytics/needsYou";
@@ -122,7 +123,40 @@ function BuildRow({ build }: { build: BuildStatRow }) {
   );
 }
 
+/** Mobile 28 D: a build's numbers on a phone, in table order. */
+export const PHONE_BUILD_NUMBERS = ["Rebuilds", "Likes", "Saved"] as const;
+
+/**
+ * Mobile 28 D: the builds on a phone, each a Card: the build's name as its link, then its numbers in a grid (mono 15/500
+ * over 12/16 Text 3 labels). A list, not a table, so it never scrolls sideways.
+ */
+function BuildCards({ builds }: { builds: BuildStatRow[] }) {
+  const rows = orderForTable(builds);
+  return (
+    <ul data-testid="build-stats-cards" aria-label="Your builds" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      {rows.map((build) => {
+        const numbers = [build.rebuild_count, build.like_count, build.save_count];
+        return (
+          <li key={build.id} data-testid="build-stats-row" style={{ background: t.module, borderRadius: 12, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <BuildLink build={build} />
+            <dl style={{ margin: 0, display: "grid", gridTemplateColumns: `repeat(${numbers.length}, minmax(0, 1fr))`, gap: 8 }}>
+              {numbers.map((value, index) => (
+                <div key={PHONE_BUILD_NUMBERS[index]} style={{ display: "flex", flexDirection: "column-reverse", gap: 2, minWidth: 0 }}>
+                  <dt style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label }}>{PHONE_BUILD_NUMBERS[index]}</dt>
+                  <dd style={{ margin: 0, fontFamily: DM_MONO, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: value === 0 ? t.label : t.text, ...tabular }}>{value.toLocaleString("en-GB")}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function BuildTable({ builds }: { builds: BuildStatRow[] }) {
+  const phone = useIsPhone();
+  if (phone) return <BuildCards builds={builds} />;
   const rows = orderForTable(builds);
   return (
     <div

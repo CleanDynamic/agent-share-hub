@@ -37,6 +37,7 @@ import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import {
+  buildSteps,
   changeSet,
   flattenFamily,
   getBuild,
@@ -258,6 +259,12 @@ function RebuildPageBody() {
   const creditTitle = (draft.source_title_at_fork ?? "").trim() || source.title;
   const creditHandle = (draft.source_handle_at_fork ?? "").trim() || null;
   const workspace = `/compose/${draft.id}?from=rebuild`;
+  /* Mobile 28 A: the source's counts for the phone's "Rebuilt from" module. */
+  const sourceSteps = buildSteps(sourceRecord.data.tree);
+  const sourceFacts = {
+    steps: sourceSteps.length,
+    sessions: new Set(sourceSteps.map((step) => step.session ?? step.sessionId).filter((value): value is string => Boolean(value))).size,
+  };
 
   return (
     <>
@@ -272,6 +279,7 @@ function RebuildPageBody() {
         draftTitle={(draft.title ?? "").trim() || "Untitled rebuild"}
         source={{ title: creditTitle, maker: creditHandle ? `@${creditHandle}` : null }}
         family={familyTree}
+        sourceFacts={sourceFacts}
         changes={computed.groups}
         readiness={computed.readiness}
         credit={{ title: creditTitle, handle: creditHandle, delta: computed.delta }}

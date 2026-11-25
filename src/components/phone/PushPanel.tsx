@@ -35,10 +35,12 @@ export interface PhonePushPanelProps {
   "data-testid"?: string;
   /** The content pins its own footer to the bottom edge: no padding under it. */
   flush?: boolean;
+  /** Mobile 28 E: a pushed page of its own (not inside a sheet): the whole screen on the Page shade, under the status bar. */
+  page?: boolean;
   children: ReactNode;
 }
 
-export function PhonePushPanel({ open, onClose, title, onOpenAutoFocus, footer, flush = false, children, ...rest }: PhonePushPanelProps) {
+export function PhonePushPanel({ open, onClose, title, onOpenAutoFocus, footer, flush = false, page = false, children, ...rest }: PhonePushPanelProps) {
   const focus = useWindowFocus(open);
   const keyboard = useKeyboardInset();
   const back = useInteractive<HTMLButtonElement>();
@@ -67,6 +69,7 @@ export function PhonePushPanel({ open, onClose, title, onOpenAutoFocus, footer, 
             color: t.text,
             fontFamily: FIGTREE,
             paddingTop: 8,
+            ...(page ? { top: 0, borderRadius: 0, background: t.bg, paddingTop: "calc(4px + env(safe-area-inset-top))" } : null),
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 4, padding: `4px ${PHONE_MARGIN}px 8px 4px`, flexShrink: 0 }}>

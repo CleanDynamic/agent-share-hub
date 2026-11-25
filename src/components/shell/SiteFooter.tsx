@@ -72,18 +72,18 @@ export function SiteFooterView({ signedIn = false, onSignOut, onSignIn, showPriv
         gap: phone ? 12 : 20,
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+      <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} data-hit="" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <BeaverLogo theme={theme} size={FOOTER_LOGO_WIDTH} />
       </FrameLink>
       <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", flexGrow: 1 }}>
         {links.map(({ label, href }) => <FrameLink key={href} to={href} aria-current={pathname === href ? "page" : undefined} style={{ ...linkStyle, color: pathname === href ? t.text : t.text2, display: "inline-flex", alignItems: "center", minWidth: phone ? 44 : undefined, textUnderlineOffset: 4, ...touchHit(phone, 44) }} hoverStyle={{ color: t.text, textDecoration: "underline" }}>{label}</FrameLink>)}
       </nav>
       {signedIn ? (
-        <button type="button" onClick={onSignOut} style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign out</button>
+        <button type="button" onClick={onSignOut} data-hit="" style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign out</button>
       ) : signInTo ? (
-        <FrameLink to={signInTo} state={signInState} style={{ ...actionStyle, ...touchHit(phone, 44), display: "inline-flex", alignItems: "center" }}>Sign in</FrameLink>
+        <FrameLink to={signInTo} state={signInState} data-hit="" style={{ ...actionStyle, ...touchHit(phone, 44), display: "inline-flex", alignItems: "center" }}>Sign in</FrameLink>
       ) : (
-        <button type="button" onClick={onSignIn} style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign in</button>
+        <button type="button" onClick={onSignIn} data-hit="" style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign in</button>
       )}
     </footer>
   );

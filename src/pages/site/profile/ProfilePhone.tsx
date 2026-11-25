@@ -220,7 +220,7 @@ export function ProfileFeedPhone(props: ProfileFeedProps) {
         </div>
       ) : props.status === "ready" && entries.length === 0 ? (
         <div style={{ padding: PHONE_MARGIN }}>
-          <PageEmpty line={props.empty.line} action={props.empty.action ? { label: props.empty.action.label, href: props.empty.action.to } : undefined} testId="profile-feed-empty" />
+          <PageEmpty phoneList line={props.empty.line} action={props.empty.action ? { label: props.empty.action.label, href: props.empty.action.to } : undefined} testId="profile-feed-empty" />
         </div>
       ) : (
         <div role="feed" aria-busy={props.status === "loading" || props.loadingMore}>

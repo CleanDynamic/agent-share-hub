@@ -1868,6 +1868,26 @@ function componentFindings(code: string, file: string): Finding[] {
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   {
     rule: "spacing 10 is not in SPACE_REFINED",
+    text: `padding: "10px 12px"`,
+    why: "Mobile 28 C: a compared step on a phone is a Card, radius 12, padding 10 12 (the mobile pack's measure).",
+  },
+  {
+    rule: "spacing 10, 10 is not in SPACE_REFINED",
+    text: `padding: "10px 0 10px 8px"`,
+    why: "Mobile 28 C: a compare total on a phone sits on Panel, padding 10 16; this is that row's value cell.",
+  },
+  {
+    rule: "spacing 10, 10 is not in SPACE_REFINED",
+    text: `padding: "10px 8px 10px 16px"`,
+    why: "Mobile 28 C: a compare total on a phone sits on Panel, padding 10 16; this is that row's first cell.",
+  },
+  {
+    rule: "spacing 10, 10 is not in SPACE_REFINED",
+    text: `padding: "10px 16px 10px 8px"`,
+    why: "Mobile 28 C: a compare total on a phone sits on Panel, padding 10 16; this is that row's last cell.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
     text: `padding: "6px 10px",`,
     why: "Synth 08: a step's titled text box row is Raised, radius 8, 6px 10px (the build page prompt).",
   },
@@ -2325,6 +2345,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no gradient (radial)",
     text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",
     why: "The map well's dot grid. RULES.md (UI-P99) makes it part of the well recipe for maps and media; it was there before CA-03.",
+  },
+  {
+    rule: "no gradient (radial)",
+    text: "radial-gradient(${t.phoneDotGrid} 1px, transparent 1px)",
+    why: "The same map well's dot grid on a phone, in the phone's grid-dot colour (mobile 29: #DCE3DC in light).",
   },
   {
     rule: "no em dash in copy",
