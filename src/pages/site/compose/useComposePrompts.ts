@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 import { addMadeWithTools, newSessionKey, setSessionMeta, type SessionMeta } from "@/lib/build/making";
 import { toolName } from "@/lib/tools/registry";
-import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
+import { deleteMedia, MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
 import { composeBuildQueryKey, SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 import {
@@ -37,6 +37,8 @@ import {
   setPromptReply,
   setPromptModel,
 } from "@/lib/build/composePrompts";
+import { addAttachmentUses, addFile, orderAttachments, setFileMedia } from "@/lib/build/graph";
+import { ATTACHMENTS_MAX, namedFilesOf } from "@/lib/build/attachments";
 import {
   addAgent,
   addAgentPrompt,
@@ -258,6 +260,12 @@ export interface ComposePrompts {
   setStillOpen: (id: string, problem: string | null) => void;
   /** UI-P66: take a node out of an agent or a team. */
   removeInside: (id: string) => void;
+  /** A prompt's attachments in a new order (File node ids). */
+  orderAttachments: (promptId: string, order: readonly string[]) => void;
+  /** An attachment goes: out of the prompt's inputs, its File node and its stored media. */
+  removeAttachment: (fileId: string) => void;
+  /** An attached picture replaced by a new upload (crop or blur): the node points at it (`replacePicture` deletes the old object). */
+  replaceAttachmentMedia: (fileId: string, media: { id: string; size?: number | null; mime?: string | null }) => Promise<boolean>;
   /** TF-08: name a file a step makes; resolves its id, or null if it failed. */
   addMadeFile: (stepId: string, name: string) => Promise<string | null>;
   /** TF-08: take a made file out of the build and out of the steps that use it. */
@@ -574,6 +582,18 @@ export function useComposePrompts({
         const build = await latest.current.ensureBuild();
         const node = await addSessionPrompt({ buildId: build, tree: nodes.current(), importSessionId: sessionId, model: session.modelName, prompt });
         nodes.record(node.id, node);
+        // The files the turn named but the import did not bring: placeholders on the prompt, in order, each filled in place when attached.
+        const named = namedFilesOf(prompt.text).names.slice(0, ATTACHMENTS_MAX);
+        if (named.length > 0) {
+          const ids: string[] = [];
+          for (const name of named) {
+            const file = await addFile(build, nodes.current(), { title: name, attached: true });
+            nodes.record(file.id, file);
+            ids.push(file.id);
+          }
+          const fresh = findNode(nodes.current(), node.id);
+          if (fresh) nodes.record(node.id, await addAttachmentUses(rowOf(fresh), ids));
+        }
         return promptNodes(nodes.current()).findIndex((candidate) => candidate.id === node.id) + 1;
       })
       .then((n) => {
@@ -684,6 +704,29 @@ export function useComposePrompts({
       nodes.record(id, null);
     }, undefined);
   };
+
+  const orderAttachmentsOf = (promptId: string, order: readonly string[]) =>
+    void writeStep(promptId, "Couldn't move the attachment. Try again.", (node) => orderAttachments(node, order));
+
+  const mediaOfFile = (fileId: string): string | null => {
+    const payload = findNode(nodes.current(), fileId)?.payload as Record<string, unknown> | null | undefined;
+    return typeof payload?.media_id === "string" ? payload.media_id : null;
+  };
+
+  const removeAttachment = (fileId: string) =>
+    void attempt("Couldn't remove the attachment. Try again.", async () => {
+      const media = mediaOfFile(fileId);
+      await dropFile(fileId);
+      if (media) await deleteMedia(media);
+    }, undefined);
+
+  const replaceAttachmentMedia = (fileId: string, media: { id: string; size?: number | null; mime?: string | null }) =>
+    attempt("Couldn't save the picture. Try again.", async () => {
+      const node = findNode(nodes.current(), fileId);
+      if (!node) return false;
+      nodes.record(node.id, await setFileMedia(rowOf(node), media));
+      return true;
+    }, false);
 
   /** TF-08: name a file `stepId` makes. Resolves the new file's id, or null if it failed. */
   const addMadeFile = (stepId: string, name: string) =>
@@ -966,5 +1009,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, setBoxTitles, setStillOpen: setStillOpenOf, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addRetrievalTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, setBoxTitles, setStillOpen: setStillOpenOf, removeInside, orderAttachments: orderAttachmentsOf, removeAttachment, replaceAttachmentMedia, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addRetrievalTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

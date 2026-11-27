@@ -57,14 +57,14 @@ function select(word: string) {
 describe("the prompt window's Optional section (maker)", () => {
   it("has Model settings and Variables; closed until something in it is held, and the prompt's variables hold something", () => {
     open({ text: "Write a welcome email." });
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(screen.getByTestId("optional-count").textContent).toBe("3 optional details");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("radiogroup", { name: "Reasoning effort" })).toBeNull();
     openOptional();
     expect(["Model settings", "Variables"].map((name) => fieldNamed(name).textContent?.includes(name))).toEqual([true, true]);
     cleanup();
     open({});
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(screen.getByTestId("optional-count").textContent).toBe("3 optional details");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
   });
 
@@ -79,10 +79,10 @@ describe("the prompt window's Optional section (maker)", () => {
   it("falls back to payload.model while settings.model is empty, and prefers settings.model when it is given", () => {
     // The model alone makes the field count as filled, which opens the section; with no model and no variable it stays shut.
     open({ text: "Write a welcome email.", model: "Fable 5.1", settings: { model: "", effort: "default", instructions: "" } });
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(screen.getByTestId("optional-count").textContent).toBe("3 optional details");
     cleanup();
     open({ text: "Write a welcome email." });
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(screen.getByTestId("optional-count").textContent).toBe("3 optional details");
     cleanup();
     open({ text: "Write a welcome email.", model: "Fable 5.1", settings: { model: "Opus 5.5", effort: "high", instructions: "" } });
     const area = fieldNamed("Model settings");
@@ -100,7 +100,7 @@ describe("the prompt window's Optional section (maker)", () => {
 
   it("lists the variables written in the prompt, and saves a description for one", () => {
     const props = open({});
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
+    expect(screen.getByTestId("optional-count").textContent).toBe("3 optional details");
     openOptional();
     const field = screen.getByLabelText("{customer}");
     fireEvent.change(field, { target: { value: " The customer's first name " } });

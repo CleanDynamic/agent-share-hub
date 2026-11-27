@@ -12,6 +12,8 @@
    the ready-to-publish sheet first, as the checklist does on a computer. Nothing here writes on its own: every action is the
    page's, the same handler the computer's control calls. */
 
+import { ATTACHMENT_COPY, type Attachment } from "@/lib/build/attachments";
+import { ReaderAttachmentStrip } from "@/components/build/AttachmentStrip";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -34,7 +36,7 @@ import { ring } from "@/lib/theme/controls";
 import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, SENTIENT } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, SENTIENT, textStep } from "@/lib/theme/type";
 
 import { ClickToEdit } from "../DetailsOverlay";
 import { NO_DRAG } from "../listNest";
@@ -95,6 +97,8 @@ export interface PhoneEditorProps {
   publishedWords: string;
   publishing: boolean;
   checklist: import("@/lib/build/publishChecklist").Checklist | null;
+  /** The pictures attached to prompts, to check they show nothing private before publishing. */
+  pictures?: readonly Attachment[];
   /** Runs before anything opens; false stops it (offline). */
   prepare?: () => Promise<boolean>;
   onPublish: () => void;
@@ -485,6 +489,12 @@ export function PhoneEditor(props: PhoneEditorProps) {
             );
           })}
         </div>
+        {props.pictures?.length ? (
+          <section aria-label={ATTACHMENT_COPY.privatePictures} data-testid="checklist-section-pictures" style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: textStep.meta, fontWeight: 400, lineHeight: "16px", color: t.label }}>{ATTACHMENT_COPY.privatePictures}</h3>
+            <ReaderAttachmentStrip attachments={props.pictures} phone />
+          </section>
+        ) : null}
       </PhoneBottomSheet>
 
       <PhoneBottomSheet open={moveOpen} onOpenChange={setMoveOpen} title={PHONE_EDITOR_COPY.moveTo} data-testid="move-sheet">

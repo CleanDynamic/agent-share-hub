@@ -17,7 +17,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { COST_MAX, costField, countWords, figureOf, sourceOfCount, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
-import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
+import { SESSION_EFFORT_LABEL as EFFORT_LABEL, SESSION_EFFORTS as EFFORTS, type SessionEffort as Effort } from "@/lib/build/tileExtras";
 import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type ReviewScope } from "@/lib/build/sessionReview";
 import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";

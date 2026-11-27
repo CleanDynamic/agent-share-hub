@@ -80,6 +80,10 @@ import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines
 import { checkHistoryLine, checkStatus, plainPreview, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
+import { TileAttachmentStrip } from "@/components/build/AttachmentStrip";
+import { ATTACHMENT_COPY } from "@/lib/build/attachments";
+import { toast } from "sonner";
+import { downloadPromptWithFiles } from "@/lib/build/promptDownload";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { markFor } from "@/lib/models/marks";
@@ -940,7 +944,10 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
 
 /** What a step's "Uses" row holds: its input chips, the suggestions waiting on it, and whether it goes into the result. */
 function usesParts(step: Step, props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult">, withGoes: boolean) {
+  // A prompt's attachments are drawn in its strip, so they are not named again as inputs.
+  const attached = new Set((step.attachments ?? []).map((attachment) => attachment.id));
   const chips = step.uses
+    .filter((use) => !(use.kind === "file" && attached.has(use.node_id)))
     .map((use) => ({ use, text: inputLabel(use, props.steps, props.names) }))
     .filter((chip): chip is { use: typeof chip.use; text: string } => chip.text !== null);
   const mine = props.suggestions.filter((suggestion) => suggestion.stepId === step.id);
@@ -1399,6 +1406,21 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <ConvertRows step={step} phone={phone} />
                 <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
+                {step.attachments?.length ? (
+                  <MenuRow
+                    phone={phone}
+                    onSelect={() =>
+                      void downloadPromptWithFiles(step).then(
+                        (missing) => {
+                          if (missing.length > 0) toast(`Left out ${missing.join(", ")}: ${missing.length === 1 ? "it" : "they"} couldn't be fetched.`);
+                        },
+                        () => toast.error("Couldn't download the files. Try again."),
+                      )
+                    }
+                  >
+                    {ATTACHMENT_COPY.downloadWithFiles}
+                  </MenuRow>
+                ) : null}
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Add file name</MenuRow> : null}
                 <MenuRow phone={phone} disabled={!can(-1)} shortcut="moveUp" reason={moveReason("tile", -1, !can(-1))} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
@@ -1422,6 +1444,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
+      {/* The message's attachments, where they sat: above the text, or under it for "after". */}
+      {step.attachments?.length && step.attachmentsAt !== "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
       <p
         ref={textRef}
         style={
@@ -1434,6 +1458,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
         <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
       </p>
+      {step.attachments?.length && step.attachmentsAt === "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />

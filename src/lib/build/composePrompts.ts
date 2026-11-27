@@ -22,6 +22,7 @@
 // does the swap: it parks both rows before placing them, because the unique
 // index on (build_id, parent_id, position) is not deferrable.
 
+import { namedFilesOf } from "./attachments";
 import type { Json } from "@/integrations/supabase/types";
 import { toolFor } from "@/lib/tools/registry";
 import { nodeRow, placeTopNode } from "./composeCover";
@@ -118,7 +119,8 @@ export async function addSessionPrompt({ buildId, tree, importSessionId, model, 
   return placeTopNode(buildId, tree, {
     type: PROMPT_TYPE,
     title: null,
-    payload: promptPayload(prompt.text, model),
+    // The files a turn named are placeholders on the prompt (the page adds them); the marker is not part of what was typed.
+    payload: promptPayload(namedFilesOf(prompt.text).text, model),
     source_ref: sourceRef as unknown as Json,
   });
 }

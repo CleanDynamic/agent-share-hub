@@ -50,6 +50,11 @@ import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/an
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
 import { groupKind, groupOfStep, isCountedPrompt, promptNumbersOf, stepLabel, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { metaLine, sentModelOf, type Attachment } from "@/lib/build/attachments";
+import { isMessage } from "@/lib/build/copyTogether";
+import { AttachedSection } from "./AttachedSection";
+import { MessageMetaLine, ReaderAttachmentStrip } from "./AttachmentStrip";
+import { PromptContextFields } from "./PromptContextFields";
 import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -104,6 +109,16 @@ export interface FullPromptWindowProps {
   /** CA-18, maker mode: the prompt as Details reads it, and what changes it: Model, How it was run, Uses and Makes. Absent: those are not drawn. */
   details?: (id: string) => PromptView | null;
   handlers?: PromptEditHandlers;
+  /** Maker mode: files picked, pasted or dropped onto the window, attached to the prompt in the order given. Absent: no Attached section. */
+  onAttach?: (id: string, files: File[]) => void;
+  /** Maker mode: the prompt's attachments in a new order (File node ids). */
+  onOrderAttachments?: (id: string, order: string[]) => void;
+  /** Maker mode: remove an attachment (its File node and its media). */
+  onRemoveAttachment?: (id: string, fileId: string) => void;
+  /** Maker mode: an attachment's note or captured day. */
+  onAttachmentExtras?: (fileId: string, patch: Record<string, unknown>) => void;
+  /** Maker mode: crop or blur an attached picture. */
+  onEditPicture?: (attachment: Attachment) => void;
 }
 
 export const FULL_PROMPT_COPY = {
@@ -135,6 +150,7 @@ export const FULL_PROMPT_COPY = {
   replyCount: (n: number) => `${n.toLocaleString("en-GB")} / ${REPLY_MAX.toLocaleString("en-GB")}`,
   markVariable: "Mark selection as a variable",
   noVariables: "No {variables} written in this prompt yet.",
+  context: "What the app added",
 } as const;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -197,7 +213,9 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
     .join(" · ");
 
   const all = flatten(steps);
-  const uses = step.uses.flatMap((use) => {
+  // The attachments are the window's Attached section (a reader's strip), so they are not named again as inputs.
+  const attached = new Set((step.attachments ?? []).map((attachment) => attachment.id));
+  const uses = step.uses.filter((use) => !(use.kind === "file" && attached.has(use.node_id))).flatMap((use) => {
     if (use.kind === "output") {
       const from = all.find((candidate) => candidate.id === use.node_id);
       return from ? [{ key: `${use.kind}:${use.node_id}`, label: `Output of ${from.number} · ${stepTitle(from)}`, paste: `Paste in: what step ${from.number} gave you` }] : [];
@@ -403,10 +421,12 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked, mod
   const [instructions, setInstructions] = useState(settings.instructions);
   const [described, setDescribed] = useState<Record<string, string>>({});
   const variables = variablesFor(step.text, step.variables ?? []);
-  const effortHeld = settings.effort !== "default";
-  const modelHeld = Boolean(model) && !modelElsewhere;
+  // A reader of a message reads its model and effort in the meta line under the text, so this row does not say them again.
+  const metaSays = mode === "reader" && isMessage(step);
+  const effortHeld = settings.effort !== "default" && !metaSays;
+  const modelHeld = Boolean(model) && !modelElsewhere && !metaSays;
   const settingsHeld = modelHeld || effortHeld || Boolean(settings.instructions);
-  const shownModel = model && !modelElsewhere ? modelLabel(model) : null;
+  const shownModel = model && !modelElsewhere && !metaSays ? modelLabel(model) : null;
   const settingsLine = summaryOf(shownModel, effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions);
   const variablesLine = summaryOf(variables.map((variable) => `{${variable.name}}`));
   const saveSettings = (patch: Partial<PromptSettings>) => onExtras?.(step.id, { settings: { ...settings, ...patch } });
@@ -451,7 +471,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked, mod
       {agent && onExtras ? <JobFields step={step} agent={agent} names={props.names ?? {}} phone={phone} onExtras={onExtras} /> : null}
       <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
         {modelElsewhere ? null : <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />}
-        <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
+        <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} scroll items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
           phone={phone}
           rows={2}
@@ -464,6 +484,9 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked, mod
             if (instructions.trim() !== settings.instructions) saveSettings({ instructions: instructions.trim() });
           }}
         />
+      </OptionalField>
+      <OptionalField name={FULL_PROMPT_COPY.context} summary={metaLine(null, null, step.context)} phone={phone}>
+        <PromptContextFields id={step.id} context={step.context} phone={phone} onSave={(next) => onExtras?.(step.id, { context: next })} />
       </OptionalField>
       <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
         {variables.length === 0 ? <Count>{FULL_PROMPT_COPY.noVariablesCount}</Count> : null}
@@ -568,12 +591,33 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
   };
 
   const quiet = geist(11.5, 400, t.label);
+  /** The maker attaches to a prompt (never an agent's instructions): picked, pasted or dropped, in the order given. */
+  const attachable = mode === "maker" && step.kind === "prompt" && !isInstructions(step) && Boolean(props.onAttach);
+  const filesOf = (list: DataTransfer | null): File[] => Array.from(list?.files ?? []);
   const maker = mode === "maker" && Boolean(onTitle) && !instructions;
   const extras = (step.kind === "prompt" && !isInstructions(step) && step.outputShape) || step.changes?.length || ((uses.length > 0 || goesInto.length > 0) && !(maker && props.details));
 
   return (
     /* The global field rule makes a field inherit its size on a computer, so the window sets the fields' 13 here. */
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13, ...(phone ? { minHeight: "100%" } : null) }}>
+    <div
+      onPaste={attachable ? (event) => {
+        const files = filesOf(event.clipboardData);
+        if (files.length === 0) return;
+        event.preventDefault();
+        props.onAttach?.(step.id, files);
+      } : undefined}
+      onDragOver={attachable ? (event) => {
+        if (!Array.from(event.dataTransfer?.types ?? []).includes("Files")) return;
+        event.preventDefault();
+      } : undefined}
+      onDrop={attachable ? (event) => {
+        const files = filesOf(event.dataTransfer);
+        if (files.length === 0) return;
+        event.preventDefault();
+        props.onAttach?.(step.id, files);
+      } : undefined}
+      style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13, ...(phone ? { minHeight: "100%" } : null) }}
+    >
       <LiveRegion message={said} />
       <div data-testid="modal-header" style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
         <div style={HEADER_TEXT}>
@@ -604,6 +648,24 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
       {phone && sessionTotal > 0 && inSession > 0 ? <StepProgress at={inSession} total={sessionTotal} where={sessionName ?? (step.kind === "prompt" ? "Prompt" : name)} /> : null}
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         <div data-testid="modal-body" style={bodyStyle(phone)}>
+          {attachable ? (
+            <AttachedSection
+              attachments={step.attachments ?? []}
+              at={step.attachmentsAt ?? "before"}
+              phone={phone}
+              onAttach={(files) => props.onAttach?.(step.id, files)}
+              onOrder={(order) => props.onOrderAttachments?.(step.id, order)}
+              onRemove={(fileId) => props.onRemoveAttachment?.(step.id, fileId)}
+              onExtras={(fileId, patch) => props.onAttachmentExtras?.(fileId, patch)}
+              onAt={(at) => props.onExtras?.(step.id, { attachments_at: at === "after" ? "after" : null })}
+              onEditPicture={props.onEditPicture}
+            />
+          ) : null}
+          {mode === "reader" && step.attachments?.length && step.attachmentsAt !== "after" ? (
+            <Block noRule>
+              <ReaderAttachmentStrip attachments={step.attachments} phone={phone} />
+            </Block>
+          ) : null}
           <Block noRule>
             <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={FULL_PROMPT_COPY.wordCount(step.words)}>
               {markable ? (
@@ -628,6 +690,8 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
               </RecipeButton>
             </BlockHead>
             <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && (onChanges || onText) ? setPicked : undefined} />
+            {mode === "reader" && step.attachments?.length && step.attachmentsAt === "after" ? <ReaderAttachmentStrip attachments={step.attachments} phone={phone} /> : null}
+            {mode === "reader" && isMessage(step) ? <MessageMetaLine line={metaLine(sentModelOf(step), step.settings, step.context)} /> : null}
           </Block>
           {!isInstructions(step) && step.kind === "prompt" ? <ReplyField key={`reply-${step.id}`} step={step} onReply={mode === "maker" ? onReply : undefined} phone={phone} /> : null}
           {maker && !isInstructions(step) && step.kind === "prompt" && props.details && props.handlers ? (

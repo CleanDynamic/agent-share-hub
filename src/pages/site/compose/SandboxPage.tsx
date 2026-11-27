@@ -54,7 +54,7 @@ import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, t
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionOrderOf, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta, type Workstream } from "@/lib/build/making";
 import { defaultWorkstream, labelsOf, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamLabel, workstreamMark, workstreamsOf } from "@/lib/build/workstreams";
-import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
+import { deleteMedia, fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionCopy, addSessionToBuild, fillMissingTiles, hasSession, type SessionCopy } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
@@ -106,6 +106,9 @@ import { useComposerScrollPadding } from "./composeChrome";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import type { FullPromptWindow as FullPromptWindowImpl } from "@/components/build/FullPromptWindow";
 import { attachFiles } from "./attachFiles";
+import { ATTACHMENT_COPY, ATTACHMENTS_MAX, placeholderFor, type Attachment } from "@/lib/build/attachments";
+import { PictureEditor } from "@/components/build/PictureEditor";
+import { replacePicture } from "@/lib/build/pictureEdit";
 import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
 import type { TileEditDialog as TileEditDialogImpl } from "./TileEditDialog";
 import type { SetupPromptWindow as SetupPromptWindowImpl } from "./SetupPromptWindow";
@@ -695,6 +698,8 @@ function SandboxPageBody() {
   }, [selectedId, focusMakes]);
   /** UI-P67: the prompt open in the full prompt window. */
   const [openPromptId, setOpenPromptId] = useState<string | null>(null);
+  /** The attached picture being cropped or blurred. */
+  const [editingPicture, setEditingPicture] = useState<Attachment | null>(null);
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
   const picker = useRef<HTMLInputElement>(null);
   /** The prompt that opened the picker; none for Sources and Add › File, which add to the build. */
@@ -1860,6 +1865,11 @@ function SandboxPageBody() {
   const stillOpenCount = useMemo(() => stillOpenMarksOf(made, tree).length, [made, tree]);
   const [stillOpenIn, setStillOpenIn] = useState<string[]>([]);
   stillOpenSpaces.current = stillOpenIn;
+  /** The pictures attached to prompts, for the publish check. */
+  const attachedPictures = useMemo(() => {
+    const visit = (list: readonly Step[]): Attachment[] => list.flatMap((step) => [...(step.attachments ?? []).filter((attachment) => attachment.kind === "picture" && attachment.mediaId), ...visit([...step.children, ...(step.sentWith ?? [])])]);
+    return visit(steps);
+  }, [steps]);
   const checklist = useMemo(
     () =>
       publishChecklist({
@@ -2075,7 +2085,9 @@ function SandboxPageBody() {
             added.node = await writeFileTile(id, { title: file.name, media_id: media.id, size: file.size, mime: file.type || null, preview: await previewOfFile(file) }, place);
             return;
           }
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows });
+          // A file attached to a prompt (not sent inside a step) is part of its message, with its size and type for the strip.
+          const message = verb === "attach" && !parentId;
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows, ...(message ? { attached: true, size: file.size, mime: file.type || null } : null) });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -2140,12 +2152,43 @@ function SandboxPageBody() {
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
   const attach = useCallback(
-    (stepId: string, files: File[]) =>
-      attachFiles(stepId, files, (file) => addOneFile(file, "attach"), (id, use) => {
+    (stepId: string, files: File[]) => {
+      // At most 20 on one prompt: the files past that are not uploaded, and the maker is told.
+      const find = (list: readonly Step[]): Step | undefined => list.reduce<Step | undefined>((found, step) => found ?? (step.id === stepId ? step : find([...step.children, ...(step.sentWith ?? [])])), undefined);
+      const held = find(steps)?.attachments ?? [];
+      let waiting = held.filter((attachment) => !attachment.mediaId);
+      const filling = files.filter((file) => placeholderFor(waiting, file.name)).length;
+      const room = Math.max(0, ATTACHMENTS_MAX - held.length) + filling;
+      if (files.length > room) toast.error(ATTACHMENT_COPY.tooMany(ATTACHMENTS_MAX));
+      const fill = async (file: File): Promise<boolean> => {
+        const placeholder = placeholderFor(waiting, file.name);
+        if (!placeholder) return false;
+        waiting = waiting.filter((attachment) => attachment.id !== placeholder);
+        const decided = fileKindFor(file);
+        if ("refused" in decided) {
+          toast.error(decided.refused);
+          return true;
+        }
+        if (file.size > MEDIA_MAX_BYTES) {
+          toast.error(`${file.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
+          return true;
+        }
+        try {
+          const id = await ensureBuild();
+          const media = await nodes.run(() => uploadMedia({ buildId: id, file }));
+          await prompts.replaceAttachmentMedia(placeholder, { id: media.id, size: file.size, mime: file.type || null });
+          afterWrite();
+        } catch (cause) {
+          sayFailed(cause, `${file.name} not attached`, () => undefined);
+        }
+        return true;
+      };
+      return attachFiles(stepId, files.slice(0, room), (file) => addOneFile(file, "attach"), (id, use) => {
         prompts.accept(id, use, steps);
         afterWrite();
-      }),
-    [addOneFile, prompts, steps, afterWrite],
+      }, fill);
+    },
+    [addOneFile, prompts, steps, afterWrite, ensureBuild, nodes],
   );
 
   /**
@@ -2170,6 +2213,11 @@ function SandboxPageBody() {
         navigate("/compose/start");
         return;
       }
+      // A file dropped on a prompt is attached to its message, in the order given.
+      if (steps.some((step) => step.id === stepId && step.kind === "prompt")) {
+        await attach(stepId, files);
+        return;
+      }
       // CA-04 P2: a file dropped on a step is sent with it: a tile inside that step.
       // CA-05 P7: on a Check, a .csv, .json or .jsonl file is its test cases, with their number when it can be counted exactly.
       const onCheck = steps.some((step) => step.id === stepId && step.kind === "check");
@@ -2178,7 +2226,7 @@ function SandboxPageBody() {
         await addOneFile(file, "attach", stepId, cases);
       }
     },
-    [addOneFile, navigate, steps],
+    [addOneFile, navigate, steps, attach],
   );
 
   /* ── the session setup (CA-04 P4) ── */
@@ -2933,7 +2981,7 @@ function SandboxPageBody() {
         onPublish={onPublish}
         onUnpublish={unpublish}
         publishedAt={build?.published_at}
-        publish={{ checklist, opensIn: stillOpenCount > 0 ? (
+        publish={{ checklist, pictures: attachedPictures, opensIn: stillOpenCount > 0 ? (
             <Suspense fallback={null}>
               <StillOpenSpaces selected={stillOpenIn} onChange={setStillOpenIn} />
             </Suspense>
@@ -3202,6 +3250,11 @@ function SandboxPageBody() {
         onReply={prompts.setReply}
         onExtras={prompts.setExtras}
         onText={prompts.setTextOf}
+        onAttach={(id, files) => void attach(id, files)}
+        onOrderAttachments={prompts.orderAttachments}
+        onRemoveAttachment={(_id, fileId) => prompts.removeAttachment(fileId)}
+        onAttachmentExtras={prompts.setExtras}
+        onEditPicture={(attachment) => setEditingPicture(attachment)}
         onNavigate={openPrompt}
         onClose={() => {
           setOpenPromptId(null);
@@ -3213,6 +3266,30 @@ function SandboxPageBody() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       </BoxTitleSinkContext.Provider>
+      <PictureEditor
+        attachment={editingPicture}
+        phone={phone}
+        onClose={() => setEditingPicture(null)}
+        onSave={async (file) => {
+          const picture = editingPicture;
+          if (!picture) return false;
+          try {
+            const id = await ensureBuild();
+            return await replacePicture(file, {
+              oldMediaId: picture.mediaId,
+              upload: async (edited) => {
+                const media = await uploadMedia({ buildId: id, file: edited });
+                return { id: media.id, bytes: media.bytes, mime: media.mime };
+              },
+              repoint: (media) => prompts.replaceAttachmentMedia(picture.id, media),
+              remove: deleteMedia,
+            });
+          } catch (cause) {
+            sayFailed(cause, "Couldn't save the picture. Try again.", () => undefined);
+            return false;
+          }
+        }}
+      />
       {colourPicker}
       <ClashWindow view={twoTabs.clash} busy={twoTabs.busy} onUseOther={twoTabs.useOther} onKeepThis={twoTabs.keepThis} />
       <LeaveWindow open={leaving.open} count={leaving.count} unsent={unsentBoxes.map((box) => box.sessionNumber)} onStay={leaving.stay} onLeave={leaving.leave} />
