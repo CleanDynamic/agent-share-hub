@@ -103,7 +103,7 @@ export function sandboxSourcesProps(which: SandboxFixture = "fox", state: Design
   };
 }
 
-const step = (over: Partial<Step> & Pick<Step, "id" | "number" | "text">): Step => ({
+export const step = (over: Partial<Step> & Pick<Step, "id" | "number" | "text">): Step => ({
   kind: "prompt",
   title: null,
   defaultTitle: `Prompt ${over.number}`,
