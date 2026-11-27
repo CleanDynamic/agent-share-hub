@@ -196,7 +196,7 @@ describe("mapLayoutOf", () => {
     expect(got.later).toEqual({ a: 1 });
     expect(got.root).toMatchObject({ glow: true, style: { fill: "blue", shadow: 2 } });
     expect((got.twoWay as unknown[])[0]).toMatchObject({ colour: "red" });
-    const deep = read({ ...FULL, root: { ...split("s", "across", [box("a"), { ...region("r", { session: "s1" }, box("b")), tab: "x" }]), weight: 3 } }) as unknown as { root: Record<string, unknown> & { children: Record<string, unknown>[] } };
+    const deep = read({ ...FULL, root: { ...split("s", "across", [box("a"), { ...region("r", { session: "s1" }, box("b")), tab: "x" } as MapNode]), weight: 3 } }) as unknown as { root: Record<string, unknown> & { children: Record<string, unknown>[] } };
     expect(deep.root.weight).toBe(3);
     expect(deep.root.children[1].tab).toBe("x");
   });

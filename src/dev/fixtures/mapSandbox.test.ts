@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupKey, groupOfStep, shownGroups } from "@/lib/build/graph";
+import { groupKey, groupOfStep, shownGroups, type Step } from "@/lib/build/graph";
 import { mapLayoutOf, type MapBox, type MapSplit } from "@/lib/build/mapLayout";
 import { sessionMapFor, tileLinksOf } from "@/lib/build/sessionMap";
 import { workstreamsOf } from "@/lib/build/workstreams";
@@ -92,7 +92,7 @@ describe("the map sandbox fixtures", () => {
   it("every fixture is made fresh", () => {
     for (const name of MAP_SANDBOX_NAMES) expect(mapSandboxFixture(name)).not.toBe(mapSandboxFixture(name));
     const first = mapSandboxFixture("supportInbox");
-    first.steps.pop();
+    (first.steps as Step[]).pop();
     expect(mapSandboxFixture("supportInbox").steps).toHaveLength(8);
   });
 });
