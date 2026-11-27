@@ -8,6 +8,7 @@
 import { lazy, memo, Suspense, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { useHasPhoneRow } from "@/components/phone/phoneRow";
 import { PhoneTopBar, type PhoneTopBarAction } from "@/components/phone/PhoneTopBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResolvedTheme, useTheme } from "@/contexts/ThemeContext";
@@ -19,7 +20,7 @@ import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 import type { FrameViewer } from "./frameTypes";
 import { MoreSheet } from "./MoreSheet";
 import { usePageBar } from "./phoneBarRegistry";
-import { phoneBarFor } from "./phoneTopBar";
+import { phoneBarFor, tabsCarryLine } from "./phoneTopBar";
 import { SITE_NAV } from "./siteNav";
 
 /* The drawer and the search page draw nothing until first opened, so their code (and the dialog library and the gallery's data
@@ -64,6 +65,7 @@ function MobileHeaderContainer() {
   const { setTheme } = useTheme();
   const { count: unread } = useUnreadNotifications();
   const page = usePageBar();
+  const hasRow = useHasPhoneRow();
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -109,6 +111,7 @@ function MobileHeaderContainer() {
         unread={unread > 0}
         theme={resolved}
         progress={page.progress}
+        line={!tabsCarryLine(pathname) && !hasRow}
       />
       <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} bare={page.bare} />
       {searchEver ? (

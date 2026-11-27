@@ -37,6 +37,8 @@ export interface PhonePillsProps<V extends string = string> {
   label: string;
   /** The pills are tabs (prompt 22): a `tablist`, each pill a `tab` with its id and the panel it controls. */
   tabs?: { idOf: (value: V) => string; controls: string };
+  /** The row sits under the top bar (a 52 row: 10 above and below the 32 pills). */
+  docked?: boolean;
 }
 
 /** A pill that is a link: the same 32 tall shape, its hit area grown to 44 by padding with a matching negative margin. */
@@ -106,7 +108,7 @@ function moveTab(event: KeyboardEvent<HTMLDivElement>) {
   tabs[next].click();
 }
 
-export function PhonePills<V extends string = string>({ pills, value, onChange, label, tabs }: PhonePillsProps<V>) {
+export function PhonePills<V extends string = string>({ pills, value, onChange, label, tabs, docked = false }: PhonePillsProps<V>) {
   return (
     <div
       data-ui="phone-pills"
@@ -114,7 +116,7 @@ export function PhonePills<V extends string = string>({ pills, value, onChange, 
       role={tabs ? "tablist" : "group"}
       aria-label={label}
       onKeyDown={tabs ? moveTab : undefined}
-      style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `12px ${PHONE_MARGIN}px` }}
+      style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `${docked ? 10 : 12}px ${PHONE_MARGIN}px` }}
     >
       {pills.map((pill) =>
         pill.href !== undefined ? (

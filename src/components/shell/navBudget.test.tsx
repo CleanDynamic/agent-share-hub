@@ -126,8 +126,8 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace, account menu" }));
     // The drawer is a dialog: focus is trapped in it, Escape closes it.
     const drawer = await screen.findByRole("dialog", { name: "Account" });
-    expect(within(drawer).getAllByRole("link").map((a) => a.textContent)).toEqual(["Your profile", "Your library", "Drafts", "Messages", "Settings", "API docs"]);
-    expect(within(drawer).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/profile/ada", "/library", "/drafts", "/messages", "/settings", "/api-docs"]);
+    expect(within(drawer).getAllByRole("link").map((a) => a.textContent)).toEqual(["Your profile", "Your library", "Drafts", "Messages", "Settings", "API docs", "Connect a tool", "About"]);
+    expect(within(drawer).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/profile/ada", "/library", "/drafts", "/messages", "/settings", "/api-docs", "/connect", "/about"]);
     expect(within(drawer).getByRole("switch", { name: "Dark theme" })).toBeTruthy();
     expect(within(drawer).getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(within(drawer).getByText("@ada")).toBeTruthy();

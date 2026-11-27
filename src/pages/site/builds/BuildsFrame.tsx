@@ -14,6 +14,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PHONE_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
 import { PhonePills } from "@/components/phone/PhonePills";
 import { PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
@@ -143,11 +144,12 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
     sideways inside its own box. */
 export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode; hrefFor: (view: GalleryViewMode) => string; onIntent?: (view: GalleryViewMode) => void }) {
   const phone = useIsPhone();
+  usePhoneRowLine(phone);
   if (phone) {
     /* Prompt 21: PhonePills whose pills are links, so the view stays in the address. */
     return (
-      <nav aria-label="View">
-        <PhonePills<GalleryViewMode> label="Views" value={view} onChange={() => undefined} pills={VIEWS.map((entry) => ({ value: entry, label: VIEW_LABEL[entry], href: hrefFor(entry), onIntent: () => onIntent?.(entry) }))} />
+      <nav aria-label="View" style={PHONE_ROW_STYLE}>
+        <PhonePills<GalleryViewMode> docked label="Views" value={view} onChange={() => undefined} pills={VIEWS.map((entry) => ({ value: entry, label: VIEW_LABEL[entry], href: hrefFor(entry), onIntent: () => onIntent?.(entry) }))} />
       </nav>
     );
   }
@@ -167,7 +169,8 @@ export function BuildsHead({ figure, parts, switcher, updating }: { figure: Reac
   const phone = useIsPhone();
   const count = parts[0]?.text;
   return (
-    <div data-testid="builds-head" style={phone ? undefined : { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "20px 20px 8px" }}>
+    <div data-testid="builds-head" style={phone ? { display: "contents" } : { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "20px 20px 8px" }}>
+      {phone ? switcher : null}
       <h1 className="sr-only" style={{ margin: 0 }}>
         {figure}
       </h1>
@@ -175,7 +178,7 @@ export function BuildsHead({ figure, parts, switcher, updating }: { figure: Reac
       <div data-testid="builds-count" style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(phone ? { padding: "0 16px 8px" } : null), ...(updating ? { opacity: 0.5 } : null) }}>
         {count ?? "\u00a0"}
       </div>
-      {switcher}
+      {phone ? null : switcher}
     </div>
   );
 }

@@ -14,7 +14,7 @@ export const LOGO_WIDTH = 96;
 export const LOGO_COMPACT_WIDTH = HEADER_COMPACT_HEIGHT;
 
 /** The phone top bar's height (prompt 19: 52, under the top safe-area inset), and the old header's beaver width. */
-export const PHONE_HEADER_HEIGHT = 52;
+export const PHONE_HEADER_HEIGHT = 44;
 export const PHONE_LOGO_WIDTH = 40;
 
 /** The footer's beaver, the sign-in dialog's, and the one above a standalone card. */
@@ -54,11 +54,19 @@ export const DOCK_PAD = 6;
 export const DOCK_HEIGHT = DOCK_PAD * 2 + DOCK_TILE_HEIGHT;
 
 /* The phone version's measurements (Synth mobile pack, prompt 17). The dock's and the sheets' safe-area inset is added in CSS. */
-export const PHONE_TOPBAR = 52;
-export const PHONE_TAB = 49;
+export const PHONE_TOPBAR = 44;
+export const PHONE_TAB = 44;
+/** A row of pills under the bar: 32 pills with 10 above and below. */
+export const PHONE_PILL_ROW = 52;
 export const PHONE_PILL = 32;
 export const PHONE_ROW = 56;
-export const PHONE_DOCK = 56;
+/** The dock without the safe-area inset (29b): 49, with its structural line on top. */
+export const PHONE_DOCK = 49;
 export const PHONE_FAB = 56;
 export const PHONE_SHEET_RADIUS = 16;
 export const PHONE_MARGIN = 16;
+
+/** The one place the phone frame's page padding is written (29b): the fixed bar under the top inset above, the fixed dock and
+    its inset below. Tabs and pill rows sit in the page and stick under the bar, so they are not in this top figure. */
+export const PHONE_PAGE_TOP = `calc(${PHONE_TOPBAR}px + env(safe-area-inset-top))`;
+export const PHONE_PAGE_BOTTOM = `calc(${PHONE_DOCK}px + env(safe-area-inset-bottom))`;

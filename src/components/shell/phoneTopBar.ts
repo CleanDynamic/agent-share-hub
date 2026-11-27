@@ -100,3 +100,9 @@ export function dockHiddenFor(pathname: string, search = ""): boolean {
   if (path === "/auth/callback" || path.startsWith("/oauth") || path.startsWith("/consent")) return true;
   return false;
 }
+
+/** Pages whose sticky tab row sits right under the bar and carries the structural line itself (29b): Home and OpenBuilds. */
+export function tabsCarryLine(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
+  return path === SITE_NAV.home || path === SITE_NAV.openbuilds;
+}

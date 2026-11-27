@@ -50,7 +50,7 @@ export interface DockViewProps {
 }
 
 /* Prompt 19: the dock on the phone. Fixed to the bottom edge, full width, on Page: no glass, no blur, no lamp, no glow, no
-   line. 56 tall plus the safe-area inset, a grid of five equal slots. Each slot is the icon at 24 over its label (13/16 500),
+   line. 49 tall plus the safe-area inset, a grid of five equal slots. Each slot is the icon at 24 over its label (13/16 500),
    3 apart, in Text 3; the current slot is the filled icon with its label 600 in Text. New is a 44 by 32 Mint pill with the plus
    at 20 in On-mint, and it opens the New sheet. Activity's unread state is a 9px Mint square with a 2px Page ring at the icon's
    top right; the accessible name says the count. */
@@ -80,8 +80,8 @@ function NewSlot({ onNew }: { onNew?: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button type="button" data-testid="dock-tile-new" aria-haspopup="dialog" aria-label="New" onClick={onNew} {...handlers} style={{ ...SLOT, color: t.label, fontWeight: 500, ...ring(state.focusVisible) }}>
-      <span aria-hidden="true" style={{ width: 44, height: 32, borderRadius: 16, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <MobileIcon name="new" size={20} />
+      <span aria-hidden="true" style={{ width: 44, height: 28, borderRadius: 14, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <MobileIcon name="new" size={18} />
       </span>
       <span aria-hidden="true">New</span>
     </button>
@@ -109,6 +109,7 @@ function RefinedDockView({ current, unread, placement = "fixed", onNew, away = f
         paddingBottom: "env(safe-area-inset-bottom)",
         boxSizing: "border-box",
         background: t.bg,
+        boxShadow: `inset 0 1px 0 ${t.control}`,
       }}
     >
       {TILES.map(({ name, label, href, icon }) => {

@@ -91,9 +91,9 @@ describe("SiteFrameView under the refined look", () => {
     expect(html).not.toContain("var(--surface-shadow)");
   });
 
-  it("is 88 tall on a desktop and 52 on a phone (the top bar), both on the page shade", () => {
+  it("is 88 tall on a desktop and 44 on a phone (the top bar), both on the page shade", () => {
     expect(markup({ viewport: "desktop", children: <p>page</p> })).toContain("min-height:88px;background:var(--frame)");
-    expect(markup({ viewport: "mobile", children: <p>page</p> })).toContain("min-height:52px;background:var(--frame)");
+    expect(markup({ viewport: "mobile", children: <p>page</p> })).toContain("position:fixed;top:0;left:0;right:0;z-index:20;background:var(--frame)");
   });
 
   it("keeps the 8px margins and the 12px radius on a phone, with the phone header and the dock", () => {
@@ -101,7 +101,8 @@ describe("SiteFrameView under the refined look", () => {
     expect(screen.getByTestId("mh")).toBeTruthy();
     expect(screen.getByTestId("d")).toBeTruthy();
     const html = markup({ viewport: "mobile", children: <p>page</p> });
-    expect(html).toContain("width:100%;max-width:1280px;margin:0 auto;padding:0 8px 8px");
+    expect(html).toContain("width:100%;max-width:1280px;margin:0 auto;padding:calc(44px + env(safe-area-inset-top)) 8px calc(49px + env(safe-area-inset-bottom))");
+    expect(html).not.toContain('data-slot="footer"');
     expect(html).toContain("border-radius:12px");
   });
 

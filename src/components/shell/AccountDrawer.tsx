@@ -173,6 +173,8 @@ export function AccountDrawer({ open, onOpenChange, viewer, dark, onToggleDark, 
           <LinkRow to="/messages" current={pathname === "/messages"} onGo={close}>Messages</LinkRow>
           <LinkRow to={SITE_NAV.settings} current={pathname.startsWith(SITE_NAV.settings)} onGo={close}>Settings</LinkRow>
           <LinkRow to="/api-docs" current={pathname === "/api-docs"} onGo={close}>API docs</LinkRow>
+          <LinkRow to="/connect" current={pathname === "/connect"} onGo={close}>Connect a tool</LinkRow>
+          <LinkRow to="/about" current={pathname === "/about"} onGo={close}>About</LinkRow>
           <div style={{ flex: 1 }} />
           <div style={{ ...ROW, cursor: "default", justifyContent: "space-between", paddingRight: 8 }}>
             <span>Dark theme</span>

@@ -54,6 +54,8 @@ export interface PhoneTopBarProps {
   theme?: "dusk" | "noon";
   /** Onboarding (prompt 27 Part C): the title is "1 of 3" in mono 13 Text 3, and three 4px segments sit at the very top under the inset. */
   progress?: { step: number; of: number };
+  /** The structural line on the bar's bottom edge (Raised, 1px). Off where a tab row right under the bar carries it. */
+  line?: boolean;
 }
 
 const HIT: CSSProperties = {
@@ -81,11 +83,11 @@ function IconButton({ icon, text, disabled, label, onClick, to }: PhoneTopBarAct
       padding: "0 8px",
       borderRadius: r.full,
       fontFamily: FIGTREE,
-      fontSize: 13,
-      fontWeight: 600,
-      lineHeight: "16px",
+      fontSize: 15,
+      fontWeight: 500,
+      lineHeight: "20px",
       whiteSpace: "nowrap",
-      color: disabled ? t.label : t.text,
+      color: disabled ? t.label : t.text2,
       cursor: disabled ? "default" : "pointer",
       textDecoration: "none",
       ...ring(state.focusVisible),
@@ -100,13 +102,13 @@ function IconButton({ icon, text, disabled, label, onClick, to }: PhoneTopBarAct
   if (to) {
     return (
       <FrameLink to={to} aria-label={label} style={style}>
-        <MobileIcon name={icon ?? "more"} size={24} />
+        <MobileIcon name={icon ?? "more"} size={22} />
       </FrameLink>
     );
   }
   return (
     <button type="button" aria-label={label} onClick={onClick} {...handlers} style={style}>
-      <MobileIcon name={icon ?? "more"} size={24} />
+      <MobileIcon name={icon ?? "more"} size={22} />
     </button>
   );
 }
@@ -128,7 +130,7 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
         style={{
           width: 32,
           height: 32,
-          borderRadius: r.full,
+          borderRadius: 8,
           overflow: "hidden",
           display: "inline-flex",
           alignItems: "center",
@@ -168,7 +170,7 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
   );
 }
 
-export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk", progress }: PhoneTopBarProps) {
+export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk", progress, line = true }: PhoneTopBarProps) {
   /* Words in a side slot are wider than 48: the sides then take equal shares and the centre its own width. */
   const wide = Boolean(leftAction?.text || right?.text);
   const Title = titleAs;
@@ -177,12 +179,12 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
       data-testid="phone-top-bar"
       data-ui="phone-top-bar"
       style={{
-        position: "sticky",
-        top: 0,
+        position: "relative",
         zIndex: 20,
         boxSizing: "border-box",
         paddingTop: "env(safe-area-inset-top)",
         background: t.bg,
+        boxShadow: line ? `inset 0 -1px 0 ${t.control}` : undefined,
       }}
     >
       {progress ? (

@@ -30,10 +30,10 @@ const wrap = (node: React.ReactElement) => <MemoryRouter>{node}</MemoryRouter>;
 const markup = (node: React.ReactElement) => renderToStaticMarkup(wrap(node));
 
 describe("PhoneTopBar", () => {
-  it("is a 48 1fr 48 grid, 52 tall, on Page with no line", () => {
+  it("is a 48 1fr 48 grid, 44 tall, on Page with the structural line on its bottom edge", () => {
     const html = markup(<PhoneTopBar left="account" centre="logo" viewer={{ name: "Maya Okafor" }} />);
     expect(html).toContain("grid-template-columns:48px 1fr 48px");
-    expect(html).toContain("height:52px");
+    expect(html).toContain("height:44px");
     expect(html).toContain("padding-top:env(safe-area-inset-top)");
     expect(html).toContain("background:var(--bg)");
     const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
@@ -89,7 +89,7 @@ describe("PhoneTabs", () => {
     expect(bars).toHaveLength(1);
     expect(bars[0].style.height).toBe("4px");
     expect(Number.parseInt(bars[0].style.width)).toBeGreaterThanOrEqual(40);
-    expect(screen.getByRole("tab", { name: "Following" }).style.height).toBe("49px");
+    expect(screen.getByRole("tab", { name: "Following" }).style.height).toBe("44px");
   });
   it("arrow keys move and change at once; equal shares the width", () => {
     const onChange = vi.fn();
@@ -220,7 +220,7 @@ describe("BigButton, PhoneField, RoundPostButton, PhoneToast", () => {
     const fab = screen.getByRole("button", { name: "New post" });
     expect(fab.style.width).toBe("56px");
     expect(fab.style.right).toBe("16px");
-    expect(markup(<RoundPostButton label="New post" />)).toContain("bottom:calc(56px + env(safe-area-inset-bottom) + 16px)");
+    expect(markup(<RoundPostButton label="New post" />)).toContain("bottom:calc(49px + env(safe-area-inset-bottom) + 16px)");
     unmount();
     const vv = Object.assign(new EventTarget(), { height: 400, offsetTop: 0 });
     Object.defineProperty(window, "visualViewport", { value: vv, configurable: true });

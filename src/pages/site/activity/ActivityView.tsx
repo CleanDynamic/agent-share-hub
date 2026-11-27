@@ -23,6 +23,7 @@ import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PHONE_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
 import { PhonePills, type PhonePill } from "@/components/phone/PhonePills";
 import type { PanelFailure } from "@/components/pagestate/PageState";
 import { FrameLink } from "@/components/shell/FrameLink";
@@ -454,6 +455,7 @@ function Layout(props: ActivityViewProps) {
   const { now, list, unread, live, kindCounts, writeError, onOpen, onMarkAllRead } = props;
   useColumnPanels(true);
   const phone = useIsPhone();
+  usePhoneRowLine(phone);
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
   const [pill, setPill] = useState("all");
   const toggle = (kind: ActivityKind) => setChosen((current) => switchKind(current, kind));
@@ -462,8 +464,9 @@ function Layout(props: ActivityViewProps) {
 
   const main = (
     <section aria-label="Activity" style={phone ? { display: "flex", flexDirection: "column", minWidth: 0 } : { ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* On a phone the pill row comes first: it sits right under the top bar and carries the structural line. */}
+      {phone ? <div style={PHONE_ROW_STYLE}><PhonePills docked label="Show" pills={pills} value={pill} onChange={setPill} /></div> : null}
       <Head unread={unread} live={live} onMarkAllRead={onMarkAllRead} phone={phone} />
-      {phone ? <PhonePills label="Show" pills={pills} value={pill} onChange={setPill} /> : null}
       {writeError ? (
         <div style={{ padding: `0 ${PAD}px` }}>
           <WriteFailed failure={writeError} />
