@@ -8,6 +8,7 @@ import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { PHONE_DOCK, PHONE_FAB, PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { PageLink } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
+import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -24,12 +25,14 @@ export interface RoundPostButtonProps {
   /** Where its foot stands, when not over the dock (the editor's, above its sticky footer). */
   bottom?: string;
   buttonRef?: Ref<HTMLButtonElement>;
+  /** 29f: the editor's round Add: 44 round, Raised fill, the icon in Text, 16 from the right. It is not Mint: Publish is that screen's. */
+  quiet?: boolean;
   /** A menu or a sheet it opens. */
   "aria-haspopup"?: "dialog" | "menu";
   "aria-expanded"?: boolean;
 }
 
-export function RoundPostButton({ label, icon = "compose", onClick, to, bottom, buttonRef, ...aria }: RoundPostButtonProps) {
+export function RoundPostButton({ label, icon = "compose", onClick, to, bottom, buttonRef, quiet = false, ...aria }: RoundPostButtonProps) {
   const keyboard = useKeyboardOpen();
   const { state, handlers } = useInteractive<HTMLButtonElement & HTMLAnchorElement>();
   if (keyboard) return null;
@@ -39,28 +42,28 @@ export function RoundPostButton({ label, icon = "compose", onClick, to, bottom, 
     bottom: bottom ?? `calc(${PHONE_DOCK}px + env(safe-area-inset-bottom) + ${PHONE_MARGIN}px)`,
     zIndex: 25,
     boxSizing: "border-box" as const,
-    width: PHONE_FAB,
-    height: PHONE_FAB,
+    width: quiet ? TOUCH_MIN : PHONE_FAB,
+    height: quiet ? TOUCH_MIN : PHONE_FAB,
     borderRadius: r.full,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     padding: 0,
     border: 0,
-    background: t.brandAccent,
-    color: t.onBrandAccent,
-    boxShadow: t.shadowFloat,
+    background: quiet ? t.control : t.brandAccent,
+    color: quiet ? t.text : t.onBrandAccent,
+    boxShadow: quiet ? "none" : t.shadowFloat,
     textDecoration: "none",
     cursor: "pointer",
     ...ring(state.focusVisible),
   };
   return to ? (
     <PageLink to={to} aria-label={label} data-testid="round-post-button" {...handlers} style={style}>
-      <MobileIcon name={icon} size={24} />
+      <MobileIcon name={icon} size={quiet ? 22 : 24} />
     </PageLink>
   ) : (
     <button ref={buttonRef} type="button" aria-label={label} {...aria} data-testid="round-post-button" onClick={onClick} {...handlers} style={style}>
-      <MobileIcon name={icon} size={24} />
+      <MobileIcon name={icon} size={quiet ? 22 : 24} />
     </button>
   );
 }

@@ -40,7 +40,7 @@ import { DM_MONO } from "@/lib/theme/type";
 import { ChevronDown } from "lucide-react";
 
 import { PhoneActiveFilters } from "./BuildsPhone";
-import { PhoneTable, type PhoneCardView, type PhoneNumber } from "./BuildsTablePhone";
+import { PhoneTable, rowFacts, type PhoneCardView, type PhoneNumber, type PhoneView } from "./BuildsTablePhone";
 import { useColumnDrag, type HeadDrag } from "./columnDrag";
 import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
@@ -193,6 +193,8 @@ export interface BuildsTableViewProps {
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
   columns: readonly ColumnId[];
+  /** 29f: the page's views with their addresses; a phone lists the others in the bar's More sheet. */
+  views?: readonly PhoneView[];
   rows: readonly TableRowView[];
   /** The column each head sorts by, and the arrow on the sorted one. */
   sortColumn: { id: ColumnId; ascending: boolean } | null;
@@ -602,7 +604,7 @@ function numbersOf(columns: readonly ColumnId[], row: TableRowView): PhoneNumber
 }
 
 function phoneCards(columns: readonly ColumnId[], rows: readonly TableRowView[]): PhoneCardView[] {
-  return rows.map((row) => ({ id: row.id, href: row.href, title: row.title, maker: row.maker, facts: [row.built, row.field].filter(Boolean).join(" · "), numbers: numbersOf(columns, row) }));
+  return rows.map((row) => ({ id: row.id, href: row.href, title: row.title, maker: row.maker, facts: [row.built, row.field].filter(Boolean).join(" · "), numbers: numbersOf(columns, row), line: rowFacts(row.sessions, row.steps, row.maker) }));
 }
 
 /** The footer's calculation words as a phone says them: "Median 11, Steps", "Most common Food and drink, Field". */
@@ -679,6 +681,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
         onMore={onMore}
         loadingMore={loadingMore}
         empty={empty}
+        views={props.views}
       />
     );
   }

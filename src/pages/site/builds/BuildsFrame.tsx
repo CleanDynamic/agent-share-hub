@@ -14,8 +14,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { PHONE_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
-import { PhonePills } from "@/components/phone/PhonePills";
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
@@ -29,7 +28,7 @@ import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { PhoneCardSkeletons } from "./BuildsPhoneSkeletons";
+import { PhoneCardSkeletons, PhoneLensRowSkeleton, PhoneRowSkeletons } from "./BuildsPhoneSkeletons";
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {
@@ -140,19 +139,13 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
   );
 }
 
-/** Table, Maps, Classification: a row of pills. Links, not buttons: the view is in the address. On a phone the row scrolls
-    sideways inside its own box. */
-export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode; hrefFor: (view: GalleryViewMode) => string; onIntent?: (view: GalleryViewMode) => void }) {
+/** Table, Maps, Classification: a row of pills. Links, not buttons: the view is in the address. On a phone (29f) there is no row:
+    the other views are rows of the bar's More sheet, registered here unless the table (which adds its own controls to the same
+    sheet) is drawn. */
+export function ViewSwitch({ view, hrefFor, onIntent, more = true }: { view: GalleryViewMode; hrefFor: (view: GalleryViewMode) => string; onIntent?: (view: GalleryViewMode) => void; more?: boolean }) {
   const phone = useIsPhone();
-  usePhoneRowLine(phone);
-  if (phone) {
-    /* Prompt 21: PhonePills whose pills are links, so the view stays in the address. */
-    return (
-      <nav aria-label="View" style={PHONE_ROW_STYLE}>
-        <PhonePills<GalleryViewMode> docked label="Views" value={view} onChange={() => undefined} pills={VIEWS.map((entry) => ({ value: entry, label: VIEW_LABEL[entry], href: hrefFor(entry), onIntent: () => onIntent?.(entry) }))} />
-      </nav>
-    );
-  }
+  useRegisterPageBar(phone && more ? { more: VIEWS.filter((entry) => entry !== view).map((entry) => ({ label: VIEW_LABEL[entry], to: hrefFor(entry) })) } : null);
+  if (phone) return null;
   return (
     <nav aria-label="View" style={{ display: "flex", gap: 8, minWidth: 0, maxWidth: "100%", overflowX: "auto", scrollbarWidth: "none", padding: 4, margin: -4 }}>
       {VIEWS.map((entry) => (
@@ -174,8 +167,8 @@ export function BuildsHead({ figure, parts, switcher, updating }: { figure: Reac
       <h1 className="sr-only" style={{ margin: 0 }}>
         {figure}
       </h1>
-      {/* Prompt 21: on a phone the count is the fact, 20/24 600 with padding 0 16 8, and the view switch is its own row under it. */}
-      <div data-testid="builds-count" style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(phone ? { padding: "0 16px 8px" } : null), ...(updating ? { opacity: 0.5 } : null) }}>
+      {/* 29f: on a phone the list starts right under the pills (`07-builds.jpg`), so the count is for screen readers there. */}
+      <div data-testid="builds-count" className={phone ? "sr-only" : undefined} style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(updating ? { opacity: 0.5 } : null) }}>
         {count ?? "\u00a0"}
       </div>
       {phone ? null : switcher}
@@ -340,9 +333,11 @@ export function BuildsLoadingView() {
         head={<BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
         main={
           phone ? (
-            /* 29c: the skeleton keeps the content's boxes. The table's phone content is still cards, so the skeleton is cards; 29f turns
-              both into rows (PhoneRowSkeletons: 64 tall, 12 between) once the rows have their covers. */
-            <PhoneCardSkeletons count={6} height={112} />
+            /* 29c and 29f: the skeleton keeps the content's boxes: the lens row, then rows 64 tall with a 48 cover. */
+            <>
+              <PhoneLensRowSkeleton />
+              <PhoneRowSkeletons count={10} />
+            </>
           ) : (
           <>
             <div style={{ height: 36, borderBottom: `1px solid ${t.hairline}` }} />

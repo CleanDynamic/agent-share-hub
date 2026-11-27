@@ -13,7 +13,7 @@ import { PREVIEW_NOTE, previewScale } from "@/lib/build/postPreview";
 import type { ThreadDoc } from "@/lib/build/thread";
 import type { Build } from "@/lib/build/types";
 
-import { brk, doc, mountPostTab, p, startOf } from "./postTabKit";
+import { brk, doc, focusEditor, mountPostTab, p, startOf } from "./postTabKit";
 import type { PostDraft } from "./PostTab";
 
 // jsdom has no hit testing; ProseMirror asks for it when an element reports a size.
@@ -206,7 +206,8 @@ describe("the preview", () => {
 describe("the preview sheet", () => {
   it("opens from the toolbar's Preview on both widths, as a sheet titled Preview holding the phone item", () => {
     for (const phone of [false, true]) {
-      mountPostTab(doc(p("First"), brk, p("Second")), { phone }, { draft: DRAFT });
+      const { editor } = mountPostTab(doc(p("First"), brk, p("Second")), { phone }, { draft: DRAFT });
+      if (phone) focusEditor(editor);
       expect(screen.queryByRole("dialog")).toBeNull();
       fireEvent.click(within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Preview" }));
       const sheet = screen.getByRole("dialog", { name: "Preview" });
@@ -242,7 +243,12 @@ describe("the toolbar", () => {
   const tools = () => within(toolbar()).getAllByRole("button");
   const press = (name: string) => fireEvent.click(within(toolbar()).getByRole("button", { name }));
   const mountDesk = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, {}, { draft: DRAFT, ...extra });
-  const mountPhone = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, { phone: true }, { draft: DRAFT, ...extra });
+  /* 29f: a phone's tools are drawn once the composer is focused, so this focuses it, as a tap on the row does. */
+  const mountPhone = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => {
+    const mounted = mountPostTab(content, { phone: true }, { draft: DRAFT, ...extra });
+    focusEditor(mounted.editor);
+    return mounted;
+  };
 
   it("is X's row of buttons, in order, each named and 36 square on a desktop", () => {
     mountDesk();

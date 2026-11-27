@@ -1,14 +1,14 @@
 // PT-05 — the composer's post, run in jsdom: what it allows, what survives a save, the breaks, the thread rail, the
 // count and the layout.
 
-import { act, cleanup, fireEvent, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import type { Editor } from "@tiptap/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { checkThread, THREAD_MARK_TYPES, THREAD_NODE_TYPES, type ThreadBlock, type ThreadDoc } from "@/lib/build/thread";
 import { postRuns, tidyThread } from "@/lib/build/threadEditor";
 
-import { brk, doc, mountPostTab as mount, p, startOf } from "./postTabKit";
+import { brk, doc, focusEditor, mountPostTab as mount, p, startOf } from "./postTabKit";
 
 afterEach(cleanup);
 
@@ -198,11 +198,11 @@ describe("the thread rail", () => {
     expect((avatars[0] as HTMLElement).style.width).toBe("40px");
   });
 
-  it("is one avatar for a one-post thread, 36 on a phone", () => {
+  it("is one avatar for a one-post thread, 32 on a phone (29f)", () => {
     mount(doc(p("only")), { phone: true });
     const avatars = screen.getByTestId("thread-rail").querySelectorAll('[data-ui="avatar"]');
     expect(avatars).toHaveLength(1);
-    expect((avatars[0] as HTMLElement).style.width).toBe("36px");
+    expect((avatars[0] as HTMLElement).style.width).toBe("32px");
   });
 
   it("follows the posts as a break is added", () => {
@@ -231,7 +231,8 @@ describe("the layout", () => {
   });
 
   it("gives the toolbar the whole width on a phone, with 12 between the avatar and the words", () => {
-    mount(doc(p("")), { phone: true });
+    const { editor } = mount(doc(p("")), { phone: true });
+    focusEditor(editor);
     expect((screen.getByTestId("post-tab").firstElementChild as HTMLElement).style.gap).toBe("12px");
     expect((screen.getByTestId("post-toolbar").parentElement as HTMLElement).style.marginLeft).toBe("0px");
   });
@@ -261,5 +262,28 @@ describe("the layout", () => {
   it("shows no words once the post has text", () => {
     mount(doc(p("written")));
     expect(document.querySelector("[data-post-placeholder]")).toBeNull();
+  });
+});
+
+describe("the composer on a phone (29f)", () => {
+  it("is one row until it is focused: the tools are drawn then, and Characters left only once typing starts", () => {
+    const { editor } = mount(doc(p("")), { phone: true });
+    expect(screen.queryByTestId("post-toolbar")).toBeNull();
+    focusEditor(editor);
+    expect(screen.getByTestId("post-toolbar")).toBeTruthy();
+    expect(screen.queryByTestId("character-ring")).toBeNull();
+    act(() => {
+      editor.commands.insertContent("a");
+    });
+    expect(screen.getByTestId("character-ring")).toBeTruthy();
+  });
+
+  it("has no separate plus: Add another post is a plain tool in the row, and a computer keeps its boxed plus", () => {
+    const { editor } = mount(doc(p("words")), { phone: true });
+    focusEditor(editor);
+    const toolbar = screen.getByTestId("post-toolbar");
+    const add = within(toolbar).getByRole("button", { name: "Add another post" });
+    expect(add.style.width).toBe("44px");
+    expect(toolbar.querySelector('span[aria-hidden="true"][style*="width: 1px"]')).toBeNull();
   });
 });

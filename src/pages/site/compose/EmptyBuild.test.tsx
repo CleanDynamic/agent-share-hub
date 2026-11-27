@@ -143,3 +143,30 @@ describe("the drop zone", () => {
     expect(props.onPick).toHaveBeenCalledTimes(1);
   });
 });
+
+/* 29f, `12-editor.jpg`: the phone's empty build. Styles are read from the SSR markup (jsdom drops var() values). */
+describe("on a phone (29f)", () => {
+  const phoneMarkup = () =>
+    renderToStaticMarkup(
+      <EmptyBuild phone fine={false} available={2} addSession={{ library: [], adding: false, onAdd: vi.fn(), onStartNew: vi.fn() }} onDropFiles={vi.fn()} onPick={vi.fn()} />,
+    );
+
+  it("is a 17/22 700 heading over a Panel of two rows with their own icons, no rule between them and no chevron", () => {
+    mount({ phone: true });
+    const heading = screen.getByRole("heading", { name: "Add your first session" });
+    expect([heading.style.fontSize, heading.style.lineHeight, heading.style.fontWeight]).toEqual(["17px", "22px", "700"]);
+    expect(screen.getByTestId("empty-build-chats").querySelector("svg")).toBeTruthy();
+    expect(screen.getByTestId("empty-build-new").querySelector("svg")).toBeTruthy();
+    const html = phoneMarkup();
+    expect(html).toContain("background:var(--surface);border-radius:12px");
+    expect(html).not.toContain("border-top:1px solid");
+    expect(html).not.toContain("empty-chevron");
+  });
+
+  it("draws the drop zone 64 tall with a 1.5px dashed Raised border, radius 12, 14/20 Text 3", () => {
+    const html = phoneMarkup();
+    expect(html).toContain("height:64px");
+    expect(html).toContain("border:1.5px dashed var(--control);border-radius:12px");
+    expect(html).toContain("font-size:14px;font-weight:400;line-height:20px;color:var(--label)");
+  });
+});

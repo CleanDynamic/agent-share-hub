@@ -43,6 +43,10 @@ export interface PhoneTopBarProps {
   /** What the title is drawn as. The page's own h1 stays the page's; the bar's words are a `p` there. */
   titleAs?: "h1" | "p";
   right?: PhoneTopBarAction | null;
+  /** 29f: a second action that stands just before `right` (an icon: More). */
+  extra?: PhoneTopBarAction | null;
+  /** 29f: the beaver's width in the bar (default 56). */
+  logoWidth?: number;
   /** What the left control does. */
   onLeft?: () => void;
   /** Back's or Close's accessible name: "Back to Drafts", "Back", "Close". */
@@ -170,9 +174,9 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
   );
 }
 
-export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk", progress, line = true }: PhoneTopBarProps) {
+export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", right = null, extra = null, logoWidth = PHONE_LOGO_WIDTH_BAR, onLeft, leftLabel, viewer = null, unread = false, theme = "dusk", progress, line = true }: PhoneTopBarProps) {
   /* Words in a side slot are wider than 48: the sides then take equal shares and the centre its own width. */
-  const wide = Boolean(leftAction?.text || right?.text);
+  const wide = Boolean(leftAction?.text || right?.text || extra);
   const Title = titleAs;
   return (
     <header
@@ -210,7 +214,7 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
           <span />
         ) : centre === "logo" ? (
           <FrameLink to={SITE_NAV.home} aria-label={`${SITE_NAME} home`} data-phone-logo="" style={{ display: "flex", justifyContent: "center", alignItems: "center", justifySelf: "center" }}>
-            <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH_BAR} />
+            <BeaverLogo theme={theme} size={logoWidth} />
           </FrameLink>
         ) : (
           <Title
@@ -220,7 +224,7 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
               textAlign: "center",
               fontFamily: progress ? DM_MONO : FIGTREE,
               fontSize: progress ? 13 : 17,
-              fontWeight: progress ? 400 : 600,
+              fontWeight: progress ? 400 : 700,
               lineHeight: progress ? "16px" : "22px",
               color: progress ? t.label : t.text,
               whiteSpace: "nowrap",
@@ -231,7 +235,10 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
             {centre}
           </Title>
         )}
-        <div style={{ display: "flex", justifyContent: wide ? "flex-end" : "center" }}>{right ? <IconButton {...right} /> : null}</div>
+        <div style={{ display: "flex", justifyContent: wide ? "flex-end" : "center" }}>
+          {extra ? <IconButton {...extra} /> : null}
+          {right ? <IconButton {...right} /> : null}
+        </div>
       </div>
     </header>
   );

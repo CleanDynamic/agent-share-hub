@@ -199,6 +199,57 @@ describe("ActivityView on a phone (Synth 12)", () => {
   });
 });
 
+/* 29f, `08-activity-filter.jpg`: rows on a phone are an avatar at 40 (radius 9), 12 across, the line with the person's name at 700 and the
+   age 13/16 Text 3 under it; an unread row is a 6 round Mint dot 5 from the left edge, centred on the avatar. No kind squares, no
+   day heads drawn, no "live" label with its dot; and nothing yet is the ripple and the line, centred. */
+describe("ActivityView on a phone (29f)", () => {
+  it("marks an unread row with a 6 round Mint dot 5 from the left, centred on the avatar, and draws no bar or kind square", () => {
+    phone(true);
+    mount();
+    const unread = screen.getAllByTestId("activity-row").filter((row) => row.getAttribute("data-unread") === "true");
+    expect(unread.length).toBeGreaterThan(0);
+    const dot = within(unread[0]).getByTestId("activity-unread-bar");
+    expect(dot.style.width).toBe("6px");
+    expect(dot.style.height).toBe("6px");
+    expect(dot.style.left).toBe("5px");
+    expect(dot.style.top).toBe("29px");
+    expect(dot.style.borderRadius).toBe("50%");
+    expect(screen.queryAllByTestId("activity-badge")).toHaveLength(0);
+  });
+
+  it("sets the person's name at 700 and the age at 13/16 Text 3, with 12 and 16 round the row", () => {
+    phone(true);
+    const list = activityFixture().list;
+    mount({ list: { ...list, groups: list.groups.map((group) => ({ ...group, rows: group.rows.map((r) => ({ ...r, actorLabel: r.who.split(" ")[0] })) })) } });
+    const row = screen.getAllByTestId("activity-row")[0];
+    expect((row.querySelector('span[style*="font-weight: 700"]') as HTMLElement | null)?.textContent).toBeTruthy();
+    const age = row.querySelector("time") as HTMLElement;
+    expect([age.style.fontSize, age.style.lineHeight]).toEqual(["13px", "16px"]);
+    expect([row.style.gap, row.style.padding, row.style.minHeight]).toEqual(["12px", "12px 16px", "64px"]);
+    const avatar = row.querySelector('[data-ui="avatar"]') as HTMLElement;
+    expect([avatar.style.width, avatar.style.borderRadius]).toEqual(["40px", "9px"]);
+  });
+
+  it("draws no live label or dot (it is said to screen readers only), and the day heads are for screen readers only", () => {
+    phone(true);
+    mount();
+    const live = screen.getByTestId("activity-live");
+    expect(live.className).toBe("sr-only");
+    expect(live.textContent).not.toContain("●");
+    for (const day of screen.getAllByTestId("activity-day")) expect(within(day).getByRole("heading", { level: 2 }).className).toBe("sr-only");
+  });
+
+  it("is the ripple and the line, centred in the space under the pills, when there is nothing yet", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    phone(true);
+    mount({ live: true, list: { ...activityFixture().list, groups: [] } });
+    const empty = screen.getByTestId("activity-empty");
+    expect(empty.textContent).toContain("All caught up.");
+    expect(within(empty).getByTestId("water-field")).toBeTruthy();
+    expect(empty.style.justifyContent).toBe("center");
+  });
+});
+
 describe("G9 · every region failed", () => {
   it("is one failed state for the page, under its title", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);

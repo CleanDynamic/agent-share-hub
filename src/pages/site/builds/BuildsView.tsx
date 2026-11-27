@@ -7,7 +7,7 @@ import { useState, type ReactNode } from "react";
 import type { FigurePart } from "@/components/vision/PageFigure";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 
-import { BuildsColumns, BuildsHead, ViewSwitch } from "./BuildsFrame";
+import { BuildsColumns, BuildsHead, VIEW_LABEL, ViewSwitch } from "./BuildsFrame";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsTableView, type BuildsTableViewProps } from "./BuildsTableView";
 
@@ -26,13 +26,16 @@ export interface BuildsViewProps {
   updating?: boolean;
 }
 
+const VIEW_ORDER: readonly GalleryViewMode[] = ["table", "maps", "classification"];
+
 export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters, table, other, updating }: BuildsViewProps) {
   const [open, setOpen] = useState(false);
+  const views = VIEW_ORDER.map((entry) => ({ value: entry, label: VIEW_LABEL[entry], href: hrefFor(entry) }));
   return (
     <>
       <BuildsColumns
-        head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
-        main={table ? <BuildsTableView {...table} activeCount={filters.activeCount} onOpenFilters={() => setOpen(true)} updating={updating} /> : other}
+        head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} more={table === null} />} />}
+        main={table ? <BuildsTableView {...table} views={views} activeCount={filters.activeCount} onOpenFilters={() => setOpen(true)} updating={updating} /> : other}
       />
       <BuildsFilters {...filters} open={open} onOpenChange={setOpen} />
     </>

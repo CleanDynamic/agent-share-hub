@@ -56,6 +56,8 @@ import { t } from "@/lib/theme/tokens";
 
 import { hasFilters } from "@/lib/build/gallery";
 
+import { MoreProbe } from "@/test/MoreProbe";
+
 import BuildsPage from "./BuildsPage";
 
 const build = (n: number) => ({
@@ -79,6 +81,7 @@ function renderAt(path: string) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <BuildsPage />
+        <MoreProbe />
         <Where />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -1025,7 +1028,8 @@ describe("BF-12 one sort control on the page", () => {
     listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1), build(2)], total: 2 });
     renderAt("/builds?sort=steps&dir=asc");
     await screen.findByRole("link", { name: /Build 1/ });
-    /* Prompt 21: below 768 Sort is a sheet of 52-tall rows; choosing one closes it and sorts. */
+    /* Prompt 21 and 29f: below 768 Sort is a row of the bar's More sheet (the probe draws it) opening a sheet of 52-tall rows;
+       choosing one closes it and sorts. */
     fireEvent.click(screen.getByRole("button", { name: "Sort: Steps" }));
     fireEvent.click(await screen.findByRole("radio", { name: "Rebuilds" }));
     await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));

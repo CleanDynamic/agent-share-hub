@@ -226,6 +226,18 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.queryByTestId("round-post-button")).toBeNull();
   });
 
+  it("on a phone (29f): one 44 row under the header with the reader's avatar at 32 and \"Post anything\", opening the post window", () => {
+    atWidth(390);
+    const onPost = vi.fn();
+    draw({ onPost, viewer: { id: "u1", name: "Maya Okafor", avatarUrl: null } });
+    const box = screen.getByRole("button", { name: "Post anything" });
+    expect(box.style.minHeight).toBe("44px");
+    expect(box.style.fontSize).toBe("17px");
+    expect((box.querySelector('[data-ui="avatar"]') as HTMLElement).style.width).toBe("32px");
+    fireEvent.click(box);
+    expect(onPost).toHaveBeenCalledTimes(1);
+  });
+
   it("draws the Make a space control with a plus and its label as its name", () => {
     atWidth(1440);
     draw();

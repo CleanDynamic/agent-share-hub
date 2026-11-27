@@ -1034,6 +1034,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
 input[type="search"] { border-radius: var(--r-control); }
 
+/* 29f: a browser's autofill paints its own fill and text colour over a field. The phone's fields are on Card (--module), so an
+   autofilled one is painted Card with Text over it, and the fill does not fade back in. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--module) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  transition: background-color 9999s;
+}
+
 /* Synth 09: the notepad's title and text sit on the notepad itself, with no field edge or well of their own. */
 :is(input, textarea)[data-notepad-field] {
   background: transparent !important;

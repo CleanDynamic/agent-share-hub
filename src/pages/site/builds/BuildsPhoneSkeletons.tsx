@@ -2,7 +2,8 @@
    placeholder is in the first download, so it must not bring BuildsPhone's sheets (and the dialog library) with it. */
 
 import { Skeleton } from "@/components/brand/Skeleton";
-import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { PHONE_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
+import { PHONE_MARGIN, PHONE_PILL } from "@/components/shell/chromeSize";
 import { t } from "@/lib/theme/tokens";
 
 /** Cards as they load: Panel blocks at the cards' own height, so the page does not jump. */
@@ -36,6 +37,19 @@ export function PhoneRowSkeletons({ count }: { count: number }) {
           </div>
           <Skeleton width={thumb} height={thumb} radius={8} />
         </div>
+      ))}
+    </div>
+  );
+}
+
+/** 29f: the lens pills' row as it loads: the 52 row with the structural line, three pills' worth of block, so the bar's line does
+    not move when the real row arrives. */
+export function PhoneLensRowSkeleton() {
+  usePhoneRowLine(true);
+  return (
+    <div aria-hidden="true" data-testid="phone-lens-skeleton" style={{ ...PHONE_ROW_STYLE, display: "flex", alignItems: "center", gap: 8, padding: `0 ${PHONE_MARGIN}px` }}>
+      {[44, 88, 100].map((width) => (
+        <Skeleton key={width} width={width} height={PHONE_PILL} radius={PHONE_PILL / 2} />
       ))}
     </div>
   );

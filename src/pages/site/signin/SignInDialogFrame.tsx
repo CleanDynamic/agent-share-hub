@@ -23,12 +23,13 @@ import { IconButton } from "@/components/brand/IconButton";
 import { useKeyboardInset } from "@/components/phone/useKeyboardInset";
 import { SignInWaterCanvas } from "@/lib/dots/SignInWaterLayer";
 import { Segmented } from "@/components/brand/Segmented";
+import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { useRoom } from "@/components/brand/useRoom";
 import { BeaverLogo } from "@/components/shell/BeaverLogo";
 import { DIALOG_LOGO_WIDTH, PHONE_SIGNIN_LOGO_WIDTH } from "@/components/shell/chromeSize";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { BASE, FAST, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { BASE, FAST, PHONE_EASE, PHONE_QUICK, PHONE_STANDARD, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -62,6 +63,14 @@ export function AccountSwitch({
   onChange: (view: "login" | "signup") => void;
 }) {
   const phone = useIsPhone();
+  /* 29f: on a phone the switch is the tab pattern from 29d (44 tall, a word-wide Text indicator), not small pills. */
+  if (phone) {
+    return (
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <PhoneTabs<"login" | "signup"> centred label="Sign in or join" value={value} onChange={onChange} tabs={[{ value: "login", label: "Sign in" }, { value: "signup", label: "Sign up" }]} />
+      </div>
+    );
+  }
   return (
     <Segmented
       label="Sign in or join"
@@ -131,6 +140,10 @@ export function SignInDialogFrame({
   const phone = useIsPhone();
   const keyboard = useKeyboardInset();
   const body = useRef<HTMLDivElement>(null);
+  /* 29f: while a field is focused (or the keyboard is up) the beaver moves up and fades out, and the card keeps the field, the
+     password and Sign in above the keyboard. On blur with the keyboard closed everything returns. */
+  const [typing, setTyping] = useState(false);
+  const away = phone && (typing || keyboard > 0);
   /* G5: focus goes back to the control that opened the dialog. The dialog has no Radix Trigger (the address opens it), so
      the element that had focus when it mounted is kept here and focused on close, however it closes. */
   const [opener] = useState(() =>
@@ -196,6 +209,26 @@ export function SignInDialogFrame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, scrimEl, contentEl, cardEl, phone]);
 
+  /* The card rides above the keyboard (the content's bottom padding). Once the keyboard has settled, the card is scrolled so Sign in
+     is above it, and the focused field is kept in view if the two cannot both be. The 29e handler leaves fields in dialogs alone. */
+  useEffect(() => {
+    if (!phone || !typing || keyboard === 0 || !cardEl) return;
+    const timer = window.setTimeout(() => {
+      const box = cardEl.getBoundingClientRect();
+      const primary = cardEl.querySelector<HTMLElement>('button[type="submit"]');
+      if (primary) {
+        const over = primary.getBoundingClientRect().bottom + 16 - box.bottom;
+        if (over > 0) cardEl.scrollTop += over;
+      }
+      const field = document.activeElement;
+      if (field instanceof HTMLElement && cardEl.contains(field)) {
+        const under = box.top - field.getBoundingClientRect().top + 8;
+        if (under > 0) cardEl.scrollTop -= under;
+      }
+    }, PHONE_QUICK);
+    return () => window.clearTimeout(timer);
+  }, [phone, typing, keyboard, cardEl]);
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal forceMount>
@@ -260,8 +293,18 @@ export function SignInDialogFrame({
             <>
               {/* The whole screen is the water; it sits under the beaver and the card. */}
               <SignInWaterCanvas style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-              <div aria-hidden="true" style={{ position: "relative", flex: "1 1 0", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
-                <BeaverLogo theme={room} size={PHONE_SIGNIN_LOGO_WIDTH} clear />
+              <div aria-hidden="true" data-testid="signin-beaver" data-away={away ? "" : undefined} style={{ position: "relative", flex: "1 1 0", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
+                <div
+                  data-motion="bar"
+                  style={{
+                    pointerEvents: "none",
+                    opacity: away ? 0 : 1,
+                    transform: away && !prefersReducedMotion() ? "translateY(-200px)" : "none",
+                    transition: prefersReducedMotion() ? `opacity ${PHONE_QUICK}ms ${PHONE_EASE}` : `transform ${PHONE_STANDARD}ms ${PHONE_EASE}, opacity ${PHONE_STANDARD}ms ${PHONE_EASE}`,
+                  }}
+                >
+                  <BeaverLogo theme={room} size={PHONE_SIGNIN_LOGO_WIDTH} clear />
+                </div>
               </div>
               <Dialog.Title className="sr-only" style={{ margin: 0 }}>
                 {VIEW_TITLE[view] ?? VIEW_TITLE.login}
@@ -270,6 +313,13 @@ export function SignInDialogFrame({
                 ref={card}
                 data-occlude=""
                 data-testid="signin-phone-card"
+                onFocusCapture={(event) => {
+                  if (event.target instanceof HTMLInputElement && event.target.type !== "checkbox") setTyping(true);
+                }}
+                onBlurCapture={(event) => {
+                  const next = event.relatedTarget;
+                  if (!(next instanceof HTMLInputElement) || next.type === "checkbox") setTyping(false);
+                }}
                 style={{
                   position: "relative",
                   flexShrink: 0,
@@ -279,9 +329,10 @@ export function SignInDialogFrame({
                   display: "flex",
                   flexDirection: "column",
                   gap: 10,
-                  padding: "16px 16px calc(16px + env(safe-area-inset-bottom))",
+                  padding: away && keyboard > 0 ? "16px" : "16px 16px calc(16px + env(safe-area-inset-bottom))",
                   borderRadius: "20px 20px 0 0",
-                  background: t.surface,
+                  /* 29f: the card is on the Page shade, as `13-sign-in-keyboard.jpg` draws it: Card fields, a Text Google button. */
+                  background: t.bg,
                 }}
               >
                 <div data-testid="signin-row-one" style={{ flexShrink: 0, display: "flex", alignItems: "center", minHeight: 44 }}>

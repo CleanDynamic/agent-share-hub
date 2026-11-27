@@ -120,7 +120,7 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
             full
             disabled={loadingProvider !== null}
             onClick={() => onProvider(provider.id)}
-            style={index === 0 ? { background: t.inverse, color: t.onInverse, fontWeight: 500 } : { fontWeight: 500 }}
+            style={index === 0 ? { background: t.inverse, color: t.onInverse, fontWeight: 500 } : { background: t.module, color: t.text, fontWeight: 500 }}
           >
             {loadingProvider === provider.id ? <PendingRing /> : null}
             {loadingProvider === provider.id ? provider.opening : provider.label}
@@ -267,6 +267,8 @@ export function AuthField({
   const messageId = useId();
 
   const invalid = Boolean(error) || validation?.state === "invalid" || invalidFromForm;
+  /* 29f: on a phone only an error the form set (after Sign in) draws the red edge; a live check's "invalid" is its message alone. */
+  const formInvalid = Boolean(error) || invalidFromForm;
   const message = error || validation?.message || notice;
   const confirmed = !error && validation?.state === "valid";
   const noticing = !error && !validation?.message && Boolean(notice);
@@ -280,7 +282,9 @@ export function AuthField({
           style={
             sizes.phone
               ? {
-                  /* Mobile prompt 27: a PhoneField: 44 tall, radius 12, its edge an inset line (the focus ring on focus), 16px text. */
+                  /* 29f: 48 tall, radius 12, on Card with no edge; focused, an inset 1.5px Text ring; a form's error (set only once Sign in
+                     has been pressed, cleared as the field changes) is an inset Danger line. Nothing turns red while typing. 16px text, so
+                     iOS does not zoom. */
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
@@ -288,8 +292,8 @@ export function AuthField({
                   boxSizing: "border-box",
                   padding: "0 12px",
                   borderRadius: 12,
-                  background: t.surface,
-                  boxShadow: `inset 0 0 0 ${focused || invalid ? 2 : 1}px ${invalid ? t.dangerText : focused ? t.focusRing : t.fieldEdge}`,
+                  background: t.module,
+                  boxShadow: formInvalid ? `inset 0 0 0 1.5px ${t.dangerText}` : focused ? `inset 0 0 0 1.5px ${t.text}` : "none",
                   color: t.text2,
                   fontFamily: FIGTREE,
                   fontSize: 16,
