@@ -275,6 +275,7 @@ export function MapCanvas({ layout: stored, steps, groups, files, making, result
     <div ref={wrap} data-testid="map-canvas-wrap" style={{ position: "relative", minWidth: 0, paddingTop: FRAME_TAB_ROOM }}>
       <div
         data-testid="map-canvas"
+        data-canvas-paint=""
         data-mode={mode}
         data-measuring={measured.missing ? "" : undefined}
         style={{
@@ -343,7 +344,7 @@ function MeasuringLayer({
   scope: CSSProperties;
 }) {
   return (
-    <div ref={layerRef} aria-hidden="true" data-testid="map-measure" style={{ ...scope, position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "hidden", visibility: "hidden", pointerEvents: "none" }}>
+    <div ref={layerRef} aria-hidden="true" data-canvas-paint="" data-testid="map-measure" style={{ ...scope, position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "hidden", visibility: "hidden", pointerEvents: "none" }}>
       {tiles.map((request) => {
         const step = stepById.get(request.id);
         const result = resultById.get(request.id);

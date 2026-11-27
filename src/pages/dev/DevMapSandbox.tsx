@@ -35,6 +35,9 @@ export const DEV_MAP_SANDBOX_COPY = {
   noLayout: "None stored. The map starts from the build.",
 };
 
+/** The widths the picker offers: the minimum, narrow, standard, wide and the maximum, and two between. */
+const WIDTHS = [MAP_WIDTH.min, MAP_WIDTH.narrow, 840, MAP_WIDTH.standard, 1080, MAP_WIDTH.wide, MAP_WIDTH.max];
+
 const isName = (value: string | null): value is MapSandboxName => MAP_SANDBOX_NAMES.includes(value as MapSandboxName);
 
 const HEADING = { fontSize: textStep.section, fontWeight: 600, lineHeight: "24px", margin: 0, color: t.text } as const;
@@ -91,8 +94,13 @@ export default function DevMapSandbox() {
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: space[2] }}>
           {DEV_MAP_SANDBOX_COPY.width}
-          <input data-testid="map-sandbox-width" type="range" min={MAP_WIDTH.min} max={MAP_WIDTH.max} step={12} value={width} onChange={(event) => set("width", event.target.value)} />
-          <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta }}>{width}</span>
+          <select data-testid="map-sandbox-width" value={width} onChange={(event) => set("width", event.target.value)} style={{ fontFamily: FIGTREE, fontSize: textStep.body, color: t.text, background: t.control, border: `1px solid ${t.hairline}`, borderRadius: r.control, padding: `${space[1]}px ${space[2]}px` }}>
+            {[...new Set([...WIDTHS, width])].sort((a, b) => a - b).map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
