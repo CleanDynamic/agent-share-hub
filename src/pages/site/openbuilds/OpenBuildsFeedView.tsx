@@ -27,7 +27,7 @@ import { PANEL_GUTTER, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
 import { PageLink as Link } from "@/lib/routing/PageLink";
-import { move } from "@/lib/theme/motion";
+import { phoneSlide, phoneSlideOpacity } from "@/lib/theme/motion";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
@@ -273,7 +273,7 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
     <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` }}>
       <FeedTitle />
       {view.signedIn ? (
-        <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}>
+        <div data-motion="bar" style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: phoneSlide(), opacity: phoneSlideOpacity(hidden) }}>
           <PhoneTabs<FeedScope> equal tabs={tabs} value={view.scope} onChange={view.onScope} label="Posts from" />
         </div>
       ) : null}

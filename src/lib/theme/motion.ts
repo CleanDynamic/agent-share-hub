@@ -112,6 +112,23 @@ export const PHONE_STANDARD = 280;
 /** The phone's one curve. */
 export const PHONE_EASE = "cubic-bezier(.2,.8,.2,1)";
 
+/**
+ * 29e: a phone slide's transition. Bars, the dock and the round button travel with `transform` over `PHONE_STANDARD` on
+ * `PHONE_EASE`; under reduced motion the same change is an opacity fade over `PHONE_QUICK` (the caller sets the opacity
+ * alongside, see `phoneSlideOpacity`). The element carries `data-motion` so the stylesheet's no-motion rule leaves it alone.
+ */
+export function phoneSlide(ms: number = PHONE_STANDARD): string {
+  return prefersReducedMotion() ? `opacity ${PHONE_QUICK}ms ${PHONE_EASE}` : `transform ${ms}ms ${PHONE_EASE}`;
+}
+
+/** 29e: the opacity that goes with `phoneSlide` when the slide is away: 0 under reduced motion (a fade), 1 otherwise. */
+export function phoneSlideOpacity(away: boolean): number {
+  return away && prefersReducedMotion() ? 0 : 1;
+}
+
+/** 29e: the reduced-motion version of any phone slide: a `PHONE_QUICK` opacity fade. */
+export const phoneReducedFade = (): string => `opacity ${PHONE_QUICK}ms ${PHONE_EASE}`;
+
 /** 29c: a phone list that is being read again keeps its old rows on screen at 60%, and they fade back over PHONE_QUICK. */
 export const PHONE_UPDATING_OPACITY = 0.6;
 export function phoneUpdating(updating: boolean | undefined): CSSProperties {
@@ -165,6 +182,9 @@ export const MOTION_TOKENS = {
   "motion-reveal": `${REVEAL}ms`,
   "motion-theme": `${THEME_SWITCH}ms`,
   "motion-ease": STANDARD,
+  "motion-phone-quick": `${PHONE_QUICK}ms`,
+  "motion-phone-standard": `${PHONE_STANDARD}ms`,
+  "motion-phone-ease": PHONE_EASE,
 } as const;
 
 export const MOTION_NAMES = Object.keys(MOTION_TOKENS) as (keyof typeof MOTION_TOKENS)[];

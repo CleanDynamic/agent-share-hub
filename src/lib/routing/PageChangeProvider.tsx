@@ -22,6 +22,8 @@ import { createPath, resolvePath, useLocation, useNavigate } from "react-router-
 
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
+import { isPhoneView } from "./dockScroll";
+import { phoneNavKind, type PhoneNavKind } from "./phoneNav";
 import { beginChange, beginPop, forcePlaceholder, isLoaded, PageChangeContext, PLACEHOLDER_AFTER_MS, settle, type Go } from "./go";
 import { storedUserId } from "./useIntent";
 import { warmPath } from "./warm";
@@ -35,8 +37,9 @@ interface ViewTransitionLike {
 }
 type StartViewTransition = (update: () => Promise<void>) => ViewTransitionLike;
 
-function viewTransitions(): StartViewTransition | null {
-  if (typeof document === "undefined" || prefersReducedMotion()) return null;
+/** 29e: on a phone a change is a push or a back (index.css `data-phone-nav`); with reduced motion it is a PHONE_QUICK fade, not nothing. */
+function viewTransitions(phone: boolean): StartViewTransition | null {
+  if (typeof document === "undefined" || (prefersReducedMotion() && !phone)) return null;
   const start = (document as Document & { startViewTransition?: StartViewTransition }).startViewTransition;
   return typeof start === "function" ? start.bind(document) : null;
 }
@@ -76,12 +79,20 @@ export function PageChangeProvider({ children }: { children: ReactNode }) {
     if (queryClient) void storedUserId().then((userId) => warmPath(pathname, queryClient, userId));
     window.setTimeout(() => forcePlaceholder(token), PLACEHOLDER_AFTER_MS);
 
-    const start = isLoaded(pathname) ? viewTransitions() : null;
+    const phone = isPhoneView();
+    const kind: PhoneNavKind | null = phone ? phoneNavKind(location.pathname, pathname) : null;
+    run(isLoaded(pathname) && kind !== "none" ? viewTransitions(phone) : null, kind, change);
+  };
+
+  /** The change inside a view transition when there is one. `kind` marks the root for the phone's push and back. */
+  const run = (start: StartViewTransition | null, kind: PhoneNavKind | null, change: () => void) => {
     if (!start) {
       change();
       return;
     }
     running?.skipTransition();
+    const root = document.documentElement;
+    if (kind && kind !== "none") root.dataset.phoneNav = kind;
     const fade = start(
       () =>
         new Promise<void>((resolve) => {
@@ -92,11 +103,21 @@ export function PageChangeProvider({ children }: { children: ReactNode }) {
     );
     running = fade;
     void fade.finished.catch(() => undefined).finally(() => {
-      if (running === fade) running = null;
+      if (running === fade) {
+        running = null;
+        delete root.dataset.phoneNav;
+      }
     });
   };
 
-  return <PageChangeContext.Provider value={{ go, isPending }}>{children}</PageChangeContext.Provider>;
+  /** The page's Back (the header's chevron): one step through the history, drawn as a back. */
+  const back = () => {
+    const phone = isPhoneView();
+    const change = () => startTransition(() => navigate(-1));
+    run(phone ? viewTransitions(true) : null, phone ? "back" : null, change);
+  };
+
+  return <PageChangeContext.Provider value={{ go, back, isPending }}>{children}</PageChangeContext.Provider>;
 }
 
 export default PageChangeProvider;

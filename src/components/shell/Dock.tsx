@@ -29,7 +29,7 @@ import { isActivityPath, isImportPath, SITE_NAV, sectionForPath, showsCreateButt
 import { PHONE_DOCK } from "./chromeSize";
 import { NewSheet } from "./NewSheet";
 import { dockAwayFor, dockHiddenFor } from "./phoneTopBar";
-import { move } from "@/lib/theme/motion";
+import { phoneSlide, phoneSlideOpacity } from "@/lib/theme/motion";
 
 export type DockTileName = "home" | "gallery" | "import" | "openbuilds" | "activity";
 
@@ -128,12 +128,14 @@ function RefinedDockView({ current, unread, placement = "fixed", away = false }:
     <nav
       data-testid="dock"
       data-ui="dock"
+      data-motion="bar"
       aria-label="Primary"
       aria-hidden={away || undefined}
       ref={(node) => { node?.toggleAttribute("inert", away); }}
       style={{
         transform: away ? "translateY(100%)" : "translateY(0)",
-        transition: move(),
+        transition: phoneSlide(),
+        opacity: phoneSlideOpacity(away),
         position: placement,
         left: 0,
         right: 0,

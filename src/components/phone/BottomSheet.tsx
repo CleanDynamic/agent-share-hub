@@ -4,13 +4,15 @@
 // LOOK. Scrim `--scrim`; the sheet on Card, radius 16 16 0 0, padding 8 0 plus the bottom inset; a 36 by 4 grab handle in
 // `--field-edge`; a header row (title 17/22 600 at 16 from the left, an optional line 13 Text 2, a 44 close button).
 // HEIGHTS. `content` opens to its content, at most 90% of the screen; `half` is 50% and drags up to full; `full` ends 59 below the top.
-// CLOSING. A drag down on the handle or the header closes past 80px, and a quick flick closes from anywhere above the body.
+// CLOSING. A drag down on the handle or the header closes past a third of the sheet's height, or faster than 0.5 px/ms (29e);
+// released short of both it returns over PHONE_STANDARD.
 // If a field inside has changed (or `dirty` says so), closing first asks in an action sheet: "Discard changes?".
 // FOOTER. Pinned to the bottom on Surface, 12 16 plus the inset: a status line at the left, the buttons at the right. The
 // sheet rides above the on-screen keyboard.
-// MOTION. The slide is the `data-motion="sheet"` rule in index.css (BASE up on STANDARD, FAST down; a fade under reduced motion).
+// MOTION. The slide is the `data-motion="sheet"` rule in index.css, with its scrim, together: PHONE_STANDARD up and down on
+// PHONE_EASE (a PHONE_QUICK fade under reduced motion).
 
-import { FAST, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
+import { PHONE_EASE, PHONE_QUICK, PHONE_STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
@@ -28,11 +30,19 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { ActionSheet } from "./ActionSheet";
 import { useKeyboardInset } from "./useKeyboardInset";
 
-/** A downward drag of more than this many px on the handle or header closes the sheet. */
+/** 29e: a drag down of more than this fraction of the sheet's height closes it. */
+export const SHEET_CLOSE_FRACTION = 1 / 3;
+/** Kept for callers: the least a drag is worth when the sheet's height is unknown (jsdom). */
 export const PHONE_SHEET_DRAG_CLOSE_PX = 80;
-/** A downward flick faster than this (px per ms) over at least `FLICK_MIN_PX` closes it from anywhere above the body. */
-export const FLICK_SPEED = 0.6;
-export const FLICK_MIN_PX = 40;
+/** A downward drag faster than this (px per ms) over at least `FLICK_MIN_PX` closes it. */
+export const FLICK_SPEED = 0.5;
+export const FLICK_MIN_PX = 12;
+
+/** Pure: whether a release after dragging down `dy` px at `speed` px/ms closes a sheet `height` px tall. */
+export function sheetCloses(dy: number, speed: number, height: number): boolean {
+  const third = height > 0 ? height * SHEET_CLOSE_FRACTION : PHONE_SHEET_DRAG_CLOSE_PX;
+  return dy > third || (dy > FLICK_MIN_PX && speed > FLICK_SPEED);
+}
 /** `full` stops this far below the top of the screen. */
 export const SHEET_TOP_GAP = 59;
 /** The `menu` tone's top radius (29d). */
@@ -65,18 +75,20 @@ export interface PhoneBottomSheetProps {
   children?: ReactNode;
 }
 
-/** Prompt 23: a sheet stepping aside goes down in FAST, its scrim fades in FAST; reduced motion fades only. Nothing it holds unmounts. */
-const ASIDE_SCRIM: CSSProperties = { opacity: 0, pointerEvents: "none", transition: `opacity ${FAST}ms ${STANDARD}` };
+/** Prompt 23: a sheet stepping aside goes down in PHONE_QUICK, its scrim fades in PHONE_QUICK; reduced motion fades only. Nothing it holds unmounts. */
+const ASIDE_SCRIM: CSSProperties = { opacity: 0, pointerEvents: "none", transition: `opacity ${PHONE_QUICK}ms ${PHONE_EASE}` };
 const asideSheet = (): CSSProperties =>
   prefersReducedMotion()
-    ? { opacity: 0, pointerEvents: "none", transition: `opacity ${FAST}ms ${STANDARD}` }
-    : { opacity: 0, pointerEvents: "none", transform: "translateY(100%)", transition: `transform ${FAST}ms ${STANDARD}, opacity ${FAST}ms ${STANDARD}` };
+    ? { opacity: 0, pointerEvents: "none", transition: `opacity ${PHONE_QUICK}ms ${PHONE_EASE}` }
+    : { opacity: 0, pointerEvents: "none", transform: "translateY(100%)", transition: `transform ${PHONE_QUICK}ms ${PHONE_EASE}, opacity ${PHONE_QUICK}ms ${PHONE_EASE}` };
 
 export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, stepAside = false, tone = "card", children, ...rest }: PhoneBottomSheetProps) {
   const focus = useWindowFocus(open, onCloseAutoFocus);
   const keyboard = useKeyboardInset();
   const start = useRef<{ y: number; at: number } | null>(null);
   const [drag, setDrag] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const sheet = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [touched, setTouched] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -100,6 +112,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
     if ((event.target as HTMLElement).closest?.("[data-sheet-body]")) return;
     if ((event.target as HTMLElement).closest?.("button, a, input, textarea, select")) return;
     start.current = { y: event.clientY, at: event.timeStamp };
+    setDragging(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const onMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -109,11 +122,14 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
   const onUp = (event: PointerEvent<HTMLDivElement>) => {
     const from = start.current;
     start.current = null;
-    setDrag(0);
+    setDragging(false);
     if (!from) return;
     const dy = (event.clientY ?? from.y) - from.y;
     const speed = dy / Math.max(1, event.timeStamp - from.at);
-    if (dy > PHONE_SHEET_DRAG_CLOSE_PX || (dy > FLICK_MIN_PX && speed > FLICK_SPEED)) requestClose();
+    const closes = sheetCloses(dy, speed, sheet.current?.getBoundingClientRect().height ?? 0);
+    // Released short of closing, the sheet returns over PHONE_STANDARD (the transform's transition); closing carries on from here.
+    setDrag(closes && isDirty ? 0 : closes ? drag : 0);
+    if (closes) requestClose();
     else if (height === "half" && dy < -FLICK_MIN_PX) setExpanded(true);
   };
 
@@ -142,6 +158,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
         <Dialog.Portal>
           <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40, ...(stepAside ? ASIDE_SCRIM : null) }} />
           <Dialog.Content
+            ref={sheet}
             data-testid={rest["data-testid"] ?? "bottom-sheet"}
             data-motion="sheet"
             data-height={height}
@@ -172,6 +189,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               fontFamily: FIGTREE,
               overscrollBehavior: "contain",
               transform: drag ? `translateY(${drag}px)` : undefined,
+              transition: dragging || stepAside ? undefined : `transform ${PHONE_STANDARD}ms ${PHONE_EASE}`,
               ...(stepAside ? asideSheet() : null),
             }}
           >

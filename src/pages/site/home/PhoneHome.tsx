@@ -32,7 +32,7 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { siteUrl } from "@/lib/site";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { move } from "@/lib/theme/motion";
+import { phoneSlide, phoneSlideOpacity } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -122,8 +122,9 @@ function Tabs({ scope, onScopeChange, filter, hidden, onKind }: { scope: HomeSco
   return (
     <div
       data-testid="home-phone-tabs"
+      data-motion="bar"
       data-hidden={hidden ? "" : undefined}
-      style={{ position: "sticky", top: TABS_TOP, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}
+      style={{ position: "sticky", top: TABS_TOP, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: phoneSlide(), opacity: phoneSlideOpacity(hidden) }}
     >
       <PhoneTabs<HomeScope>
         label="Feed scope"

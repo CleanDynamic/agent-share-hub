@@ -71,6 +71,8 @@ export function NewSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const [posting, setPosting] = useState<PostingWindow | null>(null);
 
   const choose = (kind: CreateKind) => {
+    // 29e: closing the sheet and starting the page's push happen in this one call, so the two move together (the sheet's
+    // slide down and the editor's slide in, both PHONE_STANDARD). Nothing here waits for the sheet's close to end.
     onOpenChange(false);
     if (!isLoggedIn) {
       navigate(openOver(pathname, window.location.search), { state: deeper(locationState) });

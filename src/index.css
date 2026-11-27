@@ -337,6 +337,9 @@
   --motion-reveal: 450ms;
   --motion-theme: 180ms;
   --motion-ease: cubic-bezier(.2,.6,.35,1);
+  --motion-phone-quick: 160ms;
+  --motion-phone-standard: 280ms;
+  --motion-phone-ease: cubic-bezier(.2,.8,.2,1);
 
   /* BG-P04 — elevation. Noon's depth is a true shadow: the luminous grey
      room has a light source, so a surface above the page casts. Struck from
@@ -614,6 +617,9 @@
   --motion-reveal: 450ms;
   --motion-theme: 180ms;
   --motion-ease: cubic-bezier(.2,.6,.35,1);
+  --motion-phone-quick: 160ms;
+  --motion-phone-standard: 280ms;
+  --motion-phone-ease: cubic-bezier(.2,.8,.2,1);
 
   /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
      level pairs a deeper shadow with an inset --glass-hi top hairline: the
@@ -1205,30 +1211,125 @@ input[type="search"] { border-radius: var(--r-control); }
 @keyframes bgPushOut {
   to { translate: 100% 0; }
 }
+/* 29e: on a phone every slide is one of two durations on one curve (`--motion-phone-*`, motion.ts PHONE_QUICK, PHONE_STANDARD,
+   PHONE_EASE). A sheet and its scrim rise and leave together over PHONE_STANDARD; the drawer and a page pushed inside a sheet
+   enter over PHONE_STANDARD. Translate and opacity only. */
 @media (max-width: 767px) {
+  [data-motion="scrim"][data-state="open"] {
+    animation: bgScrimIn var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  [data-motion="scrim"][data-state="closed"] {
+    animation: bgScrimOut var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  [data-motion="sheet"][data-state="open"] {
+    animation: bgSheetIn var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  [data-motion="sheet"][data-state="closed"] {
+    animation: bgSheetOut var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
   [data-motion="drawer"][data-state="open"] {
-    animation: bgDrawerIn var(--motion-base) var(--motion-ease) both;
+    animation: bgDrawerIn var(--motion-phone-standard) var(--motion-phone-ease) both;
   }
   [data-motion="drawer"][data-state="closed"] {
-    animation: bgDrawerOut var(--motion-fast) var(--motion-ease) both;
+    animation: bgDrawerOut var(--motion-phone-standard) var(--motion-phone-ease) both;
   }
   [data-motion="push"][data-state="open"] {
-    animation: bgPushIn var(--motion-base) var(--motion-ease) both;
+    animation: bgPushIn var(--motion-phone-standard) var(--motion-phone-ease) both;
   }
   [data-motion="push"][data-state="closed"] {
-    animation: bgPushOut var(--motion-fast) var(--motion-ease) both;
+    animation: bgPushOut var(--motion-phone-standard) var(--motion-phone-ease) both;
   }
 }
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   [data-motion="drawer"][data-state="open"],
   [data-motion="push"][data-state="open"],
   [data-motion="sheet"][data-state="open"] {
-    animation: bgScrimIn var(--motion-base) var(--motion-ease) both !important;
+    animation: bgScrimIn var(--motion-phone-quick) var(--motion-phone-ease) both !important;
   }
   [data-motion="drawer"][data-state="closed"],
   [data-motion="push"][data-state="closed"],
   [data-motion="sheet"][data-state="closed"] {
-    animation: bgScrimOut var(--motion-fast) var(--motion-ease) both !important;
+    animation: bgScrimOut var(--motion-phone-quick) var(--motion-phone-ease) both !important;
+  }
+  /* The bars, the round button and the dock change by opacity over PHONE_QUICK; the global rule below would zero it. */
+  [data-motion="bar"] {
+    transition-duration: var(--motion-phone-quick) !important;
+  }
+}
+
+/* 29e: a page pushed from a feed, and Back. PageChangeProvider sets `data-phone-nav` on the root for the length of the view
+   transition: "push" (the new page enters from the right while the old one goes to -30% and 88% brightness), "back" (the
+   reverse). The header travels with its page. Dock tab switches start no transition at all. Reduced motion: a PHONE_QUICK fade. */
+@keyframes bgPhonePushIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes bgPhoneUnderOut {
+  from { transform: translateX(0); filter: brightness(1); }
+  to   { transform: translateX(-30%); filter: brightness(.88); }
+}
+@keyframes bgPhoneUnderIn {
+  from { transform: translateX(-30%); filter: brightness(.88); }
+  to   { transform: translateX(0); filter: brightness(1); }
+}
+@keyframes bgPhoneOutRight {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+@media (max-width: 767px) {
+  :root[data-phone-nav] ::view-transition-old(page),
+  :root[data-phone-nav] ::view-transition-new(page),
+  :root[data-phone-nav] ::view-transition-old(site-header),
+  :root[data-phone-nav] ::view-transition-new(site-header) {
+    mix-blend-mode: normal;
+  }
+  :root[data-phone-nav="push"] ::view-transition-old(page),
+  :root[data-phone-nav="push"] ::view-transition-old(site-header) {
+    animation: bgPhoneUnderOut var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  :root[data-phone-nav="push"] ::view-transition-new(page),
+  :root[data-phone-nav="push"] ::view-transition-new(site-header) {
+    animation: bgPhonePushIn var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  :root[data-phone-nav="back"] ::view-transition-old(page),
+  :root[data-phone-nav="back"] ::view-transition-old(site-header) {
+    z-index: 2;
+    animation: bgPhoneOutRight var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+  :root[data-phone-nav="back"] ::view-transition-new(page),
+  :root[data-phone-nav="back"] ::view-transition-new(site-header) {
+    animation: bgPhoneUnderIn var(--motion-phone-standard) var(--motion-phone-ease) both;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  :root[data-phone-nav] ::view-transition-old(page),
+  :root[data-phone-nav] ::view-transition-old(site-header) {
+    z-index: 2;
+    animation: bgScrimOut var(--motion-phone-quick) var(--motion-phone-ease) both;
+  }
+  :root[data-phone-nav] ::view-transition-new(page),
+  :root[data-phone-nav] ::view-transition-new(site-header) {
+    animation: bgScrimIn var(--motion-phone-quick) var(--motion-phone-ease) both;
+  }
+}
+
+/* 29e: press states. phonePress.ts sets `data-pressed` on the tappable under a finger the moment it goes down (and
+   `data-motion="press"` while it settles, so the no-motion rule leaves the release alone). Rows and buttons darken 6%; icon
+   buttons shrink to 0.96. Release restores over PHONE_QUICK. `filter` and `scale` only. */
+@media (max-width: 767px) {
+  [data-motion="press"] {
+    transition: filter var(--motion-phone-quick) var(--motion-phone-ease), scale var(--motion-phone-quick) var(--motion-phone-ease);
+  }
+  [data-pressed] {
+    filter: brightness(.94);
+  }
+  [data-pressed][data-press="icon"] {
+    filter: none;
+    scale: .96;
+  }
+  /* A field being typed in stays clear of the keyboard (phoneKeyboard.ts scrolls it once). */
+  :is(input, textarea, select, [contenteditable="true"]) {
+    scroll-margin-bottom: 24px;
   }
 }
 

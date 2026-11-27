@@ -53,7 +53,8 @@ describe("SV-04 adds no motion but the page fade and the progress line", () => {
   });
 
   it("animates no view-transition group but the page area's old and new pictures", () => {
-    const css = readFileSync("src/index.css", "utf8");
+    // 29e's phone push and back (`:root[data-phone-nav]`, under 768px) are the phone's own and are tested in phoneMotion.test.ts.
+    const css = readFileSync("src/index.css", "utf8").replace(/@media \(max-width: 767px\)[^{]*\{\s*:root\[data-phone-nav[\s\S]*?\n\}\n/g, "");
     const rules = [...css.matchAll(/(::view-transition[^{]+)\{([^}]*)\}/g)];
     const animated = rules.filter(([, , body]) => (body.match(/animation:\s*([^;]+)/)?.[1].trim() ?? "none") !== "none").map(([, selector]) => selector.trim());
     expect(animated).toEqual(["::view-transition-old(page)", "::view-transition-new(page)"]);

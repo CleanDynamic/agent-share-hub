@@ -23,7 +23,7 @@ export interface PhoneTabsProps<V extends string = string> {
   /** Every tab takes an equal share of the width. */
   equal?: boolean;
   /** 29d: the tabs sit as a centred pair, each its word plus 16 either side with 24 between, over one 3 tall indicator in Text
-   *  that is exactly as wide as the word and slides between them (`PHONE_QUICK`; instantly under reduced motion). Mark the word
+   *  that is exactly as wide as the word and slides between them (a transform over `PHONE_QUICK`; instantly under reduced motion). Mark the word
    *  with `data-tab-word` in a custom label so the chevron and the like are not underlined. */
   centred?: boolean;
   /** What a tab's label draws, for a tab that carries more than its words (Home's kind after a middle dot). Absent: the label. */
@@ -152,15 +152,17 @@ export function PhoneTabs<V extends string = string>({ tabs, value, onChange, la
         <span
           aria-hidden="true"
           data-testid="phone-tab-indicator"
+          data-motion="bar"
           style={{
             position: "absolute",
-            left: bar.left,
+            left: 0,
             bottom: 0,
             width: bar.width,
             height: 3,
             borderRadius: 2,
             background: t.text,
-            transition: prefersReducedMotion() ? "none" : `left ${PHONE_QUICK}ms ${PHONE_EASE}, width ${PHONE_QUICK}ms ${PHONE_EASE}`,
+            transform: `translateX(${bar.left}px)`,
+            transition: prefersReducedMotion() ? "none" : `transform ${PHONE_QUICK}ms ${PHONE_EASE}`,
           }}
         />
       ) : null}
