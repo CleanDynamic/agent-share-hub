@@ -254,26 +254,68 @@ CREATE POLICY "Readers can log their own export" ON public.ai_export_log
 -- 2. Storage: every write tied to its owner.
 -- ---------------------------------------------------------------------------------------------------------------------
 
-ALTER POLICY "Authors replace entry media" ON storage.objects
-  WITH CHECK (bucket_id = 'build-media' AND (storage.foldername(name))[1] = 'entries' AND (storage.foldername(name))[2] = ((SELECT auth.uid()))::text);
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Authors replace entry media') THEN
+    EXECUTE 'ALTER POLICY "Authors replace entry media" ON storage.objects
+  WITH CHECK (bucket_id = ''build-media'' AND (storage.foldername(name))[1] = ''entries'' AND (storage.foldername(name))[2] = ((SELECT auth.uid()))::text)';
+  ELSE
+    RAISE NOTICE 'Policy Authors replace entry media on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "Creators update build media objects" ON storage.objects
-  WITH CHECK (bucket_id = 'build-media' AND EXISTS (SELECT 1 FROM public.builds b WHERE b.id::text = (storage.foldername(objects.name))[1] AND b.creator_id = (SELECT auth.uid())));
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Creators update build media objects') THEN
+    EXECUTE 'ALTER POLICY "Creators update build media objects" ON storage.objects
+  WITH CHECK (bucket_id = ''build-media'' AND EXISTS (SELECT 1 FROM public.builds b WHERE b.id::text = (storage.foldername(objects.name))[1] AND b.creator_id = (SELECT auth.uid())))';
+  ELSE
+    RAISE NOTICE 'Policy Creators update build media objects on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "build-media owner update" ON storage.objects
-  WITH CHECK (bucket_id = 'build-media' AND EXISTS (SELECT 1 FROM public.builds b WHERE b.id = public.try_uuid(split_part(objects.name, '/', 1)) AND (b.creator_id = (SELECT auth.uid()) OR (SELECT public.is_admin((SELECT auth.uid()))))));
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'build-media owner update') THEN
+    EXECUTE 'ALTER POLICY "build-media owner update" ON storage.objects
+  WITH CHECK (bucket_id = ''build-media'' AND EXISTS (SELECT 1 FROM public.builds b WHERE b.id = public.try_uuid(split_part(objects.name, ''/'', 1)) AND (b.creator_id = (SELECT auth.uid()) OR (SELECT public.is_admin((SELECT auth.uid()))))))';
+  ELSE
+    RAISE NOTICE 'Policy build-media owner update on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "Users can update own avatar" ON storage.objects
-  WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = ((SELECT auth.uid()))::text);
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Users can update own avatar') THEN
+    EXECUTE 'ALTER POLICY "Users can update own avatar" ON storage.objects
+  WITH CHECK (bucket_id = ''avatars'' AND (storage.foldername(name))[1] = ((SELECT auth.uid()))::text)';
+  ELSE
+    RAISE NOTICE 'Policy Users can update own avatar on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "Users can update own profile assets" ON storage.objects
-  WITH CHECK (bucket_id = 'profile-assets' AND (storage.foldername(name))[1] = ((SELECT auth.uid()))::text);
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Users can update own profile assets') THEN
+    EXECUTE 'ALTER POLICY "Users can update own profile assets" ON storage.objects
+  WITH CHECK (bucket_id = ''profile-assets'' AND (storage.foldername(name))[1] = ((SELECT auth.uid()))::text)';
+  ELSE
+    RAISE NOTICE 'Policy Users can update own profile assets on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "Users can update their own result media" ON storage.objects
-  WITH CHECK (bucket_id = 'content-results' AND ((SELECT auth.uid()))::text = (storage.foldername(name))[1]);
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Users can update their own result media') THEN
+    EXECUTE 'ALTER POLICY "Users can update their own result media" ON storage.objects
+  WITH CHECK (bucket_id = ''content-results'' AND ((SELECT auth.uid()))::text = (storage.foldername(name))[1])';
+  ELSE
+    RAISE NOTICE 'Policy Users can update their own result media on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
-ALTER POLICY "blueprint-media owner update" ON storage.objects
-  WITH CHECK (bucket_id = 'blueprint-media' AND ((SELECT auth.uid()))::text = (storage.foldername(name))[1]);
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'blueprint-media owner update') THEN
+    EXECUTE 'ALTER POLICY "blueprint-media owner update" ON storage.objects
+  WITH CHECK (bucket_id = ''blueprint-media'' AND ((SELECT auth.uid()))::text = (storage.foldername(name))[1])';
+  ELSE
+    RAISE NOTICE 'Policy blueprint-media owner update on storage.objects not found; skipped';
+  END IF;
+END $guard$;
 
 -- content-files: paths are `<item>/...` and `covers/<item>/...` (src/pages/Upload.tsx, src/components/ProjectUploadForm.tsx),
 -- so a file belongs to the creator of that item. The old rules compared the first folder with the user's id, which never
@@ -321,8 +363,14 @@ CREATE POLICY "Authenticated users can submit tools" ON public.ai_tools_registry
     )
   );
 
-ALTER POLICY "Admins can update tools" ON public.ai_tools_registry
-  WITH CHECK ((SELECT public.is_admin((SELECT auth.uid()))));
+DO $guard$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'ai_tools_registry' AND policyname = 'Admins can update tools') THEN
+    EXECUTE 'ALTER POLICY "Admins can update tools" ON public.ai_tools_registry
+  WITH CHECK ((SELECT public.is_admin((SELECT auth.uid()))))';
+  ELSE
+    RAISE NOTICE 'Policy Admins can update tools on public.ai_tools_registry not found; skipped';
+  END IF;
+END $guard$;
 
 -- ---------------------------------------------------------------------------------------------------------------------
 -- 5. Accepting a solution gives a fixed amount, capped per day. The reward is set by the bounty's author and nothing is
