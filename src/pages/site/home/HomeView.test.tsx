@@ -80,10 +80,14 @@ describe("HomeView · control heights", () => {
     expect((pill.parentElement as HTMLElement).style.justifyContent).toBe("center");
   });
 
-  it("spaces the posts 8 apart with 4 above and 16 below", () => {
+  it("spaces the posts 24 apart with no line: each item pads 12 above and below and 16 at the sides (prompt 29a)", () => {
     mount();
     const feed = screen.getByTestId("home-feed");
-    expect([feed.style.gap, feed.style.padding]).toEqual(["8px", "4px 0px 16px"]);
+    expect([feed.style.gap, feed.style.padding]).toEqual(["", "0px 0px 16px"]);
+    for (const item of screen.getAllByTestId("home-feed-item")) {
+      expect(item.style.padding).toBe("12px 16px");
+      expect(item.style.borderBottom).toBe("");
+    }
   });
 });
 

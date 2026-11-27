@@ -21,6 +21,8 @@ vi.mock("./cardMedia", async (importOriginal) => ({
 
 import type { GalleryBuild, GalleryMedia, ThreadDoc } from "@/lib/build";
 import { GalleryCard } from "./GalleryCard";
+import { FeedPost } from "./FeedPost";
+import type { XSize } from "./xFeed";
 import { feedMedia, type MediaSrcMap } from "./cardMedia";
 
 const NO_MEDIA: MediaSrcMap = new Map();
@@ -317,5 +319,91 @@ describe("feedMedia", () => {
   it("signs a build with no thread from its cover", () => {
     const rows = feedMedia(build({ post_doc: null, media: [media("m9")], cover_media_id: "m9" }));
     expect(rows.map((row) => row.id)).toEqual(["m9"]);
+  });
+});
+
+/* Prompt 29a Part A: Home's post at X's proportions, the phone's and desktop's measurements from one component. */
+function renderX(size: XSize, subject: GalleryBuild = build(), onMore?: () => void) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <FeedPost
+          x={size}
+          build={subject}
+          srcByPath={NO_MEDIA}
+          makerHandle="maria"
+          makerName="Maria Silva"
+          makerAvatar={null}
+          modelsUsed={[]}
+          engagement={{ counts: { likes: 3, comments: 1 }, liked: false, saved: false }}
+          onMore={onMore}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("Home's post at X's proportions (prompt 29a)", () => {
+  it.each([
+    ["phone", 48, "11px", "17px", "22px"],
+    ["desktop", 40, "9px", "15px", "20px"],
+  ] as const)("on the %s: a %ipx avatar (radius %s) 8 from the text, the author row and post text at %s/%s", (size, avatar, radius, text, line) => {
+    renderX(size);
+    const post = document.querySelector<HTMLElement>("[data-feed-post]")!;
+    expect(post.dataset.x).toBe(size);
+    expect(post).toHaveStyle({ gridTemplateColumns: `${avatar}px minmax(0, 1fr)`, columnGap: "8px", padding: "0px" });
+    const face = post.querySelector<HTMLElement>("[data-feed-author-column] [data-ui='avatar']")!;
+    expect(face).toHaveStyle({ width: `${avatar}px`, height: `${avatar}px`, borderRadius: radius });
+    expect(screen.getByTestId("feed-author-name")).toHaveStyle({ fontSize: text, fontWeight: "700", lineHeight: line });
+    expect(screen.getByText("Second post words", { exact: false }).closest("[data-post]")).not.toBeNull();
+  });
+
+  it("puts Show more under the pictures at the post text size in Text 3, 12 above it, with a 44 hit area on the phone", () => {
+    renderX("phone");
+    const toggle = screen.getByRole("button", { name: "Show more · 2 more posts" });
+    expect(toggle).toHaveStyle({ fontSize: "17px", lineHeight: "22px", minHeight: "44px", marginTop: "1px", marginBottom: "-11px" });
+    // The toggle comes after post 1 (its pictures), and the build line after the toggle.
+    const pictures = document.querySelector("[data-post='1'] [data-post-pictures]")!;
+    expect(pictures.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toggle.compareDocumentPosition(screen.getByTestId("feed-build-title")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws pictures at radius 14 on the phone and 16 on desktop, on the Card fill with no line", () => {
+    const { unmount } = renderX("phone");
+    expect(document.querySelector("[data-post-media-grid]")).toHaveStyle({ borderRadius: "14px" });
+    expect((document.querySelector("[data-post-media-grid]") as HTMLElement).style.border).toBe("");
+    unmount();
+    renderX("desktop");
+    expect(document.querySelector("[data-post-media-grid]")).toHaveStyle({ borderRadius: "16px" });
+  });
+
+  it.each([
+    ["phone", "20.7%", "42%", "12px", "15px"],
+    ["desktop", "22.5%", "45.3%", "6.5px", "13px"],
+  ] as const)("places the %s actions at X's places: Comment 0, Rebuild %s, Like %s, Save at the right edge", (size, rebuild, like, pad, count) => {
+    renderX(size);
+    const row = screen.getByTestId("engagement-row");
+    expect(row).toHaveStyle({ position: "relative", height: "20px", marginTop: "12px" });
+    const at = (name: string) => row.querySelector<HTMLElement>(`[data-engagement-action='${name}']`)!;
+    expect(at("comment").style.left).toBe(`calc(0% - ${pad})`);
+    expect(at("rebuild").style.left).toBe(`calc(${rebuild} - ${pad})`);
+    expect(at("like").style.left).toBe(`calc(${like} - ${pad})`);
+    expect(at("save").style.right).toBe(`-${pad}`);
+    expect(at("like").querySelector<HTMLElement>("[data-engagement-count]")).toHaveStyle({ fontSize: count });
+  });
+
+  it("shows More at the right of the author row when asked, with a 44 hit area on the phone", () => {
+    const onMore = vi.fn();
+    renderX("phone", build(), onMore);
+    const more = screen.getByTestId("feed-more");
+    expect(more).toHaveStyle({ width: "22px", height: "22px" });
+    fireEvent.click(more);
+    expect(onMore).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws the build line 13/16, its facts in Text 2", () => {
+    renderX("desktop");
+    expect(screen.getByTestId("feed-build-title")).toHaveStyle({ fontSize: "13px", fontWeight: "500", lineHeight: "16px" });
   });
 });

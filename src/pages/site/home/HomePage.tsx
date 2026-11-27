@@ -24,6 +24,7 @@ import { reportError } from "@/lib/errors/report";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { feedMedia, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,7 +141,11 @@ export function HomePage() {
   /* New since you looked: the previous visit, read once; this one is recorded when the first page has arrived. The items
      newer than it are held back until the pill is chosen. */
   const [seenAt] = useState(readHomeSeen);
-  const [revealed, setRevealed] = useState(false);
+  const [revealedByPill, setRevealed] = useState(false);
+  /* Prompt 29a: a phone has no pill to show the posts held back, so it shows them at once; what is new after that arrives with
+     the pull to refresh. Desktop holds them back for its pill as before. */
+  const phone = useIsPhone();
+  const revealed = revealedByPill || phone;
 
   const feedQuery = useInfiniteQuery({
     queryKey: feedKey(scope, userId),
@@ -184,6 +189,21 @@ export function HomePage() {
   const newAuthors = revealed ? [] : newAuthorsOf([...items, ...postEntries], seenAt);
   const shown = shownItems(items, seenAt, revealed);
   const shownPosts = shownItems(postEntries, seenAt, revealed);
+
+  /* Prompt 29a: the phone's pull to refresh. The feed query is refetched through React Query (the count of new posts is read from
+     it), the posts held back for the pill are shown, and the count of posts that were not on screen before is what it announces. */
+  const onRefresh = async (): Promise<number> => {
+    const before = new Set<string>([...shown, ...shownPosts].map((item) => item.key));
+    const result = await feedQuery.refetch();
+    if (result.isError) throw result.error;
+    const after = new Set<string>();
+    for (const page of result.data?.pages ?? []) {
+      for (const item of page.items) if (isHomeFeedRow(item)) after.add(item.key);
+      for (const entry of page.postItems ?? []) after.add(entry.key);
+    }
+    setRevealed(true);
+    return [...after].filter((key) => !before.has(key)).length;
+  };
 
   /* ── round 1: the columns ── */
 
@@ -474,6 +494,7 @@ export function HomePage() {
           newCount={newCount}
           newAuthors={newAuthors}
           onShowNew={() => setRevealed(true)}
+          onRefresh={onRefresh}
           srcByPath={srcByPath}
           onPostsNear={onPostsNear}
           topics={{

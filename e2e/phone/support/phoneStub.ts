@@ -175,6 +175,9 @@ const REPLIES = [
   postRow("r-two", PEOPLE.dax, "Same problem here. What format are you after?", 45, { parent_id: "t-open", root_id: "t-open", reply_count: 0 }),
 ];
 
+/* Prompt 29a: a post that arrives after the first read, for the pull to refresh. */
+export const NEW_BUILD = { id: "b-fresh", who: PEOPLE.dax, title: "Standup notes from the call transcript", minutes: 2, post_doc: doc(["Fresh off the press: the standup writes its own notes from the meeting transcript."]) };
+
 const TOPIC_ROWS = TOPICS.map((t) => postRow(t.id, t.who, t.body, t.minutes, { still_open: t.id === "t-open" }));
 
 export interface StubLog {
@@ -184,7 +187,12 @@ export interface StubLog {
 }
 
 /** Routes the page's Supabase traffic to the fixtures. Returns what was asked for, so a spec can see what an empty answer covered. */
-export async function installPhoneStub(page: Page): Promise<StubLog> {
+export interface StubOptions {
+  /** Prompt 29a: the second and later reads of the feed carry `NEW_BUILD` at the top, as a refresh would find it. */
+  newPostsOnRefetch?: boolean;
+}
+
+export async function installPhoneStub(page: Page, options: StubOptions = {}): Promise<StubLog> {
   const log: StubLog = { tables: new Map(), urls: new Map() };
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", headers: { "access-control-allow-origin": "*", "content-range": "0-0/*" }, body: JSON.stringify(body) });
@@ -201,10 +209,13 @@ export async function installPhoneStub(page: Page): Promise<StubLog> {
     log.tables.set(name, (log.tables.get(name) ?? 0) + 1);
     log.urls.set(name, [...(log.urls.get(name) ?? []), decodeURIComponent(url.search)]);
     const single = (request.headers()["accept"] ?? "").includes("vnd.pgrst.object");
-    if (name === "rpc/get_build_feed") return json(route, feedRows);
+    if (name === "rpc/get_build_feed") {
+      const fresh = options.newPostsOnRefetch && (log.tables.get(name) ?? 0) > 1;
+      return json(route, fresh ? [feedRow(NEW_BUILD.id, NEW_BUILD.who, NEW_BUILD.title, NEW_BUILD.minutes), ...feedRows] : feedRows);
+    }
     if (name === "builds") {
       const ids = /[?&]id=in\.\(([^)]*)\)/.exec(decodeURIComponent(url.search))?.[1]?.split(",").map((id) => id.replace(/"/g, "")) ?? [];
-      const rows = BUILDS.filter((b) => ids.includes(b.id)).map(buildRow);
+      const rows = [...BUILDS, ...(options.newPostsOnRefetch ? [NEW_BUILD as (typeof BUILDS)[number]] : [])].filter((b) => ids.includes(b.id)).map(buildRow);
       return json(route, single ? (rows[0] ?? null) : rows);
     }
     if (name === "post_spaces" && /select=space_id(&|$)/.test(url.search)) return json(route, [1, 2, 3].map(() => ({ space_id: SPACE.id })));

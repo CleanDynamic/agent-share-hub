@@ -39,8 +39,10 @@ import { hoverIsFine, prefersReducedMotion, STANDARD } from "@/lib/theme/motion"
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { X_FEED, type XSize } from "@/components/gallery/xFeed";
+
 import { PostBody } from "./PostBody";
-import { FEED_THREAD_GAP, feedType, postType, THREAD_GAP } from "./postType";
+import { FEED_THREAD_GAP, feedType, postType, THREAD_GAP, xFeedType } from "./postType";
 
 export type PostThreadMode = "closed" | "open" | "page";
 
@@ -84,6 +86,11 @@ export interface PostThreadProps {
   first?: ReactNode;
   /** Prompt 20: the phone feed's thread: 15/20 words, 24 between posts, the toggle in 15 Text 3. */
   feed?: boolean;
+  /**
+   * Prompt 29a: Home's thread at X's proportions: the post text 17/22 (phone) or 15/20 (desktop), 24 between posts, and
+   * "Show more" 12 under the pictures at the post text size in Text 3, with a 44 (phone) or 32 (desktop) hit area.
+   */
+  x?: XSize;
 }
 
 /** The size of a node on the connector, and the line's width. */
@@ -108,8 +115,9 @@ export function PostThread({
   clampLines,
   first: firstSlot,
   feed = false,
+  x,
 }: PostThreadProps) {
-  const gap = feed ? FEED_THREAD_GAP : THREAD_GAP;
+  const gap = x ? X_FEED[x].threadGap : feed ? FEED_THREAD_GAP : THREAD_GAP;
   const regionId = useId();
   const page = mode === "page";
   const [pageOpen, setPageOpen] = useState(false);
@@ -152,7 +160,7 @@ export function PostThread({
   const [first, ...rest] = posts;
   const total = posts.length;
   const foldable = total > 1 || cut;
-  const lines = (feed ? feedType() : postType(phone)).firstLine;
+  const lines = (x ? xFeedType(X_FEED[x].text, X_FEED[x].line) : feed ? feedType() : postType(phone)).firstLine;
   const connected = connector !== undefined && open && settled && rest.length > 0;
 
   const press = () => {
@@ -201,7 +209,7 @@ export function PostThread({
             style={{ position: "absolute", left: connector.x - NODE / 2, top: nodeTop - NODE / 2, width: NODE, height: NODE, borderRadius: 3, background: t.threadNode }}
           />
         ) : null}
-        <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} compact={page} feed={feed} />
+        <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} compact={page} feed={feed} x={x} />
       </div>
     );
   });
@@ -211,7 +219,7 @@ export function PostThread({
       <div data-post={1} id={rest.length === 0 ? regionId : undefined} style={{ position: "relative" }}>
         {connected && connector ? line({ top: connector.top, bottom: -1 }) : null}
         {firstSlot ?? (
-          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} feed={feed} clampLines={open ? undefined : clampLines} onCut={setCut} />
+          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} feed={feed} x={x} clampLines={open ? undefined : clampLines} onCut={setCut} />
         )}
       </div>
       {rest.length > 0 ? (
@@ -230,7 +238,7 @@ export function PostThread({
           {footer}
         </div>
       ) : foldable ? (
-        <Toggle buttonRef={toggleRef} open={open} more={rest.length} controls={regionId} phone={phone} feed={feed} onPress={press} onIntent={open ? undefined : onIntent} />
+        <Toggle buttonRef={toggleRef} open={open} more={rest.length} controls={regionId} phone={phone} feed={feed} x={x} onPress={press} onIntent={open ? undefined : onIntent} />
       ) : null}
     </div>
   );
@@ -305,10 +313,13 @@ function Toggle({
   phone,
   plain = false,
   feed = false,
+  x,
   buttonRef,
   onPress,
   onIntent,
 }: {
+  /** Prompt 29a: Home at X's proportions (see `PostThreadProps.x`). */
+  x?: XSize;
   /** The phone feed's: 15 in Text 3, 44 tall. */
   feed?: boolean;
   /** The build page's: an underlined text button, with no box. */
@@ -328,6 +339,9 @@ function Toggle({
     },
     onFocus: () => onIntent?.(),
   });
+  // X's proportions: 12 of visible space above the words, the hit area reaching round them without moving anything.
+  const xm = x ? X_FEED[x] : null;
+  const reach = xm ? (xm.hit - xm.line) / 2 : 0;
   const label = open ? "Show less" : plain ? `1 of ${more + 1} posts · Show more` : more === 0 ? "Show more" : `Show more · ${more === 1 ? "1 more post" : `${more} more posts`}`;
   return (
     <button
@@ -360,6 +374,9 @@ function Toggle({
         textDecoration: plain ? "underline" : "none",
         textUnderlineOffset: 3,
         cursor: "pointer",
+        ...(xm
+          ? { minHeight: xm.hit, marginTop: xm.gap - reach, marginBottom: -reach, fontSize: xm.text, fontWeight: 400, lineHeight: `${xm.line}px`, color: t.label }
+          : null),
         ...ring(state.focusVisible),
       }}
     >

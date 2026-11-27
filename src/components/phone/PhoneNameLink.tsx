@@ -11,15 +11,16 @@ import { FIGTREE } from "@/lib/theme/type";
 
 const NAME: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 };
 
-export function PhoneNameLink({ handle, children }: { handle: string | null | undefined; children: ReactNode }) {
+/** `style` sets the name's size and weight where a post's proportions differ (prompt 29a: Home's 17/22 at 700). */
+export function PhoneNameLink({ handle, style, children }: { handle: string | null | undefined; style?: CSSProperties; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  if (!handle) return <span style={NAME}>{children}</span>;
+  if (!handle) return <span style={{ ...NAME, ...style }}>{children}</span>;
   return (
     <PageLink
       to={`/profile/${encodeURIComponent(handle)}`}
       data-testid="phone-author-name"
       {...handlers}
-      style={{ ...NAME, display: "block", textDecoration: "none", padding: "12px 0", margin: "-12px 0", borderRadius: 4, ...ring(state.focusVisible) }}
+      style={{ ...NAME, ...style, display: "block", textDecoration: "none", padding: "12px 0", margin: "-12px 0", borderRadius: 4, ...ring(state.focusVisible) }}
     >
       {children}
     </PageLink>

@@ -7,6 +7,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { X_FEED, X_ROW_GAP, xGrid, xMeta, xName, type XSize } from "@/components/gallery/xFeed";
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { PhoneNameLink } from "@/components/phone/PhoneNameLink";
 import { MoreSheet } from "@/components/shell/MoreSheet";
@@ -62,6 +63,8 @@ export interface PostCardProps {
   onBlock?: { label: string; onSelect: () => void };
   /** Prompt 20: the phone's post. "home": text in Text, six lines. "list": a space's or the feed's topic, text in Text 2, six lines. Both: the item frame holds the padding, meta at 15, More is a content sheet, the actions are the phone feed's. Absent: desktop, unchanged. */
   phone?: "home" | "list";
+  /** Prompt 29a: Home's topic at X's proportions: the post's grid and sizes, the lead line at the post text size in 600, the text in Text 2, Like, Reply and Save at X's places. */
+  x?: XSize;
 }
 
 /** The phone's More: three dots at 18 in Text 3, a 32 hit area with the touch target reaching 44 round it. */
@@ -85,12 +88,12 @@ function PhoneMore({ onPress }: { onPress: () => void }) {
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 
 /** The post's heading at FeedPost's card title size, 13/500 (a topic and a build sit side by side as equals): underlined at once under hover (a fine pointer only). */
-function HeadingLink({ to, level = 3, children }: { to: string; level?: 2 | 3; children: string }) {
+function HeadingLink({ to, level = 3, size, children }: { to: string; level?: 2 | 3; size?: { text: number; line: number }; children: string }) {
   const Heading = level === 2 ? "h2" : "h3";
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
-      <Heading style={{ ...plain, display: "inline", fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{children}</Heading>
+      <Heading style={{ ...plain, display: "inline", fontSize: size?.text ?? 15, fontWeight: 600, lineHeight: `${size?.line ?? 20}px` }}>{children}</Heading>
     </Link>
   );
 }
@@ -209,7 +212,8 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, headingLevel = 3, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock, phone }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, headingLevel = 3, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock, phone, x }: PostCardProps) {
+  const xm = x ? X_FEED[x] : null;
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
@@ -243,24 +247,25 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
   return (
     <article
       aria-label={card.heading}
-      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: phone ? 0 : "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
+      data-x={x}
+      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, ...(x ? xGrid(x) : null), padding: phone || x ? 0 : "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
     >
-      <div style={{ gridColumn: 1, width: 40 }}>
-        <Avatar size={40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
+      <div style={{ gridColumn: 1, width: xm ? xm.avatar : 40 }}>
+        <Avatar size={xm ? xm.avatar : 40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
       </div>
 
       <div style={{ gridColumn: 2, minWidth: 0 }}>
         {/* Synth 11: a pinned card says so above the author line, 13 in Text 2. */}
         {card.pinned ? <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.text2, marginBottom: 4 }}>Pinned</div> : null}
         {/* Head: name, @handle · age · in spaces; the reward at the right end. */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: phone ? 20 : 24, marginBottom: 4 }}>
-          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone ? "nowrap" : "wrap", alignItems: "baseline", columnGap: phone ? 4 : 6 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: xm ? xm.line : phone ? 20 : 24, marginBottom: x ? X_ROW_GAP : 4 }}>
+          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone || x ? "nowrap" : "wrap", alignItems: "baseline", columnGap: phone || x ? 4 : 6 }}>
             {phone ? (
-              <PhoneNameLink handle={card.author.handle}>{name}</PhoneNameLink>
+              <PhoneNameLink handle={card.author.handle} style={x ? xName(x) : undefined}>{name}</PhoneNameLink>
             ) : (
-              <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{name}</span>
+              <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(x ? { ...xName(x), whiteSpace: "nowrap" } : null) }}>{name}</span>
             )}
-            <span style={{ ...plain, fontSize: phone ? 15 : 13, lineHeight: phone ? "20px" : 1.4, color: label, whiteSpace: phone ? "nowrap" : "pre-wrap", ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } : null) }}>
+            <span style={{ ...plain, fontSize: phone ? 15 : 13, lineHeight: phone ? "20px" : 1.4, color: label, whiteSpace: phone ? "nowrap" : "pre-wrap", ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } : null), ...(x ? { ...xMeta(x), whiteSpace: "nowrap", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } : null) }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}
               {card.spaces.map((space, index) => (
@@ -305,7 +310,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {page ? (
           <h1 style={{ ...plain, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
         ) : (
-          <HeadingLink to={card.to} level={headingLevel}>
+          <HeadingLink to={card.to} level={headingLevel} size={xm ?? undefined}>
             {card.heading || "Untitled post"}
           </HeadingLink>
         )}
@@ -314,10 +319,10 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
           <p
             style={{
               ...plain,
-              marginTop: 4,
-              fontSize: 15,
-              lineHeight: "20px",
-              color: phone === "home" ? t.text : t.text2,
+              marginTop: x ? X_ROW_GAP : 4,
+              fontSize: xm ? xm.text : 15,
+              lineHeight: `${xm ? xm.line : 20}px`,
+              color: x ? t.text2 : phone === "home" ? t.text : t.text2,
               whiteSpace: "pre-wrap",
               overflowWrap: "anywhere",
               ...(clamp && !page ? { display: "-webkit-box", WebkitLineClamp: phone ? 6 : 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
@@ -352,7 +357,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
 
         {card.replies ? <RepliesStrip replies={card.replies} /> : null}
 
-        {topic && !compact ? <TopicEngagementRow {...topic} phoneFeed={Boolean(phone)} style={phone ? { marginTop: 0, ...topic.style } : { marginTop: 12, maxWidth: 425, justifyContent: "space-between", ...topic.style }} /> : null}
+        {topic && !compact ? <TopicEngagementRow {...topic} phoneFeed={Boolean(phone) && !x} x={x} style={x ? topic.style : phone ? { marginTop: 0, ...topic.style } : { marginTop: 12, maxWidth: 425, justifyContent: "space-between", ...topic.style }} /> : null}
         {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} phoneFeed={Boolean(phone)} style={phone ? undefined : { marginTop: 12, maxWidth: 425, justifyContent: "space-between" }} /> : null}
         {!compact && reactions ? reactions : null}
       </div>
