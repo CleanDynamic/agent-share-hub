@@ -55,7 +55,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
 import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
-import { CRUMB_BAND, FRAME_MAX_WIDTH, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, PHONE_TOPBAR } from "./chromeSize";
+import { CRUMB_BAND, FRAME_MAX_WIDTH, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, PHONE_PAGE_BOTTOM, PHONE_PAGE_TOP, PHONE_TOPBAR } from "./chromeSize";
 import { Dock } from "./Dock";
 import { FocusRescue } from "./FocusRescue";
 import { MobileHeader } from "./MobileHeader";
@@ -68,7 +68,7 @@ import { CrumbTitleProvider } from "./useBreadcrumb";
 import { useHeaderHeight } from "./useHeaderCompact";
 import { useIsPhone, useShortWindow } from "./useMinWidth";
 import { useBarsHidden } from "./phoneBars";
-import { move } from "@/lib/theme/motion";
+import { move, PHONE_STANDARD } from "@/lib/theme/motion";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -141,6 +141,9 @@ const CONTAINER: CSSProperties = {
   flexDirection: "column",
   minWidth: 0,
 };
+
+/** The phone's page: the fixed bar and dock are out of flow, so the page pads for them, once, from chromeSize (29b). */
+const PHONE_CONTAINER: CSSProperties = { ...CONTAINER, padding: `${PHONE_PAGE_TOP} ${PANEL_GUTTER}px ${PHONE_PAGE_BOTTOM}` };
 
 /** The composer (`wide`) lays itself out from the window's width, so its container is not capped. */
 const WIDE_CONTAINER: CSSProperties = { ...CONTAINER, maxWidth: "none" };
@@ -251,20 +254,22 @@ export function SiteFrameView({
         data-frame-id={frameId}
         /* G22: pinned unless the window is short (zoomed), where it would cover the page. */
         style={{
-          position: short ? "relative" : "sticky",
+          position: short ? "relative" : phone ? "fixed" : "sticky",
           top: 0,
+          ...(phone && !short ? { left: 0, right: 0 } : null),
           zIndex: 20,
-          minHeight: barHeight,
+          minHeight: phone ? undefined : barHeight,
           background: t.frame,
-          ...(phone ? { transform: barsHidden ? `translateY(-${PHONE_TOPBAR}px)` : "translateY(0)", transition: move() } : null),
+          ...(phone ? { transform: barsHidden ? `translateY(-${PHONE_TOPBAR}px)` : "translateY(0)", transition: move(PHONE_STANDARD) } : null),
         }}
       >
         {phone ? mobileHeader : header}
         {progress}
       </div>
-      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} data-columns={columns ? "true" : undefined} style={wide && !phone ? WIDE_CONTAINER : CONTAINER}>
+      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} data-columns={columns ? "true" : undefined} style={phone ? (short ? CONTAINER : PHONE_CONTAINER) : wide ? WIDE_CONTAINER : CONTAINER}>
         <main
           id="main"
+          data-phone-main={phone ? "" : undefined}
           /* G4: the skip link's target. A programmatic focus target, never a Tab stop, and it draws no outline. */
           tabIndex={-1}
           style={{
@@ -274,7 +279,7 @@ export function SiteFrameView({
             display: "flex",
             flexDirection: "column",
             gap: columns ? PANEL_GUTTER : phone ? 16 : 24,
-            padding: columns ? 0 : phone ? `${PANEL_PAD}px ${PANEL_PAD}px calc(72px + env(safe-area-inset-bottom))` : wide ? "0 0 48px" : `${PANEL_PAD + CRUMB_BAND}px ${PANEL_PAD}px 48px`,
+            padding: columns ? 0 : phone ? `${PANEL_PAD}px` : wide ? "0 0 48px" : `${PANEL_PAD + CRUMB_BAND}px ${PANEL_PAD}px 48px`,
             boxSizing: "border-box",
             minWidth: 0,
             ...(columns ? null : PANEL),
@@ -284,7 +289,7 @@ export function SiteFrameView({
           {phone || !wide ? null : <div data-slot="breadcrumb" style={{ padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` }}>{breadcrumb}</div>}
           <FrameColumnsContext.Provider value={setColumns}>{children}</FrameColumnsContext.Provider>
         </main>
-        <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>{footer}</div>
+        {phone ? null : <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>{footer}</div>}
       </div>
       {phone ? <div data-slot="dock">{dock}</div> : null}
     </div>

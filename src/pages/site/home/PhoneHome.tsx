@@ -123,7 +123,7 @@ function Tabs({ scope, onScopeChange, filter, hidden, onKind }: { scope: HomeSco
     <div
       data-testid="home-phone-tabs"
       data-hidden={hidden ? "" : undefined}
-      style={{ position: "sticky", top: TABS_TOP, zIndex: 19, background: t.bg, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}
+      style={{ position: "sticky", top: TABS_TOP, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}
     >
       <PhoneTabs<HomeScope>
         label="Feed scope"

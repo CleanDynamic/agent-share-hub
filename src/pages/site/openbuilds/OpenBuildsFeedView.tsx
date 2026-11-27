@@ -274,7 +274,7 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
     <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` }}>
       <FeedTitle />
       {view.signedIn ? (
-        <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}>
+        <div style={{ position: "sticky", top: `calc(env(safe-area-inset-top) + ${PHONE_TOPBAR}px)`, zIndex: 19, background: t.bg, boxShadow: `inset 0 -1px 0 ${t.control}`, transform: hidden ? `translateY(-${HIDE_TRAVEL}px)` : "translateY(0)", transition: move() }}>
           <PhoneTabs<FeedScope> equal tabs={tabs} value={view.scope} onChange={view.onScope} label="Posts from" />
         </div>
       ) : null}

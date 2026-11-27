@@ -109,6 +109,7 @@ function RefinedDockView({ current, unread, placement = "fixed", onNew, away = f
         paddingBottom: "env(safe-area-inset-bottom)",
         boxSizing: "border-box",
         background: t.bg,
+        boxShadow: `inset 0 1px 0 ${t.control}`,
       }}
     >
       {TILES.map(({ name, label, href, icon }) => {

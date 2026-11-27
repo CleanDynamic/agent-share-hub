@@ -19,7 +19,7 @@ import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 import type { FrameViewer } from "./frameTypes";
 import { MoreSheet } from "./MoreSheet";
 import { usePageBar } from "./phoneBarRegistry";
-import { phoneBarFor } from "./phoneTopBar";
+import { phoneBarFor, tabsCarryLine } from "./phoneTopBar";
 import { SITE_NAV } from "./siteNav";
 
 /* The drawer and the search page draw nothing until first opened, so their code (and the dialog library and the gallery's data
@@ -109,6 +109,7 @@ function MobileHeaderContainer() {
         unread={unread > 0}
         theme={resolved}
         progress={page.progress}
+        line={!tabsCarryLine(pathname)}
       />
       <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} items={page.more ?? []} bare={page.bare} />
       {searchEver ? (

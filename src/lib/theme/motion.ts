@@ -105,6 +105,13 @@ export const SPLASH_MS = 3200;
 /** 110ms. How often a code glyph cell changes character during a splash. */
 export const GLYPH_STEP_MS = 110;
 
+/** 160ms. The phone's press states, tab indicators and content arriving (29b). */
+export const PHONE_QUICK = 160;
+/** 280ms. The phone's sheets, pushed pages and hiding bars (29b). */
+export const PHONE_STANDARD = 280;
+/** The phone's one curve. */
+export const PHONE_EASE = "cubic-bezier(.2,.8,.2,1)";
+
 /** Every duration this system knows, by name. */
 export const DURATION = {
   fast: FAST,
