@@ -1565,6 +1565,8 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
 /** A dashed, text-only row that adds something inside an agent or a team. */
 function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  // MS-05: adding to an agent or a team is the List's; the map edits no step.
+  if (useOnMap()) return null;
   return (
     <button
       type="button"
