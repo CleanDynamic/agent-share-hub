@@ -7,6 +7,8 @@
 // A key the reader doesn't know is ignored when reading and never removed: the reader copies it through onto the object it
 // read, so a layout read, changed and written again keeps it.
 
+import { MAP_WIDTH } from "./mapGeometry";
+
 /** builds.making.map_layout. Proportions and ids only: the canvas works out every pixel. */
 export interface MapLayout {
   v: 1;
@@ -60,12 +62,6 @@ export interface MapBox {
 export type MapTilePart = "text" | "settings" | "files" | "code" | "picture";
 export interface MapStyle { fill?: MapFill; border?: "line" | "dashed" | "none"; corners?: 4 | 8 | 12 | 16 }
 export type MapFill = "none" | "grey" | "green" | "amber" | "blue" | "violet";
-
-/**
- * Canvas widths in px (README Decision 7). MS-02 moves this to `mapGeometry.ts`, beside `MAP_GRID`; until then it lives here
- * because the reader clamps to it.
- */
-export const MAP_WIDTH = { min: 640, narrow: 720, standard: 960, wide: 1200, max: 1600 } as const;
 
 /** The background presets, by key. Their colours live in `canvasRecipes.ts` (MS-05). */
 export const MAP_BACKGROUNDS = ["grey", "dusk", "slate", "paper"] as const;
