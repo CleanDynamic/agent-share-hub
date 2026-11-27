@@ -81,7 +81,8 @@ import {
   type SystemPromptFacts,
   type SystemPromptScope,
 } from "./sourceTiles";
-import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
+import { attachmentsTitle, type Attachment } from "./attachments";
+import { agentExtrasOf, attachmentsAtOf, checkExtrasOf, cleanExtras, contextOf, patternOf, settingsOf, toolExtrasOf, variablesOf, type PromptContext, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
 import type { EvidencePayload } from "./evidenceKinds";
@@ -228,6 +229,12 @@ export interface Step {
   settings?: PromptSettings;
   /** SV-30 P3, a prompt: how it was sent when not by the maker, and what the maker says it asks for. */
   origin?: PromptOrigin;
+  /** A prompt: the files and pictures attached to the message, in order (File nodes used by this prompt alone). Absent when none. */
+  attachments?: Attachment[];
+  /** A prompt: the attachments came after the text (`payload.attachments_at`). Absent: before it, as chat apps put them. */
+  attachmentsAt?: "after";
+  /** A prompt: what the app added that the maker could not see (`payload.context`). Absent when not given. */
+  context?: PromptContext;
   asksFor?: AsksFor;
   variables?: PromptVariable[];
   /** CA-15 P9, a system prompt only: where it applies and its version; `appliesTo` is how many of the build's prompts that reaches. */
@@ -1047,6 +1054,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
     ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
     ...(kind === "prompt" && originOf(payload) ? { origin: originOf(payload) as PromptOrigin } : null),
+    ...(kind === "prompt" && attachmentsAtOf(payload.attachments_at) === "after" ? { attachmentsAt: "after" as const } : null),
+    ...(kind === "prompt" && contextOf(payload.context) ? { context: contextOf(payload.context) as PromptContext } : null),
     ...(kind === "prompt" && asksForOf(payload) ? { asksFor: asksForOf(payload) as AsksFor } : null),
     ...((kind === "prompt" || kind === "system_prompt") && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
     ...(kind === "system_prompt" ? { systemPrompt: { ...systemPromptOf(payload), appliesTo: 0 } } : null),
@@ -1212,8 +1221,111 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  * with it in `sentWith`, recursively; only top-level steps take numbers.
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
-  const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return withPipeline(withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id)));
+  // A File tile that is one prompt's attachment is drawn inside that prompt, not as a step of its own.
+  const owners = attachmentOwners(tree);
+  const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node) && !owners.has(node.id)));
+  return withAttachments(withPipeline(withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id))), tree, owners);
+}
+
+const treeNodes = (tree: readonly NodeTree[]): NodeTree[] => tree.flatMap((node) => [node, ...treeNodes(node.children ?? [])]);
+
+/**
+ * The File nodes that are attachments, each with the prompt it belongs to: a File tile, or a file attached to a message
+ * (`payload.attached`), at the top of the build, made by no step, whose only use is as one prompt's input. A file used by two or
+ * more steps, or by none, stays as it was.
+ */
+export function attachmentOwners(tree: readonly NodeTree[]): Map<string, string> {
+  const all = treeNodes(tree);
+  // A file from Sources that one prompt uses (a project file, a menu) keeps the meaning it had; a File tile, or a file attached to the
+  // message (`payload.attached`), is part of the message.
+  const attachable = (node: NodeTree): boolean => isRecord(node.payload) && (node.payload.step === true || node.payload.attached === true) && !isSetupNode(node.payload);
+  const files = new Map(all.filter((node) => node.type === FILE_TYPE && node.parent_id === null && !madeByOf(node) && attachable(node)).map((node) => [node.id, node]));
+  const users = new Map<string, Set<string>>();
+  const prompts = new Set<string>();
+  for (const node of all) {
+    if (node.type === PROMPT_TYPE) prompts.add(node.id);
+    for (const use of usesOf(node)) {
+      if (use.kind !== "file" || !files.has(use.node_id)) continue;
+      const held = users.get(use.node_id) ?? new Set<string>();
+      held.add(node.id);
+      users.set(use.node_id, held);
+    }
+  }
+  const out = new Map<string, string>();
+  for (const [fileId, held] of users) {
+    const [only] = [...held];
+    if (held.size === 1 && prompts.has(only)) out.set(fileId, only);
+  }
+  return out;
+}
+
+/** A File node read as an attachment. */
+function attachmentOf(node: Pick<BuildNode, "id" | "payload">): Attachment {
+  const payload = payloadOf(node);
+  const name = stringOf(payload.title)?.trim() ?? "Untitled file";
+  const mime = stringOf(payload.mime);
+  const note = stringOf(payload.note)?.trim();
+  const captured = stringOf(payload.captured_at)?.trim();
+  return {
+    id: node.id,
+    name,
+    mediaId: stringOf(payload.media_id),
+    size: typeof payload.size === "number" && Number.isFinite(payload.size) && payload.size >= 0 ? payload.size : null,
+    mime,
+    kind: fileKindOf(name, mime),
+    ...(note ? { note } : null),
+    ...(captured ? { capturedAt: captured } : null),
+  };
+}
+
+/** Each prompt carries its attachments, in the order of its inputs; a short text with attachments is named with their count. */
+function withAttachments(steps: Step[], tree: readonly NodeTree[], owners: ReadonlyMap<string, string>): Step[] {
+  if (owners.size === 0) return steps;
+  const byId = new Map(treeNodes(tree).map((node) => [node.id, node]));
+  const apply = (step: Step): Step => {
+    const inner = { ...step, children: step.children.map(apply), ...(step.sentWith ? { sentWith: step.sentWith.map(apply) } : null) };
+    if (step.kind !== "prompt") return inner;
+    const attachments = step.uses.flatMap((use) => (use.kind === "file" && owners.get(use.node_id) === step.id && byId.has(use.node_id) ? [attachmentOf(byId.get(use.node_id) as NodeTree)] : []));
+    if (attachments.length === 0) return inner;
+    return { ...inner, attachments, defaultTitle: step.summary ? step.defaultTitle : attachmentsTitle(step.defaultTitle, step.words, attachments.length) };
+  };
+  return steps.map(apply);
+}
+
+/** The prompt's inputs with its file inputs put in `order` (File node ids); every other input keeps its place. */
+export function usesInOrder(uses: readonly Use[], order: readonly string[]): Use[] {
+  const files = uses.filter((use) => use.kind === "file");
+  const ranked = [...files].sort((a, b) => {
+    const ia = order.indexOf(a.node_id);
+    const ib = order.indexOf(b.node_id);
+    return (ia < 0 ? Number.MAX_SAFE_INTEGER : ia) - (ib < 0 ? Number.MAX_SAFE_INTEGER : ib);
+  });
+  let next = 0;
+  return uses.map((use) => (use.kind === "file" ? ranked[next++] : use));
+}
+
+/** A prompt's new attachments (File node ids) listed after its inputs, in order; one already listed is not listed again. */
+export async function addAttachmentUses(node: BuildNode, fileIds: readonly string[]): Promise<BuildNode> {
+  const current = usesOf(node);
+  const fresh = fileIds.filter((id) => !current.some((use) => use.kind === "file" && use.node_id === id)).map((id): Use => ({ kind: "file", node_id: id }));
+  if (fresh.length === 0) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), uses: [...current, ...fresh] as unknown as Json }));
+}
+
+/** An attachment's picture replaced (cropped or blurred): the File node points at the new media, with its size and type. */
+export async function setFileMedia(node: BuildNode, media: { id: string; size?: number | null; mime?: string | null }): Promise<BuildNode> {
+  const payload = { ...payloadOf(node), media_id: media.id } as Payload;
+  if (typeof media.size === "number") payload.size = media.size;
+  if (media.mime) payload.mime = media.mime;
+  return upsertNode(withPayload(node, payload));
+}
+
+/** Put a prompt's attachments in a new order. Nothing is written when the order is the same. */
+export async function orderAttachments(node: BuildNode, order: readonly string[]): Promise<BuildNode> {
+  const current = usesOf(node);
+  const next = usesInOrder(current, order);
+  if (next.every((use, index) => use.node_id === current[index]?.node_id && use.kind === current[index]?.kind)) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), uses: next as unknown as Json }));
 }
 
 /**
@@ -2703,8 +2815,11 @@ export async function addFile(
     size,
     mime,
     preview,
+    attached,
   }: {
     title: string;
+    /** The file is attached to a prompt's message (`payload.attached`): drawn inside that prompt while it is its only use. */
+    attached?: boolean;
     url?: string;
     summary?: string;
     media_id?: string;
@@ -2729,8 +2844,11 @@ export async function addFile(
     if (mime?.trim()) tileKeys.mime = mime.trim();
     const lines = (preview ?? []).slice(0, 4).map((line) => line.slice(0, 160));
     if (lines.length > 0) tileKeys.preview = lines;
+  } else if (attached && !parentId) {
+    if (typeof size === "number" && Number.isFinite(size) && size >= 0) tileKeys.size = size;
+    if (mime?.trim()) tileKeys.mime = mime.trim();
   }
-  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted, ...tileKeys } as Json };
+  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted, ...tileKeys, ...(attached && !parentId ? { attached: true } : null) } as Json };
   if (parentId) {
     const why = nestHomeRefusal(tree, parentId);
     if (why) throw refuse("addFile", why);

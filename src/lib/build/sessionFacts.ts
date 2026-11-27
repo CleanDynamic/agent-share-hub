@@ -14,7 +14,7 @@ import { ACCESS_SYSTEMS, ENVIRONMENTS, ISOLATIONS, accessLine, accessOf, environ
 import { reviewLine, reviewOf, reviewRefusal, type SessionReview } from "./sessionReview";
 import { outputsCountLine, outputsOf, outputsRefusal, type OutputLink } from "./sessionOutputs";
 import { traceUrlOf } from "./trace";
-import { EFFORTS, EFFORT_LABEL, type Effort } from "./tileExtras";
+import { SESSION_EFFORTS as EFFORTS, SESSION_EFFORT_LABEL as EFFORT_LABEL, type SessionEffort as Effort } from "./tileExtras";
 
 export type Currency = "GBP" | "USD";
 

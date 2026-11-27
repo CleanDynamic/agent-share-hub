@@ -6,6 +6,8 @@
    a 1px `--hairline`. The footer is on `--window-foot`: the note on the left, Close, then Publish (greyed while a required item is
    open). Every action closes the window first, so the page can take focus. */
 
+import { ATTACHMENT_COPY, type Attachment } from "@/lib/build/attachments";
+import { ReaderAttachmentStrip } from "@/components/build/AttachmentStrip";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, type CSSProperties, type ReactNode } from "react";
@@ -197,9 +199,23 @@ export interface PublishChecklistProps {
   onAction: (item: ChecklistItem, action?: ChecklistItem["action"]) => void;
   /** Publish in the footer: the page opens Confirm. The window has already closed. */
   onPublish: () => void;
+  /** The pictures attached to prompts: listed to check they show nothing private, each opening the viewer. */
+  pictures?: readonly Attachment[];
 }
 
-export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, onPublish }: PublishChecklistProps) {
+/** The pictures attached to prompts, each opening full size: a maker checks them before anyone else sees them. */
+function PicturesGroup({ pictures, phone }: { pictures: readonly Attachment[]; phone: boolean }) {
+  return (
+    <section aria-label={ATTACHMENT_COPY.privatePictures} data-testid="checklist-section-pictures">
+      <h3 style={{ ...SECTION_LABEL, fontWeight: 400 }}>{ATTACHMENT_COPY.privatePictures}</h3>
+      <div style={{ ...ROW, display: "block" }}>
+        <ReaderAttachmentStrip attachments={pictures} phone={phone} />
+      </div>
+    </section>
+  );
+}
+
+export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, onPublish, pictures = [] }: PublishChecklistProps) {
   const phone = useIsPhone();
   const acted = useRef(false);
   const choose = (item: ChecklistItem) => {
@@ -229,6 +245,7 @@ export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, 
           {showRequired ? <Section label={CHECKLIST_COPY.required} items={checklist.required} onAction={choose} /> : null}
           {checklist.opens > 0 ? <OpensGroup count={checklist.opens} control={opensIn} /> : null}
           {checklist.recommended.length > 0 ? <Section label={CHECKLIST_COPY.recommended} items={checklist.recommended} onAction={choose} /> : null}
+          {pictures.length > 0 ? <PicturesGroup pictures={pictures} phone={phone} /> : null}
         </>
       }
       footer={

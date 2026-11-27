@@ -209,12 +209,13 @@ describe("each modal as its board (CA-15b P2)", () => {
     const window = screen.getByTestId("full-prompt-window");
     expect(within(window).getByRole("button", { name: "Rename prompt" })).toBeTruthy();
     expect(within(window).getByRole("button", { name: "Close" })).toBeTruthy();
-    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 / 4,000", "2 optional details", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
+    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 / 4,000", "3 optional details", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Model settings", ""],
+      ["What the app added", ""],
       ["Variables", "Format: {company name}"],
     ]);
-    expect(within(screen.getByRole("radiogroup", { name: "Reasoning effort" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Default", "Low", "High"]);
+    expect(within(screen.getByRole("radiogroup", { name: "Reasoning effort" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Not given", "Low", "Medium", "High", "Extra high", "Max"]);
     // Synth 06: a text box in a modal is empty; its label names it.
     expect((screen.getByLabelText("Custom instructions or project knowledge that applied") as HTMLTextAreaElement).placeholder).toBe("");
     expect(screen.getByText("No variables yet")).toBeTruthy();

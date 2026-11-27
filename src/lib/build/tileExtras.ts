@@ -55,9 +55,15 @@ export function cleanUrl(raw: unknown): string | null {
 
 /* ── a prompt: model settings and variables (P2) ── */
 
-export const EFFORTS = ["default", "low", "high"] as const;
+/** The efforts the apps offer. "default" is stored for "not given", so every prompt saved before reads the same. */
+export const EFFORTS = ["default", "low", "medium", "high", "xhigh", "max"] as const;
 export type Effort = (typeof EFFORTS)[number];
-export const EFFORT_LABEL: Record<Effort, string> = { default: "Default", low: "Low", high: "High" };
+export const EFFORT_LABEL: Record<Effort, string> = { default: "Not given", low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Max" };
+
+/** A session's effort keeps its own three choices and words: sessions are not part of the prompt's efforts. */
+export const SESSION_EFFORTS = ["default", "low", "high"] as const satisfies readonly Effort[];
+export type SessionEffort = (typeof SESSION_EFFORTS)[number];
+export const SESSION_EFFORT_LABEL: Record<SessionEffort, string> = { default: "Default", low: "Low", high: "High" };
 
 export const SETTINGS_INSTRUCTIONS_MAX = 2000;
 export const SETTINGS_MODEL_MAX = 80;
@@ -137,6 +143,85 @@ export function markVariable(text: string, start: number, end: number): string |
   const lead = picked.length - picked.trimStart().length;
   const trail = picked.length - picked.trimEnd().length;
   return `${text.slice(0, from + lead)}{${picked.trim()}}${text.slice(to - trail)}`;
+}
+
+/* ── a prompt: its attachments and what the app added ── */
+
+export const ATTACHMENT_NOTE_MAX = 140;
+export const ATTACHMENTS_MAX = 20;
+export const CONNECTORS_MAX = 8;
+export const CONNECTOR_NAME_MAX = 40;
+export const SENT_FROM_NAME_MAX = 40;
+export const EARLIER_MAX = 10_000;
+
+/** Where the attachments sat in the message: above the text (as chat apps put them) or after it. */
+export type AttachmentsAt = "before" | "after";
+export const attachmentsAtOf = (raw: unknown): AttachmentsAt => (raw === "after" ? "after" : "before");
+
+/** An ISO day, "2026-11-27", that is a real date. */
+export function isDay(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const at = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
+}
+
+export const SENT_FROM = ["claude_app", "chatgpt_app", "gemini_app", "api", "harness", "other"] as const;
+export type SentFrom = (typeof SENT_FROM)[number];
+export const SENT_FROM_LABEL: Record<SentFrom, string> = { claude_app: "Claude app", chatgpt_app: "ChatGPT app", gemini_app: "Gemini app", api: "An API call", harness: "A harness", other: "Other" };
+
+/** What the app added that the maker could not see: `payload.context`. Each key only when given. */
+export interface PromptContext {
+  from?: SentFrom;
+  /** The harness's or the other app's name, for "harness" and "other". */
+  fromName?: string;
+  webSearch?: boolean;
+  memory?: boolean;
+  projectFiles?: boolean;
+  /** Earlier messages in that chat. */
+  earlier?: number;
+  connectors?: string[];
+}
+
+/** The context as saved; null when nothing was given. */
+export function contextOf(raw: unknown): PromptContext | null {
+  if (!isRecord(raw)) return null;
+  const from = SENT_FROM.includes(raw.from as SentFrom) ? (raw.from as SentFrom) : undefined;
+  const fromName = from === "harness" || from === "other" ? clean(raw.from_name, SENT_FROM_NAME_MAX) : "";
+  const earlier = finite(raw.earlier);
+  const connectors = cleanList(raw.connectors, CONNECTOR_NAME_MAX, CONNECTORS_MAX);
+  const out: PromptContext = {
+    ...(from ? { from } : null),
+    ...(fromName ? { fromName } : null),
+    ...(raw.web_search === true ? { webSearch: true } : null),
+    ...(raw.memory === true ? { memory: true } : null),
+    ...(raw.project_files === true ? { projectFiles: true } : null),
+    ...(earlier !== null && Number.isInteger(earlier) && earlier > 0 && earlier <= EARLIER_MAX ? { earlier } : null),
+    ...(connectors.length > 0 ? { connectors: [...new Set(connectors)] } : null),
+  };
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+/** The context to store, in the payload's own key names; null when nothing was given. Refuses what is out of range. */
+export function cleanContextValue(value: unknown): Json | null {
+  if (!isRecord(value)) return null;
+  if (value.from !== undefined && value.from !== null && value.from !== "" && !SENT_FROM.includes(value.from as SentFrom)) throw new ShownError("Sent from: one of the apps listed, an API call, a harness or other");
+  if (clean(value.from_name ?? value.fromName).length > SENT_FROM_NAME_MAX) throw new ShownError(`The name: ${SENT_FROM_NAME_MAX} characters max`);
+  const earlierRaw = value.earlier;
+  if (earlierRaw !== undefined && earlierRaw !== null && earlierRaw !== "" && (typeof earlierRaw !== "number" || !Number.isInteger(earlierRaw) || earlierRaw < 0 || earlierRaw > EARLIER_MAX)) throw new ShownError("Earlier messages: a whole number");
+  const names = Array.isArray(value.connectors) ? value.connectors : [];
+  if (cleanList(names, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY).length > CONNECTORS_MAX) throw new ShownError(`Connectors: ${CONNECTORS_MAX} max`);
+  if (cleanList(names, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY).some((name) => name.length > CONNECTOR_NAME_MAX)) throw new ShownError(`Each connector: ${CONNECTOR_NAME_MAX} characters max`);
+  const read = contextOf({ ...value, from_name: value.from_name ?? value.fromName, web_search: value.web_search ?? value.webSearch, project_files: value.project_files ?? value.projectFiles });
+  if (!read) return null;
+  return {
+    ...(read.from ? { from: read.from } : null),
+    ...(read.fromName ? { from_name: read.fromName } : null),
+    ...(read.webSearch ? { web_search: true } : null),
+    ...(read.memory ? { memory: true } : null),
+    ...(read.projectFiles ? { project_files: true } : null),
+    ...(read.earlier ? { earlier: read.earlier } : null),
+    ...(read.connectors ? { connectors: read.connectors } : null),
+  };
 }
 
 /* ── a tool (P4) ── */
@@ -387,6 +472,19 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     interval: lineCleaner("Interval", 20),
     event: lineCleaner("Event", 80),
     asks_for: (value) => (value === "outcome" || value === "procedure" ? value : null),
+    /* Prompt attachments: where the attachments sat in the message ("before" is the default, so it is not stored), and what the app added. */
+    attachments_at: (value) => (value === "after" ? "after" : null),
+    context: (value) => cleanContextValue(value),
+  },
+  /* Prompt attachments: a File node's note and, on a picture, the day it was captured. */
+  document: {
+    note: lineCleaner("A note", ATTACHMENT_NOTE_MAX),
+    captured_at: (value) => {
+      const day = clean(value);
+      if (!day) return null;
+      if (!isDay(day)) throw new ShownError("Captured on: a date, like 2026-11-27");
+      return day;
+    },
   },
 };
 

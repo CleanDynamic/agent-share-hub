@@ -170,6 +170,9 @@ const SECRET_NAMES: readonly string[] = ["id_rsa", "id_ed25519"];
 
 export type FileKind = { kind: MediaKind; mime: string } | { refused: string };
 
+/** An iPhone camera photo (HEIC or HEIF) is not a type that can be added: it is refused with how to get one that can. */
+export const HEIC_REFUSAL = "HEIC photos can't be added yet. Export it as JPEG and attach that.";
+
 /** The final path segment, lower case. */
 function baseName(name: string): string {
   return (name ?? "").split(/[\\/]/).pop()?.toLowerCase() ?? "";
@@ -213,6 +216,7 @@ export function fileKindFor(file: Pick<File, "name" | "type">): FileKind {
     if (mime) return { kind: "file", mime };
   }
 
+  if (/\.(heic|heif)$/.test(name) || /^image\/hei[cf]/.test(reported)) return { refused: HEIC_REFUSAL };
   return { refused: `${shown} is not a kind of file that can be added.` };
 }
 

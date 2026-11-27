@@ -45,7 +45,7 @@ import {
 import { bracketed } from "./changes";
 import { DECISION_TYPE, modelShort, originalAnswer, questionLine, runsWhenLabel } from "./decision";
 import { runtimeNeeds } from "./runtimeNeeds";
-import { copyTogether } from "./copyTogether";
+import { copiesTogether, copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, setupOwnerKey, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
@@ -641,6 +641,8 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     } else if (use.kind === "file") {
       const file = context.files.get(use.node_id);
       if (!file) continue;
+      // An attachment is part of the prompt's message: its copy lists it, in order, so it is not said twice.
+      if (step.attachments?.some((attachment) => attachment.id === use.node_id)) continue;
       attach.push(file);
       uses.push(file.name);
     } else {
@@ -1150,7 +1152,7 @@ export function stepsMarkdown(
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
-    const message = step.sentWith?.length ? copyTogether(step) : bracketed(step.text, step.changes);
+    const message = copiesTogether(step) ? copyTogether(step) : bracketed(step.text, step.changes);
     if (message) lines.push(fenced(message), "");
     if (saves.length > 0) lines.push(...saves, "");
   }

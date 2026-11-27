@@ -22,6 +22,7 @@
    between `--hairline-module` dividers 28 wide. Build becomes a module (`flex: 999 1 560px`) holding its head, the
    Map's legend, the map well and its footer line. */
 
+import type { Attachment } from "@/lib/build/attachments";
 import { DEPLOYMENT_GROUP_HEAD, deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
@@ -129,6 +130,8 @@ export interface PublishPanel {
   onUnsent?: (key: string, action: "add" | "discard") => void;
   /** UX-03 P3: Remove session on an empty session's item: the List's own history-tracked remove (`onRemoveSessions`, "keep"). */
   onRemoveSession?: (key: string) => void;
+  /** The pictures attached to prompts, for "Check these pictures show nothing private". */
+  pictures?: readonly Attachment[];
 }
 
 export interface SandboxViewProps extends CardProps {
@@ -1291,7 +1294,7 @@ function SandboxBody(props: SandboxViewProps) {
     window.setTimeout(run, 0);
   };
   const checklistWindow = props.publish ? (
-    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} opensIn={props.publish.opensIn} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
+    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} pictures={props.publish.pictures} opensIn={props.publish.opensIn} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
   ) : null;
   const confirmWindow = props.publish ? (
     <PublishConfirm open={confirming !== null} title={props.title.trim()} rows={confirming ?? []} onCancel={() => setConfirming(null)} onPublish={() => props.onPublish()} />
@@ -1488,6 +1491,7 @@ function SandboxBody(props: SandboxViewProps) {
         publishedWords={publishedWords(props.publishedAt)}
         publishing={props.publishing}
         checklist={props.publish?.checklist ?? null}
+        pictures={props.publish?.pictures}
         prepare={props.publish?.prepare}
         onPublish={() => (props.publish ? props.onPublish() : latest.current.onPublish())}
         onChecklistAction={(item) => onChecklistAction(item)}

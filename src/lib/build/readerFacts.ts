@@ -40,7 +40,7 @@ export interface ReaderFact {
 const str = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 /** The facts, in the order the modal's Optional rows come. Empty when the maker gave none. */
-export function readerFacts(step: Pick<Step, "kind" | "text">, payload: Raw | undefined): ReaderFact[] {
+export function readerFacts(step: Pick<Step, "kind" | "text"> & Partial<Pick<Step, "attachments" | "context">>, payload: Raw | undefined): ReaderFact[] {
   const raw = payload ?? {};
   const out: ReaderFact[] = [];
   const add = (fact: ReaderFact | null) => {
@@ -50,7 +50,9 @@ export function readerFacts(step: Pick<Step, "kind" | "text">, payload: Raw | un
 
   if (step.kind === "prompt") {
     const settings = settingsOf(raw.settings);
-    if (settings) add({ label: "Model settings", text: joined(settings.model ? modelLabel(settings.model) : null, settings.effort !== "default" ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions) });
+    // A prompt recorded as a message says its model and effort in the meta line under it, so here only the instructions are left.
+    const message = Boolean(step.attachments?.length || step.context);
+    if (settings) add({ label: "Model settings", text: message ? settings.instructions : joined(settings.model ? modelLabel(settings.model) : null, settings.effort !== "default" ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions) });
     const saved = variablesOf(raw.variables);
     const described = variableNamesIn(step.text).flatMap((name) => {
       const line = saved.find((entry) => entry.name === name)?.description;

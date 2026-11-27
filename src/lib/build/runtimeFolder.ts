@@ -8,6 +8,7 @@ import { agentSpecOf, agentStartingPoint, definedInTiles, startingPointIsCode } 
 import { envKeys, runtimeNeeds } from "./runtimeNeeds";
 import { schemaName } from "./answerShape";
 import { checkLine } from "./decision";
+import { attachBlock } from "./attachments";
 import type { Step } from "./graph";
 import type { ZipEntry } from "./zip";
 
@@ -33,6 +34,12 @@ export function runtimeFolder(steps: readonly Step[]): RuntimeFolder {
   };
   const files: string[] = [];
   const checks: string[] = [];
+
+  // A prompt's attachments cannot travel as text: the list says what to attach to which prompt, in order.
+  const attached = all.filter((entry) => entry.kind === "prompt" && entry.attachments?.length);
+  if (attached.length > 0) {
+    add("ATTACHMENTS.md", `${["# Attachments", "", ...attached.flatMap((entry) => [`## ${entry.number ? `Step ${entry.number} · ` : ""}${entry.title ?? entry.defaultTitle}`, "", attachBlock(entry.attachments ?? [], entry.attachmentsAt ?? "before") ?? "", ""])].join("\n").trimEnd()}\n`);
+  }
 
   for (const step of all.filter((entry) => entry.kind === "code" && entry.text.trim())) {
     const path = safeFile(step.filename ?? `${slug(step.title ?? step.defaultTitle)}.txt`);

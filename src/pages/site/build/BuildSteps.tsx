@@ -95,7 +95,9 @@ import { stepList } from "@/lib/build/readerSteps";
 import { modelRunLine } from "@/lib/build/modelRun";
 import { groupByLoaded } from "@/lib/build/setup";
 import { bracketed, changesLine } from "@/lib/build/changes";
-import { copyTogether } from "@/lib/build/copyTogether";
+import { copiesTogether, copyTogether, isMessage } from "@/lib/build/copyTogether";
+import { metaLine, sentModelOf } from "@/lib/build/attachments";
+import { MessageMetaLine, ReaderAttachmentStrip } from "@/components/build/AttachmentStrip";
 import { AgentRules, GateLine, JobLine, TeamHead, TeamLinesContext, WaitsLine } from "@/components/build/teamLines";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
@@ -139,7 +141,7 @@ export function teamText(entry: ReaderStep): string {
 }
 
 /** The words a copy puts on the clipboard for a step: CA-04 P2, a step and what is sent with it, together. */
-export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : bracketed(entry.step.text, entry.step.changes));
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : copiesTogether(entry.step) ? copyTogether(entry.step) : bracketed(entry.step.text, entry.step.changes));
 
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
@@ -488,10 +490,14 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
   const { phone } = useContext(TeamLinesContext);
   const kindWord = stepHead(step).label.split(" · ").pop() as string;
   const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} context={[kindWord, step.title].filter(Boolean).join(" · ")} /> : null;
-  if (!step.text) return boxes;
+  // A prompt recorded as a message: its attachments where they sat, the text, then one meta line.
+  const strip = step.attachments?.length ? <ReaderAttachmentStrip attachments={step.attachments} phone={phone} indent={indent} /> : null;
+  const meta = isMessage(step) ? <MessageMetaLine line={metaLine(sentModelOf(step), step.settings, step.context)} indent={indent} /> : null;
+  if (!step.text) return strip || meta ? <>{boxes}{strip}{meta}</> : boxes;
   return (
     <>
       {boxes}
+      {step.attachmentsAt === "after" ? null : strip}
       {step.origin || step.asksFor ? (
         <p data-testid="prompt-origin" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
@@ -511,6 +517,8 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
       >
         <ChangedText text={step.text} changes={step.changes} />
       </p>
+      {step.attachmentsAt === "after" ? strip : null}
+      {meta}
       {step.changes?.length ? (
         <p data-testid="changes-line" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {changesLine(step.changes.length)}
