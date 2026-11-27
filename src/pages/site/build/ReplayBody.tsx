@@ -267,7 +267,7 @@ function PhoneScrubber({ events, position, markers, onMove, onPointMarker }: { e
   return (
     <div data-testid="build-replay-scrubber" style={{ position: "relative", flex: "1 1 0", minWidth: 0, height: PHONE_SCRUB_HIT }}>
       <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: (PHONE_SCRUB_HIT - PHONE_TRACK) / 2, height: PHONE_TRACK, borderRadius: PHONE_TRACK / 2, background: t.control }}>
-        <div style={{ width: `${percent}%`, height: "100%", borderRadius: PHONE_TRACK / 2, background: t.brandAccent }} />
+        <div style={{ width: `${percent}%`, height: "100%", borderRadius: PHONE_TRACK / 2, background: t.text }} />
       </div>
       <div
         aria-hidden="true"

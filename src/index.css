@@ -1771,3 +1771,9 @@ input:-webkit-autofill:focus {
     font-size: 16px !important;
   }
 }
+
+/* Mobile 29g: Text 2 holds 7:1 on Page on a phone. Noon's is one step darker there (PHONE_NOON_TEXT2 in semantics.ts). It stands last, after
+   the theme blocks, so it wins over them and the parity test still reads the theme's own block first. */
+@media (max-width: 767px) {
+  :root[data-theme="noon"] { --text2: #434D46; }
+}

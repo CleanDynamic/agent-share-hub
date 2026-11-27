@@ -156,6 +156,17 @@ function byId<M extends CoverMedia>(media: readonly M[], id: string | null): M |
 }
 
 /**
+ * 29g: the picture the maker chose for this build, and nothing guessed: the post's first picture, else `cover_media_id` (its
+ * mirror). Never the hero node's or the first evidence node's media, the steps `resolveCover` falls through to: a session's
+ * evidence is what the harness captured while the maker worked, which can be a screenshot of the OpenBuilds editor itself, and
+ * that must never stand for a build. The phone uses this and draws its default cover when it returns null.
+ */
+export function chosenCover<M extends CoverMedia>(build: Pick<CoverSource, "cover_media_id"> | null | undefined, media: readonly M[]): M | null {
+  if (!build) return null;
+  return media.find((row) => row.post_position === 0) ?? byId(media, build.cover_media_id);
+}
+
+/**
  * The image that stands for this build, or null if it has none.
  *
  * Each step is skipped, not failed, when the row it names has gone: a

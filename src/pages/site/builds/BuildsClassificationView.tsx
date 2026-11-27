@@ -175,7 +175,7 @@ function PhoneFacetRow({ row }: { row: ClassRowView }) {
     <div style={{ display: "grid", gridTemplateColumns: "112px minmax(0, 1fr)", columnGap: 12 }}>
       <dt style={{ ...phoneText(13, 400, t.text) }}>
         {row.name}
-        {row.source ? <span style={{ display: "block", ...phoneText(12, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
+        {row.source ? <span style={{ display: "block", ...phoneText(13, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
       </dt>
       <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 12px", ...phoneText(13, 400, t.text) }}>
         {row.values.length === 0 ? <span style={{ color: t.label }}>Not stated</span> : row.values.map((value, index) => <PhoneValue key={`${value.label}-${index}`} value={value} />)}
@@ -262,7 +262,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
           groups={[{ rows: ALL_FACETS.map((facet) => ({ id: facet, label: FACET_LABEL[facet], checked: facets.includes(facet), disabled: facets.includes(facet) && facets.length === 1 })) }]}
           onToggle={toggle}
         />
-        <p data-testid="classification-key" style={{ margin: 0, padding: "12px 16px 0", ...phoneText(12, 400, t.label) }}>
+        <p data-testid="classification-key" style={{ margin: 0, padding: "12px 16px 0", ...phoneText(13, 400, t.label) }}>
           Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>derived</span> when the tiles were not kept, <span style={{ color: t.text2 }}>stated</span> by the maker, or{" "}
           <span style={{ color: t.text2 }}>corrected</span> by the maker
         </p>

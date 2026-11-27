@@ -11,7 +11,8 @@
 // measuring, because a ratio against an rgba() string is not a thing that exists.
 
 import { describe, expect, it } from "vitest";
-import type { TokenName } from "./semantics";
+import { PHONE_NOON_TEXT2, type TokenName } from "./semantics";
+import { readFileSync } from "node:fs";
 import { resolveToken as resolveRefined, type ThemeKey } from "./resolve";
 import { MAP_ARTWORK } from "@/pages/site/compose/mapArtwork";
 import { contrast, luminance, over, parse } from "./luminance";
@@ -183,5 +184,28 @@ describe("the lines inside a Map box, on the box's own fill", () => {
         expect(round(contrast(resolveRefined(theme, ink), fill)), `${ink} on ${fill}`).toBeGreaterThanOrEqual(TEXT_FLOOR);
       }
     }
+  });
+});
+
+/* Mobile 29g: on a phone, Text 3 holds 4.5:1 and Text 2 holds 7:1 on Page, in both themes. The phone's sizes are 13, 15, 17
+   and 24, so no Text 3 is drawn under 13 (the type sweep in e2e/phone/phone-type-mint-29g.spec.ts holds the sizes). */
+describe("the phone's text on Page (29g)", () => {
+  const phoneText2 = (theme: ThemeKey) => (theme === "noon" ? PHONE_NOON_TEXT2 : resolveRefined(theme, "text2"));
+  for (const theme of ["noon", "dusk"] as const) {
+    it(`${theme}: Text 3 at least 4.5:1 and Text 2 at least 7:1 on Page`, () => {
+      const page = resolveRefined(theme, "bg");
+      expect(contrast(resolveRefined(theme, "label"), page)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(phoneText2(theme), page)).toBeGreaterThanOrEqual(7);
+    });
+  }
+
+  it("declares Noon's phone Text 2 in index.css below 768px, after the theme blocks", () => {
+    const css = readFileSync("src/index.css", "utf-8");
+    const rule = css.lastIndexOf(`:root[data-theme="noon"] { --text2: ${PHONE_NOON_TEXT2}; }`);
+    expect(rule).toBeGreaterThan(css.indexOf(':root[data-theme="noon"] {'));
+    // Inside a phone media block: nothing closes between the block's opening and the rule.
+    const media = css.lastIndexOf("@media (max-width: 767px) {", rule);
+    expect(media).toBeGreaterThan(-1);
+    expect(css.slice(media, rule)).not.toContain("}");
   });
 });

@@ -171,8 +171,8 @@ describe("pill rows", () => {
       expect(s).toContain("height: 32px");
       expect(s).toContain("padding: 0px 14px");
       expect(s).toContain("border-radius: 16px");
-      expect(s).toContain("font-size: 14px");
-      expect(s).toContain("line-height: 20px");
+      expect(s).toContain("font-size: 13px");
+      expect(s).toContain("line-height: 16px");
       expect(s).toContain("font-weight: 500");
     }
     const html = markup(<PhonePills label="Show" pills={[{ value: "a", label: "All" }, { value: "b", label: "Rebuilt" }]} value="a" onChange={vi.fn()} />);

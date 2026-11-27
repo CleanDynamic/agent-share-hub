@@ -7,6 +7,8 @@
 
 import type { Page, Route } from "@playwright/test";
 
+import { fakeJwt, projectRef } from "../../tier2/support/supabaseStub";
+
 const NOW = Date.parse("2026-11-24T12:00:00Z");
 const ago = (minutes: number) => new Date(NOW - minutes * 60_000).toISOString();
 
@@ -190,14 +192,34 @@ export interface StubLog {
 export interface StubOptions {
   /** Prompt 29a: the second and later reads of the feed carry `NEW_BUILD` at the top, as a refresh would find it. */
   newPostsOnRefetch?: boolean;
+  /** 29g: a session in storage as Maya, and Activity rows, so the signed-in pages (Activity) render. */
+  signedIn?: boolean;
 }
+
+/* 29g: what Activity shows when signed in, one read and one unread. */
+const NOTIFICATIONS = [
+  { id: "n-like", recipient_id: PEOPLE.maya.id, actor_id: PEOPLE.sam.id, notification_type: "like", body: null, target_type: "build", target_id: "b-calls", content_id: null, project_id: null, collection_id: null, metadata: { build_id: "b-calls", build_title: "Call notes that write themselves" }, is_read: false, read_at: null, created_at: ago(20), actor: PEOPLE.sam },
+  { id: "n-follow", recipient_id: PEOPLE.maya.id, actor_id: PEOPLE.dax.id, notification_type: "follow", body: null, target_type: null, target_id: null, content_id: null, project_id: null, collection_id: null, metadata: {}, is_read: true, read_at: ago(100), created_at: ago(200), actor: PEOPLE.dax },
+];
 
 export async function installPhoneStub(page: Page, options: StubOptions = {}): Promise<StubLog> {
   const log: StubLog = { tables: new Map(), urls: new Map() };
+  if (options.signedIn) {
+    const exp = Math.floor(Date.now() / 1000) + 86_400;
+    const user = { id: PEOPLE.maya.id, aud: "authenticated", role: "authenticated", email: "maya@example.test", app_metadata: { provider: "email" }, user_metadata: {}, created_at: new Date(0).toISOString() };
+    const session = { access_token: fakeJwt({ sub: PEOPLE.maya.id, exp, role: "authenticated" }), token_type: "bearer", expires_in: 86_400, expires_at: exp, refresh_token: "phone-refresh", user };
+    await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [`sb-${projectRef()}-auth-token`, JSON.stringify(session)] as const);
+  }
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", headers: { "access-control-allow-origin": "*", "content-range": "0-0/*" }, body: JSON.stringify(body) });
 
-  await page.route("**/auth/v1/**", (route) => (route.request().url().includes("/user") ? json(route, { message: "no session" }, 401) : json(route, { session: null, user: null })));
+  await page.route("**/auth/v1/**", (route) =>
+    route.request().url().includes("/user")
+      ? options.signedIn
+        ? json(route, { id: PEOPLE.maya.id, aud: "authenticated", role: "authenticated", email: "maya@example.test", app_metadata: {}, user_metadata: {} })
+        : json(route, { message: "no session" }, 401)
+      : json(route, { session: null, user: null }),
+  );
   await page.route("**/realtime/v1/**", (route) => route.abort());
   await page.route("**/storage/v1/**", (route) => route.abort());
   await page.route("**/functions/v1/**", (route) => json(route, {}));
@@ -220,6 +242,8 @@ export async function installPhoneStub(page: Page, options: StubOptions = {}): P
     }
     if (name === "post_spaces" && /select=space_id(&|$)/.test(url.search)) return json(route, [1, 2, 3].map(() => ({ space_id: SPACE.id })));
     if (name === "spaces") return json(route, single ? SPACE : [SPACE]);
+    if (options.signedIn && name === "notifications") return json(route, single ? NOTIFICATIONS[0] : NOTIFICATIONS);
+    if (options.signedIn && name === "profiles" && single) return json(route, { ...PEOPLE.maya, bio: null, created_at: ago(60 * 24 * 90) });
     if (name === "openbuild_posts") {
       const query = decodeURIComponent(url.search);
       const one = /[?&]id=eq\.([^&]+)/.exec(query)?.[1];

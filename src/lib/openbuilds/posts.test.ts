@@ -197,7 +197,7 @@ describe("reading posts", () => {
     const page = await listPosts({ scope: "everyone", spaceId: "s1", stillOpen: true, offset: 20, limit: 1 });
     expect(String(of("openbuild_posts", "select")[0].args[0])).toContain("post_spaces!inner(");
     expect(of("openbuild_posts", "is").map((call) => call.args)).toEqual([["parent_id", null], ["hidden_by", null]]);
-    expect(of("openbuild_posts", "eq").map((call) => call.args)).toEqual([["post_spaces.space_id", "s1"], ["still_open", true]]);
+    expect(of("openbuild_posts", "eq").map((call) => call.args)).toEqual([["author.is_test_account", false], ["post_spaces.space_id", "s1"], ["still_open", true]]);
     expect(of("openbuild_posts", "range")[0].args).toEqual([20, 20]);
     expect(page.posts[0]).toMatchObject({ id: "p1", rewardGbp: 25, replyCount: 3, likeCount: 2, spaces: [{ slug: "support" }], author: { handle: "maya" } });
     expect(page.next).toBe(21);
@@ -211,7 +211,7 @@ describe("reading posts", () => {
   it("lists every topic for Everyone, in a space or in none", async () => {
     answer = () => ({ data: [postRow({ post_spaces: [] })], error: null });
     const page = await listPosts({ scope: "everyone" });
-    expect(String(of("openbuild_posts", "select")[0].args[0])).not.toContain("!inner");
+    expect(String(of("openbuild_posts", "select")[0].args[0])).not.toContain("post_spaces!inner");
     expect(of("openbuild_posts", "in")).toHaveLength(0);
     expect(page.posts[0].spaces).toEqual([]);
   });
@@ -234,6 +234,31 @@ describe("reading posts", () => {
     expect(of("openbuild_posts", "in")[0].args).toEqual(["author_id", ["me", "u2"]]);
     session = null;
     await expect(listPosts({ scope: "following" })).rejects.toThrow("Sign in to post.");
+  });
+
+  it("leaves test accounts' topics out of Everyone in the same request, and keeps them in Following (29g)", async () => {
+    await listPosts({ scope: "everyone" });
+    expect(String(of("openbuild_posts", "select")[0].args[0])).toContain("author:profiles!openbuild_posts_author_id_fkey!inner(");
+    expect(of("openbuild_posts", "eq").map((call) => call.args)).toContainEqual(["author.is_test_account", false]);
+    expect(requests()).toBe(1);
+    calls = [];
+    answer = (table) => (table === "follows" ? { data: [{ following_id: "u2" }], error: null } : { data: [], error: null });
+    await listPosts({ scope: "following" });
+    expect(String(of("openbuild_posts", "select")[0].args[0])).not.toContain("!inner(");
+    expect(of("openbuild_posts", "eq")).toHaveLength(0);
+  });
+
+  it("still reads Everyone, unfiltered, when the database does not have the test-account column yet (29g)", async () => {
+    let reads = 0;
+    answer = (table) => {
+      if (table !== "openbuild_posts") return { data: [], error: null };
+      reads += 1;
+      return reads === 1 ? { data: null, error: { code: "42703", message: "column profiles_1.is_test_account does not exist" } } : { data: [postRow()], error: null };
+    };
+    const page = await listPosts({ scope: "everyone" });
+    expect(reads).toBe(2);
+    expect(page.posts).toHaveLength(1);
+    expect(String(of("openbuild_posts", "select")[1].args[0])).not.toContain("!inner(");
   });
 
   it("sorts a space that is most replied by the stored reply count, then by time", async () => {

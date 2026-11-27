@@ -61,6 +61,8 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
   { file: "src/pages/site/builds/BuildsFiltersPhone.tsx", has: "fontSize: 16,", why: "the phone filter search's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/shell/PhoneSearchPage.tsx", has: "fontSize: 16,", why: "prompt 19: the phone search field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/gallery/xFeed.ts", has: "fontWeight: 700", why: "mobile prompt 29a: the author's name on a Home post is 700, at X's proportions" },
+  { file: "src/pages/site/build/PhoneBuild.tsx", has: "fontFamily: SENTIENT, fontSize: 24,", why: "mobile 29g: a phone build's title is its reading page's title, 24/28, in Geist Serif because it names a work" },
+  { file: "src/components/post/PostCard.tsx", has: "fontSize: phone ? 24 : 20,", why: "mobile 29g: on a phone a post's own page is a reading page and its lead line the page title, 24/28 600" },
   { file: "src/pages/site/home/RebuildPost.tsx", has: "fontWeight: 700", why: "mobile prompt 29a: the source's maker in a rebuild's \"Rebuilt from\" Card is 700, as the author row's name" },
   { file: "src/components/shell/Dock.tsx", has: "fontSize: 11,", why: "mobile 29d: the dock's unread count is 11/16 700 in a 16 tall pill, as the Synth mobile pack draws it" },
   { file: "src/components/shell/Dock.tsx", has: "fontWeight: 700,", why: "mobile 29d: the dock's unread count is 11/16 700 in a 16 tall pill" },

@@ -34,7 +34,7 @@ import { useGallerySearch } from "./HeaderSearch";
 function Group({ heading, children }: { heading: string; children: ReactNode }) {
   return (
     <section aria-label={heading}>
-      <h2 style={{ margin: 0, padding: `16px ${PHONE_MARGIN}px 4px`, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{heading}</h2>
+      <h2 style={{ margin: 0, padding: `16px ${PHONE_MARGIN}px 4px`, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{heading}</h2>
       {children}
     </section>
   );
@@ -148,7 +148,7 @@ function SearchBody({ open, onOpenChange, input }: { open: boolean; onOpenChange
       <div aria-live="polite" style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", paddingBottom: "env(safe-area-inset-bottom)" }}>
         {busyRows.length > 0 ? (
           <section aria-label="Most new posts this week" data-testid="search-busy-spaces">
-            <h2 style={{ margin: 0, padding: `16px ${PHONE_MARGIN}px 4px`, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{groupHeading(busyRows.length, "space", "spaces")}</h2>
+            <h2 style={{ margin: 0, padding: `16px ${PHONE_MARGIN}px 4px`, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{groupHeading(busyRows.length, "space", "spaces")}</h2>
             {busyRows.map((entry) => (
               <PhoneRow
                 key={entry.space.id}

@@ -289,6 +289,35 @@ describe("a build with no thread", () => {
   });
 });
 
+describe("a build with no post on a phone (29g)", () => {
+  const evidence = { id: "n-shot", type: "screenshot", title: null, payload: { media_id: "shot" }, position: 0, is_gap: false } as unknown as GalleryBuild["nodes"][number];
+
+  it("never shows a session's screenshot as its cover: the default cover, its title in Geist Serif 22/28 and its sessions in mono 13", () => {
+    const subject = { ...build({ post_doc: null, media: [media("shot", { node_id: "n-shot" })], nodes: [evidence], cover_media_id: null }), sessionCount: 3 };
+    renderX("phone", subject);
+    expect(document.querySelector("[data-feed-post-body] img")).toBeNull();
+    const cover = screen.getByTestId("default-cover");
+    expect(cover).toHaveStyle({ padding: "16px", background: "var(--module)" });
+    expect(within(cover).getByText("Crumb homepage")).toHaveStyle({ fontSize: "22px", lineHeight: "28px", fontWeight: "400" });
+    expect(within(cover).getByText("3 sessions")).toHaveStyle({ fontSize: "13px", lineHeight: "16px", color: "var(--label)" });
+    // Posts have no titles: no heading in the post, and the build line still names it.
+    expect(document.querySelector("[data-feed-post-body] h1, [data-feed-post-body] h2, [data-feed-post-body] h3")).toBeNull();
+    expect(screen.getByTestId("feed-build-title")).toHaveTextContent("Crumb homepage");
+  });
+
+  it("shows the picture its maker chose, and no title over it", () => {
+    renderX("phone", build({ post_doc: null, media: [media("m9")], cover_media_id: "m9" }));
+    expect(screen.queryByTestId("default-cover")).toBeNull();
+    expect(document.querySelector("[data-feed-post-body] [data-post-pictures]")).not.toBeNull();
+    expect(document.querySelector("[data-feed-post-body] h1, [data-feed-post-body] p")).toBeNull();
+  });
+
+  it("keeps the desktop's chain: a screenshot still covers a build there", () => {
+    renderX("desktop", build({ post_doc: null, media: [media("shot", { node_id: "n-shot" })], nodes: [evidence], cover_media_id: null }));
+    expect(screen.queryByTestId("default-cover")).toBeNull();
+  });
+});
+
 describe("the build line and the actions", () => {
   it("links the title to the build and has no made-with words", () => {
     renderRow(build());
@@ -359,10 +388,10 @@ describe("Home's post at X's proportions (prompt 29a)", () => {
     expect(screen.getByText("Second post words", { exact: false }).closest("[data-post]")).not.toBeNull();
   });
 
-  it("puts Show more under the pictures at the post text size in Text 3, 12 above it, with a 44 hit area on the phone", () => {
+  it("puts Show more under the pictures at 15 (29g: secondary text) in Text 3 on the post's 22 line, 12 above it, with a 44 hit area on the phone", () => {
     renderX("phone");
     const toggle = screen.getByRole("button", { name: "Show more · 2 more posts" });
-    expect(toggle).toHaveStyle({ fontSize: "17px", lineHeight: "22px", minHeight: "44px", marginTop: "1px", marginBottom: "-11px" });
+    expect(toggle).toHaveStyle({ fontSize: "15px", lineHeight: "22px", minHeight: "44px", marginTop: "1px", marginBottom: "-11px" });
     // The toggle comes after post 1 (its pictures), and the build line after the toggle.
     const pictures = document.querySelector("[data-post='1'] [data-post-pictures]")!;
     expect(pictures.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

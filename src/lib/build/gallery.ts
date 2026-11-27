@@ -1240,6 +1240,12 @@ function feedOrder(query: FeedQuery, sort: GalleryFeedSort, ascending = false, w
 }
 
 type EngagementColumns = { like_count?: number | null; comment_count?: number | null };
+type CountColumns = { step_count?: number | null; session_count?: number | null };
+
+/** 29g: the sessions a build's stored counts can vouch for (BF-03: only once step_count is written). */
+function sessionCountOf(row: CountColumns): number | null {
+  return typeof row.step_count === "number" && typeof row.session_count === "number" ? Math.max(0, row.session_count) : null;
+}
 
 /** The counts a read carried, or undefined when it carried none. */
 function engagementOf(row: EngagementColumns): GalleryPostBuild["engagement"] {
@@ -1254,6 +1260,11 @@ export interface GalleryPostBuild extends GalleryBuild {
   more_count: number;
   /** builds.like_count and comment_count, so the post's action row has its numbers without a request of its own. */
   engagement?: { likes: number; comments: number };
+  /**
+   * 29g: the build's sessions, for the default cover's count line. Null until the SV-23 writer has counted the build (its
+   * step_count written), as the Builds table treats it (BF-03); undefined when the read did not carry the columns.
+   */
+  sessionCount?: number | null;
 }
 
 /**
@@ -1267,16 +1278,16 @@ export async function getGalleryBuildsByIds(ids: readonly string[]): Promise<Gal
   if (wanted.length === 0) return [];
 
   const { data, error } = await withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect()}, classification, models_used, like_count, comment_count`).in("id", wanted),
+    feedTable("builds").select(`${gallerySelect()}, classification, models_used, like_count, comment_count, step_count, session_count`).in("id", wanted),
   ).limit(wanted.length);
   if (error) throw buildLayerError("getGalleryBuildsByIds", error);
 
   const byId = new Map(
-    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[]).map((row) => [row.id, row]),
+    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns & CountColumns)[]).map((row) => [row.id, row]),
   );
   return wanted.flatMap((id) => {
     const row = byId.get(id);
-    return row ? [{ ...toGalleryBuild(row), models_used: row.models_used ?? [], more_count: moreCountOf(row.post_doc), engagement: engagementOf(row) }] : [];
+    return row ? [{ ...toGalleryBuild(row), models_used: row.models_used ?? [], more_count: moreCountOf(row.post_doc), engagement: engagementOf(row), sessionCount: sessionCountOf(row) }] : [];
   });
 }
 

@@ -1,4 +1,5 @@
-// The phone's section head (prompt 17): the fact as a 20/24 600 heading (tracking -0.01em), padding 20 16 8, and an optional
+// The phone's section head (prompt 17): the fact as a 17/22 600 heading (29g: the phone has
+// no 20; it was 20/24 at -0.01em), padding 20 16 8, and an optional
 // small link at the right (13, underlined). Never a label with the fact under it: the heading is the fact.
 
 import type { ElementType, ReactNode } from "react";
@@ -20,7 +21,7 @@ export function SectionFact({ fact, headingLevel = 2, link }: SectionFactProps) 
   const Title: ElementType = `h${headingLevel}`;
   return (
     <div data-ui="section-fact" style={{ display: "flex", alignItems: "baseline", gap: 12, padding: `20px ${PHONE_MARGIN}px 8px`, fontFamily: FIGTREE }}>
-      <Title style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{fact}</Title>
+      <Title style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{fact}</Title>
       {link ? (
         <PageLink
           to={link.to}

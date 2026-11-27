@@ -549,13 +549,13 @@ export const STEP_SHEET_COPY = { back: "Back", next: "Next" } as const;
 /** Prompt 24: one segment per step in the session, 4 tall, 6 apart. */
 export const STEP_SEGMENT = { height: 4, gap: 6 } as const;
 
-/** The step sheet's progress on a phone: the segments (done and current in Mint, the rest Raised), then "Session 1 · 1 of 4". */
+/** The step sheet's progress on a phone: the segments (done and current in Text, the rest Raised; 29g: Mint is for the main action), then "Session 1 · 1 of 4". */
 function StepProgress({ at, total, where }: { at: number; total: number; where: string }) {
   return (
     <div data-testid="step-progress" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 0 12px" }}>
       <div aria-hidden="true" style={{ display: "flex", gap: STEP_SEGMENT.gap }}>
         {Array.from({ length: total }, (_, index) => (
-          <span key={index} data-done={index < at ? "" : undefined} style={{ flex: "1 1 0", height: STEP_SEGMENT.height, borderRadius: STEP_SEGMENT.height / 2, background: index < at ? t.brandAccent : t.control }} />
+          <span key={index} data-done={index < at ? "" : undefined} style={{ flex: "1 1 0", height: STEP_SEGMENT.height, borderRadius: STEP_SEGMENT.height / 2, background: index < at ? t.text : t.control }} />
         ))}
       </div>
       <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{`${where} · ${at} of ${total}`}</span>

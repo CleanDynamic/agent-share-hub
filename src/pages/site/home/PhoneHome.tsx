@@ -332,7 +332,7 @@ export function PhoneHome(props: HomeViewProps) {
         {visible.length === 0 ? <p style={{ ...meta13, margin: 0, padding: "0 16px 16px" }}>None of these among the latest.{feed.hasMore ? " Scroll to look further back." : ""}</p> : null}
         {feed.loadingMore ? <PhoneFeedBones count={2} /> : null}
         <div ref={end} aria-hidden="true" />
-        {feed.hasMore ? null : <PhoneEnd cards={props.endCards} />}
+        {feed.hasMore ? null : <PhoneEnd />}
       </>
     );
 
@@ -379,23 +379,17 @@ function ReplyGroup({ item }: { item: Extract<HomeFeedItem, { kind: "reply_group
   );
 }
 
-function PhoneEnd({ cards }: { cards: HomeViewProps["endCards"] }) {
+/**
+ * 29g: where Home's feed truly ends. "You're up to date" 15/20 Text 2, centred, 24 under the last post, and "More builds" under it
+ * as a 15/20 Text link to Builds. Nothing follows it but the dock: the end cards are not drawn on a phone.
+ */
+function PhoneEnd() {
   return (
     <div data-testid="home-feed-end" style={{ padding: "24px 16px 0", textAlign: "center" }}>
-      <div style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: t.text }}>You&rsquo;re up to date</div>
-      <PlainLink to="/builds" style={{ display: "inline-flex", alignItems: "center", minHeight: 44, fontFamily: FIGTREE, fontSize: 13, color: t.label, textDecoration: "underline", textUnderlineOffset: 3 }}>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 400, lineHeight: "20px", color: t.text2 }}>You&rsquo;re up to date</p>
+      <PlainLink to="/builds" style={{ display: "inline-flex", alignItems: "center", minHeight: 44, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text, textDecoration: "underline", textUnderlineOffset: 3 }}>
         More builds
       </PlainLink>
-      {cards.length > 0 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, paddingTop: 8, textAlign: "left" }}>
-          {cards.map((card) => (
-            <Link key={card.id} to={card.href} style={{ display: "block", padding: 12, background: t.module, borderRadius: r.card, color: t.text, textDecoration: "none" }}>
-              <span style={{ display: "block", fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.title}</span>
-              {card.facts ? <span style={{ display: "block", ...meta13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.facts}</span> : null}
-            </Link>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

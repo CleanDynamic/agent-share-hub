@@ -87,6 +87,9 @@ function PhoneMore({ onPress }: { onPress: () => void }) {
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 
+/** 29g: a post's text and its lead line on a phone, 17/22 (the desktop's stay 15/20). */
+const PHONE_POST = { text: 17, line: 22 } as const;
+
 /** The post's heading at FeedPost's card title size, 13/500 (a topic and a build sit side by side as equals): underlined at once under hover (a fine pointer only). */
 function HeadingLink({ to, level = 3, size, children }: { to: string; level?: 2 | 3; size?: { text: number; line: number }; children: string }) {
   const Heading = level === 2 ? "h2" : "h3";
@@ -258,7 +261,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {/* Synth 11: a pinned card says so above the author line, 13 in Text 2. */}
         {card.pinned ? <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.text2, marginBottom: 4 }}>Pinned</div> : null}
         {/* Head: name, @handle · age · in spaces; the reward at the right end. */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: xm ? xm.line : phone ? 20 : 24, marginBottom: x ? X_ROW_GAP : 4 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: xm ? xm.line : phone ? 22 : 24, marginBottom: x ? X_ROW_GAP : 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone || x ? "nowrap" : "wrap", alignItems: "baseline", columnGap: phone || x ? 4 : 6 }}>
             {phone ? (
               <PhoneNameLink handle={card.author.handle} style={x ? xName(x) : undefined}>{name}</PhoneNameLink>
@@ -308,9 +311,10 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         ) : null}
 
         {page ? (
-          <h1 style={{ ...plain, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
+          // 29g: on a phone the post's lead line is a reading page's title, 24/28 600 at -0.02em; the desktop keeps 20/24.
+          <h1 style={{ ...plain, fontSize: phone ? 24 : 20, fontWeight: 600, lineHeight: phone ? "28px" : "24px", letterSpacing: phone ? "-0.02em" : "-0.01em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
         ) : (
-          <HeadingLink to={card.to} level={headingLevel} size={xm ?? undefined}>
+          <HeadingLink to={card.to} level={headingLevel} size={xm ?? (phone ? PHONE_POST : undefined)}>
             {card.heading || "Untitled post"}
           </HeadingLink>
         )}
@@ -320,8 +324,8 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
             style={{
               ...plain,
               marginTop: x ? X_ROW_GAP : 4,
-              fontSize: xm ? xm.text : 15,
-              lineHeight: `${xm ? xm.line : 20}px`,
+              fontSize: xm ? xm.text : phone ? PHONE_POST.text : 15,
+              lineHeight: `${xm ? xm.line : phone ? PHONE_POST.line : 20}px`,
               color: x ? t.text2 : phone === "home" ? t.text : t.text2,
               whiteSpace: "pre-wrap",
               overflowWrap: "anywhere",

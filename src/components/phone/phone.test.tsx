@@ -170,11 +170,11 @@ describe("PhoneModule and SectionFact", () => {
     expect(html).toContain("background:var(--surface)");
     expect(html).toContain("gap:10px");
   });
-  it("a section fact is a 20/24 600 heading with an underlined link", () => {
+  it("a section fact is a 17/22 600 heading with an underlined link (29g)", () => {
     render(wrap(<SectionFact fact="36 drafts" link={{ label: "See all", to: "/drafts" }} />));
     const h = screen.getByRole("heading", { level: 2, name: "36 drafts" });
-    expect(h.style.fontSize).toBe("20px");
-    expect(h.style.lineHeight).toBe("24px");
+    expect(h.style.fontSize).toBe("17px");
+    expect(h.style.lineHeight).toBe("22px");
     expect(screen.getByRole("link", { name: "See all" }).style.textDecoration).toBe("underline");
   });
 });

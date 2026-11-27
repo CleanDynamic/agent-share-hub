@@ -39,7 +39,7 @@ import { hoverIsFine, prefersReducedMotion, STANDARD } from "@/lib/theme/motion"
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { X_FEED, type XSize } from "@/components/gallery/xFeed";
+import { PHONE_META_TEXT, X_FEED, type XSize } from "@/components/gallery/xFeed";
 
 import { PostBody } from "./PostBody";
 import { FEED_THREAD_GAP, feedType, postType, THREAD_GAP, xFeedType } from "./postType";
@@ -375,7 +375,7 @@ function Toggle({
         textUnderlineOffset: 3,
         cursor: "pointer",
         ...(xm
-          ? { minHeight: xm.hit, marginTop: xm.gap - reach, marginBottom: -reach, fontSize: xm.text, fontWeight: 400, lineHeight: `${xm.line}px`, color: t.label }
+          ? { minHeight: xm.hit, marginTop: xm.gap - reach, marginBottom: -reach, fontSize: x === "phone" ? PHONE_META_TEXT : xm.text, fontWeight: 400, lineHeight: `${xm.line}px`, color: t.label }
           : null),
         ...ring(state.focusVisible),
       }}

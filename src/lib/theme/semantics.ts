@@ -555,3 +555,10 @@ export const themes: Record<ThemeName, Record<TokenName, string>> = {
   noon,
   dusk,
 };
+
+/**
+ * Mobile 29g: on a phone Text 2 holds 7:1 on Page. Noon's `text2` (#4A554D) measures 6.40:1 on its Page (#E6EAE6), so below 768px
+ * it is this one step darker, 7.23:1 on Page and 7.88:1 on Card. Mirrored in `src/index.css` under `@media (max-width: 767px)`;
+ * the desktop keeps `noon.text2`. Dusk's Text 2 already measures 8.62:1 and is not changed.
+ */
+export const PHONE_NOON_TEXT2 = "#434D46";
