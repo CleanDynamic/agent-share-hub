@@ -214,7 +214,7 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.getByRole("region", { name: "Most new posts this week" })).toBeInTheDocument();
   });
 
-  it("on a phone (prompt 20): the tabs, the spaces as pills after All with Make a space last, the posts and the round Post button", () => {
+  it("on a phone (prompt 20): the tabs, the spaces as pills after All with Make a space last, the posts, and no round button of its own (29d: the frame's create button is the one)", () => {
     atWidth(390);
     draw();
     expect(screen.queryByRole("region", { name: "Your spaces" })).toBeNull();
@@ -223,7 +223,7 @@ describe("OpenBuildsFeedView", () => {
     const pills = within(screen.getByRole("group", { name: "Show" })).getAllByRole("button");
     expect(pills[0].textContent).toBe("All");
     expect(pills[pills.length - 1].textContent).toBe("Make a space");
-    expect(screen.getByTestId("round-post-button").getAttribute("aria-label")).toBe("Post");
+    expect(screen.queryByTestId("round-post-button")).toBeNull();
   });
 
   it("draws the Make a space control with a plus and its label as its name", () => {

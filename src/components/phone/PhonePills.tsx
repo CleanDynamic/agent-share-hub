@@ -1,8 +1,9 @@
-// The pill row on a phone (prompt 17): 32 tall pills, 8 apart, padding 12 16 around the row, scrolling sideways when they
-// overflow. The chosen pill keeps the Inverse fill: one Mint element per region stays the New button or the round post button.
+// The pill row on a phone (29d): 32 tall pills, padding 0 14, radius 16, 14/20 500; off is Card with Text 2, on is Text with the
+// Page colour. 8 apart, 16 at the sides, 10 above and below. A row that overflows scrolls sideways and a 40 wide fade to Page
+// stands at its right edge until the end is reached. One Mint element per region stays the round create button.
 // Each pill is a toggle (`aria-pressed`), or a tab when `tabs` is given.
 
-import type { KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { FilterChip } from "@/components/brand/FilterChip";
@@ -72,14 +73,14 @@ function LinkPill({ pill, on }: { pill: PhonePill; on: boolean }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          padding: "0 12px",
+          padding: "0 14px",
           borderRadius: PHONE_PILL / 2,
-          background: on ? t.action : t.module,
-          color: on ? t.onAction : t.text,
+          background: on ? t.text : t.module,
+          color: on ? t.bg : t.text2,
           fontFamily: FIGTREE,
-          fontSize: 13,
-          fontWeight: on ? 600 : 500,
-          lineHeight: "normal",
+          fontSize: 14,
+          fontWeight: 500,
+          lineHeight: "20px",
           whiteSpace: "nowrap",
         }}
       >
@@ -108,32 +109,66 @@ function moveTab(event: KeyboardEvent<HTMLDivElement>) {
   tabs[next].click();
 }
 
-export function PhonePills<V extends string = string>({ pills, value, onChange, label, tabs, docked = false }: PhonePillsProps<V>) {
+const FADE = 40;
+
+export function PhonePills<V extends string = string>({ pills, value, onChange, label, tabs }: PhonePillsProps<V>) {
+  const row = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState(false);
+  const check = () => {
+    const el = row.current;
+    if (!el) return;
+    setFade(el.scrollWidth - el.clientWidth - el.scrollLeft > 1);
+  };
+  useLayoutEffect(() => {
+    check();
+    const el = row.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [pills.length]);
   return (
-    <div
-      data-ui="phone-pills"
-      className="bg-scroll-row"
-      role={tabs ? "tablist" : "group"}
-      aria-label={label}
-      onKeyDown={tabs ? moveTab : undefined}
-      style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `${docked ? 10 : 12}px ${PHONE_MARGIN}px` }}
-    >
-      {pills.map((pill) =>
-        pill.href !== undefined ? (
-          <LinkPill key={pill.value} pill={pill} on={pill.value === value} />
-        ) : (
-        <FilterChip
-          key={pill.value}
-          label={pill.label}
-          count={pill.count}
-          leading={pill.icon ? <MobileIcon name={pill.icon} size={16} /> : undefined}
-          on={pill.value === value}
-          onClick={() => onChange(pill.value)}
-          tab={tabs ? { id: tabs.idOf(pill.value), controls: tabs.controls } : undefined}
-          style={{ height: PHONE_PILL, minHeight: PHONE_PILL, padding: "0 12px", borderRadius: PHONE_PILL / 2 }}
-        />
-        ),
-      )}
+    <div style={{ position: "relative" }}>
+      <div
+        ref={row}
+        data-ui="phone-pills"
+        className="bg-scroll-row"
+        role={tabs ? "tablist" : "group"}
+        aria-label={label}
+        onKeyDown={tabs ? moveTab : undefined}
+        onScroll={check}
+        style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `10px ${PHONE_MARGIN}px` }}
+      >
+        {pills.map((pill) =>
+          pill.href !== undefined ? (
+            <LinkPill key={pill.value} pill={pill} on={pill.value === value} />
+          ) : (
+            <FilterChip
+              key={pill.value}
+              label={pill.label}
+              count={pill.count}
+              leading={pill.icon ? <MobileIcon name={pill.icon} size={16} /> : undefined}
+              on={pill.value === value}
+              onClick={() => onChange(pill.value)}
+              tab={tabs ? { id: tabs.idOf(pill.value), controls: tabs.controls } : undefined}
+              style={{
+                height: PHONE_PILL,
+                minHeight: PHONE_PILL,
+                padding: "0 14px",
+                borderRadius: PHONE_PILL / 2,
+                background: pill.value === value ? t.text : t.module,
+                color: pill.value === value ? t.bg : t.text2,
+                fontSize: 14,
+                fontWeight: 500,
+                lineHeight: "20px",
+              }}
+            />
+          ),
+        )}
+      </div>
+      {fade ? (
+        <span aria-hidden="true" data-testid="phone-pills-fade" style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: FADE, pointerEvents: "none", background: `linear-gradient(to right, transparent, ${t.bg})` }} />
+      ) : null}
     </div>
   );
 }

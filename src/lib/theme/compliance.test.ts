@@ -121,6 +121,17 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/lib/theme/tokens.ts": {
+    max: 6,
+    why:
+      "Mobile 29d: `avatarTints`, the six muted tints a phone avatar without a picture sits on (#2D3B36, #3B2F45, #3D3A2A, " +
+      "#2A3645, #45302D, #2F4536). Artwork, identical in both themes like the cover skies, and named once here so no component " +
+      "writes them; the prompt asks for them in the tokens file.",
+  },
+  "src/components/shell/chromeSize.ts": {
+    max: 1,
+    why: "Mobile 29d: the round create button's shadow, 0 6px 18px rgba(0,0,0,.45), as the Synth mobile pack draws it; one measurement, named once.",
+  },
   "src/pages/site/signin/signinColours.ts": {
     max: 10,
     why:

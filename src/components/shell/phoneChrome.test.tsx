@@ -256,16 +256,15 @@ describe("AccountDrawer", () => {
 });
 
 describe("NewSheet", () => {
-  it("the four CreateMenu items in the repo's order", () => {
+  it("three items: New build, New post, Connect a tool, with no Import", () => {
     expect(NEW_ITEMS.map((item) => [item.label, item.icon])).toEqual([
       ["New build", "new"],
-      ["Import", "import"],
       ["New post", "compose"],
       ["Connect a tool", "connect"],
     ]);
   });
 
-  it("is a sheet of 64 tall rows with an icon square on Raised and a chevron, and a signed-out choice goes to sign in", async () => {
+  it("is a Panel sheet of 52 tall rows, an icon at 22 and the name, and a signed-out choice goes to sign in", async () => {
     render(
       <MemoryRouter initialEntries={["/builds"]}>
         <NewSheet open onOpenChange={vi.fn()} />
@@ -273,9 +272,10 @@ describe("NewSheet", () => {
     );
     const group = await screen.findByRole("group", { name: "New" });
     const rows = within(group).getAllByRole("button");
-    expect(rows.map((row) => row.textContent)).toEqual(["New build", "Import", "New post", "Connect a tool"]);
-    expect(rows[0].getAttribute("style")).toContain("height: 64px");
-    expect(rows[0].querySelector('[data-icon="chevr"]')).toBeTruthy();
-    expect(rows[0].querySelector("span")?.getAttribute("data-fill")).toBe("raised");
+    expect(rows.map((row) => row.textContent)).toEqual(["New build", "New post", "Connect a tool"]);
+    expect(rows[0].getAttribute("style")).toContain("height: 52px");
+    expect(rows[0].getAttribute("style")).toContain("gap: 14px");
+    expect(rows[0].querySelector("svg")?.getAttribute("width")).toBe("22");
+    expect(rows[0].querySelector('[data-icon="chevr"]')).toBeNull();
   });
 });

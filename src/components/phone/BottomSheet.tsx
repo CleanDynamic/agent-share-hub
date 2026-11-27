@@ -35,6 +35,8 @@ export const FLICK_SPEED = 0.6;
 export const FLICK_MIN_PX = 40;
 /** `full` stops this far below the top of the screen. */
 export const SHEET_TOP_GAP = 59;
+/** The `menu` tone's top radius (29d). */
+export const PHONE_MENU_RADIUS = 20;
 
 export type PhoneSheetHeight = "content" | "half" | "full";
 
@@ -56,8 +58,9 @@ export interface PhoneBottomSheetProps {
   onCloseAutoFocus?: (event: Event) => void;
   /** Prompt 23: the sheet steps aside (slides down and fades, still mounted) while something picked up in it is dragged onto the page behind. */
   stepAside?: boolean;
-  /** The sheet's shade: Card (the default), or the Notepad tone for the reader's notepad (prompt 22). */
-  tone?: "card" | "notepad";
+  /** The sheet's shade: Card (the default), the Notepad tone for the reader's notepad (prompt 22), or `menu` (29d): Panel, radius 20,
+   *  a 36 by 5 Raised grabber 8 from the top, and no header, for a short list of choices such as the New sheet. */
+  tone?: "card" | "notepad" | "menu";
   "data-testid"?: string;
   children?: ReactNode;
 }
@@ -131,6 +134,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
   }, [keyboard]);
 
   const close = useInteractive<HTMLButtonElement>();
+  const menu = tone === "menu";
 
   return (
     <>
@@ -161,9 +165,9 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               flexDirection: "column",
               boxSizing: "border-box",
               ...size,
-              padding: footer ? "8px 0 0" : "8px 0 env(safe-area-inset-bottom)",
-              borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`,
-              background: tone === "notepad" ? t.notepad : t.module,
+              padding: menu ? 0 : footer ? "8px 0 0" : "8px 0 env(safe-area-inset-bottom)",
+              borderRadius: `${menu ? PHONE_MENU_RADIUS : PHONE_SHEET_RADIUS}px ${menu ? PHONE_MENU_RADIUS : PHONE_SHEET_RADIUS}px 0 0`,
+              background: tone === "notepad" ? t.notepad : menu ? t.surface : t.module,
               color: t.text,
               fontFamily: FIGTREE,
               overscrollBehavior: "contain",
@@ -171,13 +175,16 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
               ...(stepAside ? asideSheet() : null),
             }}
           >
-            <div data-testid="sheet-grabber" style={{ alignSelf: "stretch", display: "flex", justifyContent: "center", padding: "0 0 8px", margin: "4px 0 0", touchAction: "none", cursor: "grab" }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fieldEdge }} />
+            <div data-testid="sheet-grabber" style={{ alignSelf: "stretch", display: "flex", justifyContent: "center", padding: menu ? "0 0 10px" : "0 0 8px", margin: menu ? "8px 0 0" : "4px 0 0", touchAction: "none", cursor: "grab" }}>
+              <div style={{ width: 36, height: menu ? 5 : 4, borderRadius: menu ? 3 : 2, background: menu ? t.control : t.fieldEdge }} />
             </div>
+            {menu ? (
+              <Dialog.Title style={VISUALLY_HIDDEN}>{title}</Dialog.Title>
+            ) : (
             <div data-testid="sheet-header" style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: `0 4px 0 ${PHONE_MARGIN}px`, touchAction: "none" }}>
               <div style={{ flex: 1, minWidth: 0, padding: "11px 0 8px" }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <Dialog.Title style={hideTitle ? VISUALLY_HIDDEN : { margin: 0, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</Dialog.Title>
+                  <Dialog.Title style={hideTitle || menu ? VISUALLY_HIDDEN : { margin: 0, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</Dialog.Title>
                   {titleNote ? <span style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label }}>{titleNote}</span> : null}
                 </div>
                 {line ? <p style={{ margin: 0, fontSize: 13, lineHeight: "16px", color: t.text2 }}>{line}</p> : null}
@@ -206,6 +213,7 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
                 <MobileIcon name="close" size={24} />
               </button>
             </div>
+            )}
             <div ref={body} data-sheet-body="" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
               {children}
             </div>

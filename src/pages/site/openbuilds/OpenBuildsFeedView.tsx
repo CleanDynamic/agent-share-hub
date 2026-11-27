@@ -23,7 +23,6 @@ import { SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { PhonePills } from "@/components/phone/PhonePills";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
-import { RoundPostButton } from "@/components/phone/RoundPostButton";
 import { PANEL_GUTTER, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
@@ -286,7 +285,6 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
           <Posts view={view} phone />
         </>
       )}
-      <RoundPostButton label="Post" icon="compose" onClick={view.onPost} />
     </div>
   );
 }

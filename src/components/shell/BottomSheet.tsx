@@ -47,6 +47,8 @@ export interface BottomSheetProps {
   dirty?: boolean;
   /** Phone only: a pinned footer, a status line at the left and buttons at the right. */
   footer?: { status?: ReactNode; actions?: ReactNode };
+  /** Phone only: the sheet's shade; `menu` (29d) is the short list of choices with no header. */
+  tone?: "card" | "notepad" | "menu";
 }
 
 /** From 768 up the sheet is the one drawn below; below it, the phone's sheet (prompt 17) with the same name, Close and behaviour. */

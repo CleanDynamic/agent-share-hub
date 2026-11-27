@@ -63,6 +63,10 @@ export const PHONE_ROW = 56;
 /** The dock without the safe-area inset (29b): 49, with its structural line on top. */
 export const PHONE_DOCK = 49;
 export const PHONE_FAB = 56;
+/** The round create button's shadow (29d). */
+export const PHONE_FAB_SHADOW = "0 6px 18px rgba(0,0,0,.45)";
+/** A press held this long on the round create button opens a new build (29d). */
+export const PHONE_FAB_HOLD_MS = 500;
 export const PHONE_SHEET_RADIUS = 16;
 export const PHONE_MARGIN = 16;
 

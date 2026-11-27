@@ -5,6 +5,8 @@
 
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { PHONE_EASE, PHONE_QUICK, prefersReducedMotion } from "@/lib/theme/motion";
+
 import { PHONE_TAB } from "@/components/shell/chromeSize";
 import type { TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
@@ -20,13 +22,17 @@ export interface PhoneTabsProps<V extends string = string> {
   label: string;
   /** Every tab takes an equal share of the width. */
   equal?: boolean;
+  /** 29d: the tabs sit as a centred pair, each its word plus 16 either side with 24 between, over one 3 tall indicator in Text
+   *  that is exactly as wide as the word and slides between them (`PHONE_QUICK`; instantly under reduced motion). Mark the word
+   *  with `data-tab-word` in a custom label so the chevron and the like are not underlined. */
+  centred?: boolean;
   /** What a tab's label draws, for a tab that carries more than its words (Home's kind after a middle dot). Absent: the label. */
   renderLabel?: (tab: TextTab<V>, current: boolean) => ReactNode;
 }
 
 const BAR_MIN = 40;
 
-function Tab({ tab, current, equal, onSelect, onKeyDown, content }: { tab: TextTab; current: boolean; equal?: boolean; onSelect: () => void; onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void; content?: ReactNode }) {
+function Tab({ tab, current, equal, centred, onSelect, onKeyDown, content }: { tab: TextTab; current: boolean; equal?: boolean; centred?: boolean; onSelect: () => void; onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void; content?: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const label = useRef<HTMLSpanElement>(null);
   const [bar, setBar] = useState(BAR_MIN);
@@ -65,10 +71,10 @@ function Tab({ tab, current, equal, onSelect, onKeyDown, content }: { tab: TextT
       }}
     >
       <span ref={label} style={{ display: "inline-block" }}>
-        {content ?? tab.label}
+        {content ?? (centred ? <span data-tab-word="">{tab.label}</span> : tab.label)}
         {tab.count !== undefined ? <span style={{ marginLeft: 6, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{tab.count}</span> : null}
       </span>
-      {current ? (
+      {current && !centred ? (
         <span
           aria-hidden="true"
           data-testid="phone-tab-bar"
@@ -89,7 +95,7 @@ function Tab({ tab, current, equal, onSelect, onKeyDown, content }: { tab: TextT
   );
 }
 
-export function PhoneTabs<V extends string = string>({ tabs, value, onChange, label, equal = false, renderLabel }: PhoneTabsProps<V>) {
+export function PhoneTabs<V extends string = string>({ tabs, value, onChange, label, equal = false, centred = false, renderLabel }: PhoneTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const last = tabs.length - 1;
@@ -104,18 +110,60 @@ export function PhoneTabs<V extends string = string>({ tabs, value, onChange, la
     onChange(tabs[next].value);
     list.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
   };
+  /* 29d: where the one indicator stands, measured from the current tab's word. */
+  const [bar, setBar] = useState<{ left: number; width: number } | null>(null);
+  const measure = () => {
+    const box = list.current;
+    const word = box?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"] [data-tab-word]');
+    if (!box || !word) return;
+    const a = box.getBoundingClientRect();
+    const b = word.getBoundingClientRect();
+    const next = { left: Math.round(b.left - a.left), width: Math.round(b.width) };
+    setBar((was) => (was && was.left === next.left && was.width === next.width ? was : next));
+  };
+  useLayoutEffect(() => {
+    if (!centred) return;
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  });
   return (
     <div
       ref={list}
       data-ui="phone-tabs"
       role="tablist"
       aria-label={label}
-      className={equal ? undefined : "bg-scroll-row"}
-      style={{ display: "flex", overflowX: equal ? "visible" : "auto", scrollbarWidth: "none", msOverflowStyle: "none", background: t.bg }}
+      className={equal || centred ? undefined : "bg-scroll-row"}
+      style={{
+        position: "relative",
+        display: "flex",
+        justifyContent: centred ? "center" : undefined,
+        gap: centred ? 24 : undefined,
+        overflowX: equal || centred ? "visible" : "auto",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        background: t.bg,
+      }}
     >
       {tabs.map((tab, index) => (
-        <Tab key={tab.value} tab={tab} equal={equal} current={tab.value === value} content={renderLabel?.(tab, tab.value === value)} onSelect={() => onChange(tab.value)} onKeyDown={(e) => move(e, index)} />
+        <Tab key={tab.value} tab={tab} equal={equal && !centred} centred={centred} current={tab.value === value} content={renderLabel?.(tab, tab.value === value)} onSelect={() => onChange(tab.value)} onKeyDown={(e) => move(e, index)} />
       ))}
+      {centred && bar ? (
+        <span
+          aria-hidden="true"
+          data-testid="phone-tab-indicator"
+          style={{
+            position: "absolute",
+            left: bar.left,
+            bottom: 0,
+            width: bar.width,
+            height: 3,
+            borderRadius: 2,
+            background: t.text,
+            transition: prefersReducedMotion() ? "none" : `left ${PHONE_QUICK}ms ${PHONE_EASE}, width ${PHONE_QUICK}ms ${PHONE_EASE}`,
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -251,7 +251,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
       style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, ...(x ? xGrid(x) : null), padding: phone || x ? 0 : "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
     >
       <div style={{ gridColumn: 1, width: xm ? xm.avatar : 40 }}>
-        <Avatar size={xm ? xm.avatar : 40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
+        <Avatar size={xm ? xm.avatar : 40} userId={card.author.id} name={name} src={card.author.avatarUrl} phone={Boolean(xm)} />
       </div>
 
       <div style={{ gridColumn: 2, minWidth: 0 }}>

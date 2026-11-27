@@ -52,7 +52,7 @@ test.describe("phone fixed frame at 390 x 844", () => {
     }
   });
 
-  test("Builds' view pills stick right under the bar and carry the line; the New slot fits the dock", async ({ page }) => {
+  test("Builds' view pills stick right under the bar and carry the line; the round create button stands clear of the dock", async ({ page }) => {
     await page.goto("/builds");
     const bar = page.getByTestId("phone-top-bar");
     await expect(bar).toBeVisible();
@@ -65,9 +65,9 @@ test.describe("phone fixed frame at 390 x 844", () => {
     expect(rowBox.height).toBeGreaterThanOrEqual(52);
     // One line under the fixed header: the bar draws none while the row draws it.
     expect(await bar.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
-    const tile = (await page.getByTestId("dock-tile-new").boundingBox())!;
+    const fab = (await page.getByTestId("create-button").boundingBox())!;
     const dock = (await page.getByTestId("dock").boundingBox())!;
-    expect(tile.height).toBeLessThanOrEqual(dock.height);
-    expect(await page.getByTestId("dock-tile-new").evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+    expect(fab.y + fab.height).toBeLessThanOrEqual(dock.y - 16 + 1);
+    expect(await page.getByTestId("dock-tile-import").evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
   });
 });

@@ -14,6 +14,8 @@ export const SITE_NAV = {
   /** The create route: AppShell's `upload` item, "New build". */
   create: "/compose/new",
   activity: "/notifications",
+  /** The import page, which has its own slot in the phone dock (29d). */
+  import: "/import",
   profile: "/profile",
   /** UX-15: the account's settings. Signed-in only; reached from the account menu, not the primary nav. */
   settings: "/settings",
@@ -54,4 +56,18 @@ function isOpenBuildsPath(pathname: string): boolean {
 /** True on the Activity page. */
 export function isActivityPath(pathname: string): boolean {
   return pathname === SITE_NAV.activity || pathname.startsWith(`${SITE_NAV.activity}/`);
+}
+
+/** True on the import page: the dock's Import slot is current there (29d). */
+export function isImportPath(pathname: string): boolean {
+  return pathname === SITE_NAV.import || pathname.startsWith(`${SITE_NAV.import}/`);
+}
+
+/**
+ * 29d: the pages that carry the phone's round create button: Home, Builds, OpenBuilds and Activity, at their own addresses.
+ * Pushed pages (a build, a space, a topic), the editor, settings and sign-in do not.
+ */
+export function showsCreateButton(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
+  return path === SITE_NAV.home || isBuildsPath(path) || path === SITE_NAV.openbuilds || path === SITE_NAV.activity;
 }

@@ -169,7 +169,7 @@ function Who({ row, phone = false }: { row: ActivityRow; phone?: boolean }) {
   const square = squareOf(row);
   return (
     <span aria-hidden="true" style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-      <Avatar size={40} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
+      <Avatar size={40} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} phone={phone} />
       {square ? (
         <span data-testid="activity-badge" data-kind={row.kind ?? square} style={{ position: "absolute", right: -1, top: -1, display: "inline-flex" }}>
           <Square square={square} ring ringColour={phone ? t.bg : t.surface} />

@@ -1,7 +1,7 @@
-// The New sheet (prompt 19), opened by the dock's New: a content-height bottom sheet with no visible title and the four
-// `CreateMenu` items in the repo's order as rows 64 tall. Each row is a 40 icon square on Raised (radius 10) with the item's
-// icon, the name at 15/500 and a chevron at the right. No line under the names. The choices do exactly what the desktop menu's
-// do: signed out goes to sign in; New post opens the posting window; the others go to their page.
+// The New sheet (29d), opened by the round create button: a content-height `menu` sheet (Panel, radius 20, a Raised grabber, no
+// header) with three rows 52 tall: New build, New post, Connect a tool. Each is an icon at 22 in Text 2, 14 across, the name at
+// 17/22. Import is not here: it has its own slot in the dock. The choices do exactly what the desktop menu's do: signed out goes
+// to sign in; New post opens the posting window; the others go to their page.
 
 import { lazy, Suspense, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,12 +23,11 @@ import { SITE_NAV } from "./siteNav";
 
 const PostingWindows = lazy(() => import("@/pages/site/openbuilds/PostingWindows"));
 
-export type CreateKind = "build" | "import" | "post" | "connect";
+export type CreateKind = "build" | "post" | "connect";
 
-/** The four items, in `CreateMenu`'s order. */
+/** The three items, in `CreateMenu`'s order without Import. */
 export const NEW_ITEMS: readonly { kind: CreateKind; label: string; icon: MobileIconName }[] = [
   { kind: "build", label: "New build", icon: "new" },
-  { kind: "import", label: "Import", icon: "import" },
   { kind: "post", label: "New post", icon: "compose" },
   { kind: "connect", label: "Connect a tool", icon: "connect" },
 ];
@@ -36,18 +35,18 @@ export const NEW_ITEMS: readonly { kind: CreateKind; label: string; icon: Mobile
 const ROW: CSSProperties = {
   boxSizing: "border-box",
   width: "100%",
-  height: 64,
+  height: 52,
   padding: `0 ${PHONE_MARGIN}px`,
   display: "flex",
   alignItems: "center",
-  gap: 12,
+  gap: 14,
   border: 0,
   background: "transparent",
   color: t.text,
   fontFamily: FIGTREE,
-  fontSize: 15,
-  fontWeight: 500,
-  lineHeight: "20px",
+  fontSize: 17,
+  fontWeight: 400,
+  lineHeight: "22px",
   textAlign: "left",
   cursor: "pointer",
 };
@@ -56,13 +55,10 @@ function Row({ label, icon, onSelect }: { label: string; icon: MobileIconName; o
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button type="button" onClick={onSelect} {...handlers} style={{ ...ROW, ...ring(state.focusVisible) }}>
-      <span aria-hidden="true" data-fill="raised" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: t.control, color: t.text }}>
-        <MobileIcon name={icon} size={20} />
+      <span aria-hidden="true" style={{ flexShrink: 0, color: t.text2, display: "inline-flex" }}>
+        <MobileIcon name={icon} size={22} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
-      <span aria-hidden="true" style={{ flexShrink: 0, color: t.label, display: "inline-flex" }}>
-        <MobileIcon name="chevr" size={20} />
-      </span>
     </button>
   );
 }
@@ -81,13 +77,13 @@ export function NewSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
       return;
     }
     if (kind === "post") setPosting({ kind: "post" });
-    else go(kind === "build" ? SITE_NAV.create : kind === "import" ? "/import" : "/connect");
+    else go(kind === "build" ? SITE_NAV.create : "/connect");
   };
 
   return (
     <>
-      <LazyBottomSheet open={open} onOpenChange={onOpenChange} title="New" hideTitle>
-        <div role="group" aria-label="New" style={{ paddingBottom: 8 }}>
+      <LazyBottomSheet open={open} onOpenChange={onOpenChange} title="New" hideTitle tone="menu">
+        <div role="group" aria-label="New" style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}>
           {NEW_ITEMS.map(({ kind, label, icon }) => (
             <Row key={kind} label={label} icon={icon} onSelect={() => choose(kind)} />
           ))}

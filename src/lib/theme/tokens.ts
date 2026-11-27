@@ -123,3 +123,10 @@ export function colourAlpha(colour: string, alpha: number): string {
 
   return colour;
 }
+
+/**
+ * The six muted tints a phone avatar without a picture sits on (29d), chosen by a stable hash of the user id. Artwork, the same
+ * in both themes, so they are listed here once rather than written in components. `avatarInk` is the initials' 62% white.
+ */
+export const avatarTints = ["#2D3B36", "#3B2F45", "#3D3A2A", "#2A3645", "#45302D", "#2F4536"] as const;
+export const avatarInk = "color-mix(in srgb, white 62%, transparent)";

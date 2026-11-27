@@ -93,13 +93,13 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
         <DockView current="home" unread={0} />
       </MemoryRouter>,
     );
-    // Prompt 19: New is a button that opens the New sheet, so the five are four links and one button.
+    // 29d: five links; creating is the round button's job, not a slot.
     const dock = within(screen.getByRole("navigation", { name: "Primary" }));
-    expect([...dock.getAllByRole("link"), ...dock.getAllByRole("button")]).toHaveLength(5);
+    expect([...dock.getAllByRole("link"), ...dock.queryAllByRole("button")]).toHaveLength(5);
     expect(Array.from(screen.getByRole("navigation", { name: "Primary" }).children).map((el) => el.getAttribute("aria-label"))).toEqual([
       "Home",
       "Builds",
-      "New",
+      "Import",
       "OpenBuilds",
       "Activity",
     ]);
