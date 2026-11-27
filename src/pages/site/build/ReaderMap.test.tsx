@@ -1,5 +1,6 @@
-// CA-17 P4, P6 — the build page's map of sessions, rendered with the dev fixture: the maker's direction, a head with Fit to
-// screen and no maker controls, the panel without "Open in the build", and the map offered only when the maker shows it.
+// CA-17 P4, P6, MS-05 — the build page's map, rendered with the dev fixture: the canvas in reader mode under a head with Fit to
+// screen and no maker controls, a tile opening its window, the phone's sessions map and panel without "Open in the build",
+// and the map offered only when the maker shows it.
 
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -25,10 +26,10 @@ function view(which: BuildStepsSample = "list", over: Partial<BuildStepsView> = 
   return { ...steps, ...over };
 }
 
-function mount(steps: BuildStepsView = view()) {
+function mount(steps: BuildStepsView = view(), { phone = false, onRead = vi.fn() }: { phone?: boolean; onRead?: (id: string) => void } = {}) {
   render(
     <MemoryRouter initialEntries={[REFINED]}>
-      <ReaderMap view={steps} announce={vi.fn()} onRead={vi.fn()} />
+      <ReaderMap view={steps} announce={vi.fn()} onRead={onRead} phone={phone} />
     </MemoryRouter>,
   );
 }
@@ -45,30 +46,36 @@ describe("ReaderMap", () => {
     expect(screen.getByTestId("map-sub").textContent).not.toMatch(/build page/);
   });
 
-  it("draws the maker's direction: horizontal unless they chose vertical", () => {
-    mount();
-    expect(screen.getByTestId("session-map-drawing").getAttribute("data-direction")).toBe("horizontal");
-    document.body.innerHTML = "";
-    mount(view("list", { making: { map: { on: true, direction: "vertical", onBuildPage: true } } }));
-    expect(screen.getByTestId("session-map-drawing").getAttribute("data-direction")).toBe("vertical");
+  it("draws the canvas in reader mode with every placed tile, and a tile opens its Full prompt window", () => {
+    const onRead = vi.fn();
+    const steps = view();
+    mount(steps, { onRead });
+    expect(screen.getByTestId("map-canvas").getAttribute("data-mode")).toBe("reader");
+    expect(screen.queryByTestId("session-map-drawing")).toBeNull();
+    expect(screen.queryByTestId("map-panel")).toBeNull();
+    const tiles = screen.getAllByTestId("map-tile");
+    expect(tiles.length).toBeGreaterThan(0);
+    const first = tiles[0];
+    fireEvent.click(within(first).getAllByRole("group")[0]);
+    expect(onRead).toHaveBeenCalledWith(first.dataset.tileId);
   });
 
-  it("before a session is picked the panel lists the stages and says what to do", () => {
-    mount();
+  it("on a phone, before a session is picked the panel lists the stages and says what to do", () => {
+    mount(view(), { phone: true });
     const panel = screen.getByTestId("map-panel");
     expect(within(panel).getByText("Stages")).toBeTruthy();
     expect(within(panel).getByTestId("panel-nothing").textContent).toBe("Nothing selected. Select a session to see what joins it.");
   });
 
-  it("a box fills the panel, without Open in the build, and Esc clears", async () => {
-    mount();
-    const first = screen.getAllByTestId("map-box")[0];
+  it("on a phone, a session fills the panel, without Open in the build, and choosing it again clears", async () => {
+    mount(view(), { phone: true });
+    const first = screen.getAllByTestId("phone-map-session")[0];
     fireEvent.click(first);
     const panel = screen.getByTestId("map-panel");
     expect(within(panel).getByTestId("panel-title")).toBeTruthy();
     expect(within(panel).getByTestId("panel-connections")).toBeTruthy();
     expect(within(panel).queryByRole("button", { name: "Open in the build" })).toBeNull();
-    fireEvent.keyDown(screen.getByTestId("session-map"), { key: "Escape" });
+    fireEvent.click(first);
     await waitFor(() => expect(within(panel).getByTestId("panel-nothing")).toBeTruthy());
   });
 });
@@ -81,12 +88,11 @@ describe("StepsList", () => {
       </MemoryRouter>,
     );
 
-  it("shows the map when Map is chosen: the column and the panel 312 wide", async () => {
+  it("shows the map when Map is chosen: the column and its canvas", async () => {
     list();
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     expect(await screen.findByTestId("reader-map")).toBeTruthy();
-    expect(screen.getByText(/Click a session to see what joins it · Esc clears/)).toBeTruthy();
-    expect(screen.getByTestId("map-panel").style.width).toBe("312px");
+    expect(screen.getByTestId("map-canvas").getAttribute("data-mode")).toBe("reader");
   });
 
   it("offers no List and Map switch when the maker has not put the map on the build page", () => {

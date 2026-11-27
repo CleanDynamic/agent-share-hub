@@ -792,6 +792,12 @@ export interface AuditRoute {
 export const inOwnRoom = (route: { id: string }, theme: string): boolean => !/-(noon|dusk)$/.test(route.id) || route.id.endsWith(`-${theme}`);
 
 export const ROUTES: AuditRoute[] = [
+  /* MS-05: the map canvas on /dev/map-sandbox, for the maker and a reader, on the grey preset and on paper. The canvas wears
+     its background's ink in either room, so both rooms are swept. */
+  ...(["noon", "dusk"] as const).flatMap((room) => [
+    { id: `ms05-map-maker-${room}`, path: `/dev/map-sandbox?fixture=supportInbox&theme=${room}` },
+    { id: `ms05-map-reader-${room}`, path: `/dev/map-sandbox?fixture=removedTile&mode=reader&width=720&theme=${room}` },
+  ]),
   /* SV-30 P10: one background session with every fact a session can record: its head and labelled lines, prompt origins, the Check's
      measurement, code with its part, the Session window's new fields, and the build page. Dev pages pick their room from the address,
      so each room is its own entry (and the sweeps visit it in that room only). */

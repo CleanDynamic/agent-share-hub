@@ -33,7 +33,11 @@ const listProps: BuildListProps = {
 /** The words a tile shows, with what only the List has taken out: the drag handle, the menu, Uses chips and the footer link. */
 function wordsOf(card: HTMLElement): string {
   const copy = card.cloneNode(true) as HTMLElement;
-  copy.querySelectorAll('[aria-label^="Move "], [aria-haspopup="menu"], [data-testid="tile-uses"], button').forEach((element) => element.remove());
+  copy.querySelectorAll('[aria-label^="Move "], [aria-haspopup="menu"], button').forEach((element) => element.remove());
+  // The Uses row: the row whose first words are "Uses".
+  copy.querySelectorAll("div").forEach((row) => {
+    if (row.firstElementChild?.textContent === "Uses") row.remove();
+  });
   return (copy.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
