@@ -9,6 +9,7 @@ import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import type { TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { phoneUpdating } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -163,7 +164,7 @@ export function PhoneTable(props: PhoneTableProps) {
       <PhoneActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
       {showCards ? (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} style={{ paddingTop: 12, ...(updating ? { opacity: 0.5 } : null) }}>
+        <div role="region" aria-label="Builds table" aria-busy={updating === true} style={{ paddingTop: 12, ...phoneUpdating(updating) }}>
           {cards.map((card, index) => (
             <BuildCard key={card.id} card={card} index={index} />
           ))}

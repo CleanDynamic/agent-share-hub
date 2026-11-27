@@ -611,7 +611,7 @@ export default function BuildsPage() {
     <>
       <SeoHead title="Builds" description="Things people built with AI, and the exact model versions other people got them working on." path="/builds" />
       {/* While the first screen loads the page is its loading state, the route's Placeholder; the page fades in over it. */}
-      <PageArrival loading={loading} placeholder={<BuildsLoadingView />}>
+      <PageArrival loading={loading} placeholder={<BuildsLoadingView />} region="Builds" onRetry={() => void shownList.refetch()}>
         {loading ? <BuildsLoadingView /> : view === "maps" ? mapsPage : view === "classification" ? classificationPage : page}
       </PageArrival>
     </>

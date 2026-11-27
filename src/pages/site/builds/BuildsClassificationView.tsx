@@ -21,6 +21,7 @@ import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { phoneUpdating } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -268,7 +269,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
         {cards.length === 0 && empty ? (
           <div style={{ margin: "20px 16px 0" }}>{empty}</div>
         ) : (
-          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...(updating ? { opacity: 0.5 } : null) }}>
+          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...phoneUpdating(updating) }}>
             {cards.map((card, index) => (
               <PhoneClassificationCard key={card.id} card={card} index={index} />
             ))}

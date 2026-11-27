@@ -25,6 +25,7 @@ import { useLocation, useNavigationType } from "react-router-dom";
 
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
+import { dockSectionOf, isPhoneView, readDockScroll, saveDockScroll } from "./dockScroll";
 import { PAGE_READY_EVENT } from "./pageReady";
 
 const KEY = (entry: string) => `scroll:v1:${entry}`;
@@ -156,6 +157,9 @@ export function ScrollKeeper() {
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         writeScroll(shown.current, window.scrollY);
+        // 29c: a dock tab's root page keeps its own position for the visit.
+        const section = dockSectionOf(window.location.pathname);
+        if (section && isPhoneView()) saveDockScroll(section, window.scrollY);
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -210,7 +214,17 @@ export function ScrollKeeper() {
       if (location.hash) {
         instant(0);
         later(() => toHash(location.hash));
-      } else instant(0);
+      } else {
+        // 29c: a dock tab opens where it was left, once its content is drawn (after the first paint).
+        const section = isPhoneView() ? dockSectionOf(location.pathname) : null;
+        const y = section ? readDockScroll(section) : null;
+        if (y && y > 0) {
+          instant(0);
+          // Now if the page is tall enough; else once it is ready, and once more after the first paint.
+          later(() => restore(y));
+          window.requestAnimationFrame(() => restore(y));
+        } else instant(0);
+      }
     }
 
     // G1 to G3: focus. A replace and a change of query string on the same page leave it where it is.

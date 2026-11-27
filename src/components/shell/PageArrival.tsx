@@ -13,15 +13,56 @@
 // The two fades are the page change's own keyframes (`bgPageIn`, `bgPageOut` in index.css): opacity only. The composer
 // has its own arrival, ComposeArrival, which does the same for its building blocks.
 
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
+import { ErrorState } from "@/components/brand/ErrorState";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { BLOCKS_OUT_MS, CONTENT_IN_MS } from "@/pages/site/compose/loadingBlocks";
 import { STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 
 // The dots fade out over BLOCKS_OUT_MS while the content fades in over CONTENT_IN_MS, in place.
 const IN = `bgPageIn ${CONTENT_IN_MS}ms ${STANDARD} both`;
 
-export function PageArrival({ loading, placeholder, children }: { loading: boolean; placeholder: ReactNode; children: ReactNode }) {
+/** 29c: on a phone no loading state stays longer than this. Then the page's failed state is drawn in its place. */
+export const SKELETON_CEILING_MS = 8000;
+
+/**
+ * 29c: the phone's ceiling. After SKELETON_CEILING_MS of `loading` the page says "That didn't load." with "Try again"
+ * in the loading state's place. The queries keep running: data that arrives later ends `loading`, and the content
+ * replaces the failed state. Desktop is not touched.
+ */
+export function useLoadingCeiling(loading: boolean): boolean {
+  const phone = useIsPhone();
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (!phone || !loading) {
+      setLate(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setLate(true), SKELETON_CEILING_MS);
+    return () => window.clearTimeout(timer);
+  }, [phone, loading]);
+  return phone && loading && late;
+}
+
+export function PageArrival({
+  loading,
+  placeholder,
+  children,
+  region = "This page",
+  onRetry,
+}: {
+  loading: boolean;
+  placeholder: ReactNode;
+  children: ReactNode;
+  /** The failed state's panel name, said to a screen reader. */
+  region?: string;
+  /** Try again. Without it every query on screen is asked again. */
+  onRetry?: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const timedOut = useLoadingCeiling(loading);
   const [was] = useState(loading);
   const [reduced] = useState(() => prefersReducedMotion() || typeof Element.prototype.animate !== "function");
   const [place, setPlace] = useState<CSSProperties | null>(null);
@@ -49,7 +90,11 @@ export function PageArrival({ loading, placeholder, children }: { loading: boole
   return (
     <>
       <span ref={marker} hidden />
-      {children}
+      {timedOut ? (
+        <ErrorState panel={region} data-testid="page-arrival-failed" style={{ padding: 16 }} onRetry={onRetry ?? (() => void queryClient.refetchQueries({ type: "active" }))} />
+      ) : (
+        children
+      )}
       {fading && place ? (
         <div
           aria-hidden="true"

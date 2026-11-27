@@ -340,6 +340,8 @@ export function BuildsLoadingView() {
         head={<BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
         main={
           phone ? (
+            /* 29c: the skeleton keeps the content's boxes. The table's phone content is still cards, so the skeleton is cards; 29f turns
+              both into rows (PhoneRowSkeletons: 64 tall, 12 between) once the rows have their covers. */
             <PhoneCardSkeletons count={6} height={112} />
           ) : (
           <>

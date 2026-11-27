@@ -435,7 +435,7 @@ export function HomePage() {
         path="/"
       />
       {/* SV-04 P5: the page arrives over its loading state, the route's Placeholder, when the feed lands. */}
-      <PageArrival loading={feedStatus === "loading"} placeholder={<HomeLoadingView />}>
+      <PageArrival loading={feedStatus === "loading"} placeholder={<HomeLoadingView />} region="Home" onRetry={() => void feedQuery.refetch()}>
         <HomeView
           now={now}
           since={seenAt !== null && activity.data ? sinceSection(activity.data, seenAt, now) : null}

@@ -45,6 +45,7 @@ import {
 import { resolveNotificationCovers } from "@/lib/notifications/covers";
 import type { GetNotificationsResult } from "@/lib/notifications/getNotifications";
 
+import { useLoadingCeiling } from "@/components/shell/PageArrival";
 import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { ActivityView, type ActivityListProps, type ActivityLoad, type ActivityRuns } from "./ActivityView";
 import { activityRowOf, countKinds, groupByDay, runsLabel, scaleSeries, type ActivityRow } from "./activityModel";
@@ -239,15 +240,18 @@ export function ActivityPage() {
   const groups = groupByDay(rows, new Date(now));
   const kindCounts = useMemo(() => countKinds(rows), [rows]);
 
+  /* 29c: no phone skeleton stays past 8 seconds. The list then says it did not load, with Try again; the query keeps
+     running, and rows that arrive later replace it. A signed-out visitor is asked to sign in, which is not a wait. */
+  const late = useLoadingCeiling(Boolean(userId) && !listQuery.data && !listQuery.isError);
   const list: ActivityListProps = {
-    status: listQuery.data ? "ready" : listQuery.isError ? "error" : "loading",
+    status: listQuery.data ? "ready" : listQuery.isError || late ? "error" : "loading",
     groups,
     hasMore: Boolean(listQuery.hasNextPage),
     loadingMore: listQuery.isFetchingNextPage,
     onMore: () => void listQuery.fetchNextPage(),
     onRetry: () => void listQuery.refetch(),
     error: listQuery.error,
-    read: listQuery,
+    read: late ? undefined : listQuery,
   };
 
   const runs: ActivityLoad<ActivityRuns> = runsQuery.data
