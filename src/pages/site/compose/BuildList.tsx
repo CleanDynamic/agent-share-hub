@@ -1261,7 +1261,7 @@ function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildLi
   if (useOnMap()) return null;
   if (!usesParts(step, props, withGoes).any) return null;
   return (
-    <div data-testid="tile-uses" style={footRow(INDENT)}>
+    <div style={footRow(INDENT)}>
       <UsesRow step={step} props={props} withGoes={withGoes} />
     </div>
   );

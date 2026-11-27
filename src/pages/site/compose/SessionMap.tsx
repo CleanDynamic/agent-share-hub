@@ -13,7 +13,7 @@ import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { GROUP_LABEL_COPY, useGroupLookup } from "./groupLabels";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Maximize2, MoreHorizontal } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { usePartRegister } from "@/components/build/partNav";
 import { IconButton } from "@/components/brand/IconButton";
@@ -110,7 +110,8 @@ export const sessionTitle = (session: { title?: string; app: string | null }): s
 
 /** What the maker can do to the map from its head. Absent: a reader's head. */
 export interface MapControls {
-  onDirection: (direction: MapDirection) => void;
+  /** The direction switch. Absent: none is drawn (the canvas, MS-05, has no direction). */
+  onDirection?: (direction: MapDirection) => void;
   /** Whether readers see the map. */
   onBuildPage: boolean;
   onToggleBuildPage: (next: boolean) => void;
@@ -128,6 +129,11 @@ export interface SessionMapColumnProps {
   shownLine?: string;
   /** CA-24 P1: the map is still being laid out: building blocks in its box. */
   loading?: boolean;
+  /**
+   * MS-05: the map canvas, drawn under the head in place of the sessions' drawing and its legend, at `width`. Fit to screen
+   * scales it to the column. With a canvas the head has no direction switch.
+   */
+  canvas?: { width: number; node: ReactNode };
 }
 
 function MapOptionsMenu({ controls }: { controls: MapControls }) {
@@ -320,7 +326,7 @@ function Legend({ model, selected }: { model: SessionMapModel; selected: string 
 }
 
 /** The map column: head, drawing, legend. */
-export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine, loading = false }: SessionMapColumnProps) {
+export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine, loading = false, canvas }: SessionMapColumnProps) {
   const wide = useMinWidth(768);
   const direction: MapDirection = wide ? wanted : "vertical";
   const [fit, setFit] = useState(false);
@@ -338,7 +344,8 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
     observer.observe(box);
     return () => observer.disconnect();
   }, []);
-  const scale = fit && room > 0 && layout.width > room ? room / layout.width : 1;
+  const drawnWidth = canvas ? canvas.width : layout.width;
+  const scale = fit && room > 0 && drawnWidth > room ? room / drawnWidth : 1;
 
   // Escape clears the selection.
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -372,7 +379,7 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
           </p>
         </div>
         <div style={MAP_HEAD_CONTROLS}>
-          {controls && wide ? (
+          {controls?.onDirection && !canvas && wide ? (
             <Segmented
               label={MAP_COPY.directionLabel}
               size={28}
@@ -391,9 +398,15 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
         </div>
       </div>
       <div ref={scroller} data-testid="map-scroll" style={MAP_SCROLL}>
-        <Drawing model={model} direction={direction} selected={selected} onSelect={onSelect} scale={scale} />
+        {canvas ? (
+          <div data-testid="map-canvas-fit" style={{ transform: scale === 1 ? undefined : `scale(${scale})`, transformOrigin: "0 0", width: scale === 1 ? undefined : drawnWidth }}>
+            {canvas.node}
+          </div>
+        ) : (
+          <Drawing model={model} direction={direction} selected={selected} onSelect={onSelect} scale={scale} />
+        )}
       </div>
-      <Legend model={model} selected={selected} />
+      {canvas ? null : <Legend model={model} selected={selected} />}
     </div>
   );
 }

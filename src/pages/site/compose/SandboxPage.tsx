@@ -119,7 +119,10 @@ import { centre, partElement } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { SessionMapColumn, NoMap } from "./SessionMap";
 import type { SessionMapPanel as SessionMapPanelImpl } from "./SessionMapPanel";
-import { makerMapOf, type MapSettings } from "@/lib/build/making";
+import { makerMapOf, mapViewOf, type MapSettings } from "@/lib/build/making";
+import { mapLayoutOf } from "@/lib/build/mapLayout";
+import { startFromBuild } from "@/lib/build/mapStart";
+import { MapCanvas } from "./MapCanvas";
 import { suggestUses } from "@/lib/build/suggest";
 import type { SourcesPanel as SourcesPanelImpl } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, repeatsOf, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
@@ -2561,6 +2564,12 @@ function SandboxPageBody() {
     },
     [registry, select],
   );
+  /* MS-05: the Sessions view draws the canvas: the stored layout, or the plain arrangement worked out on every render and
+     written only once the maker changes something (MS-06). Read only for now. */
+  const mapLayout = useMemo(
+    () => mapLayoutOf(madeShown) ?? startFromBuild(steps, groups, madeShown, listFacts.results),
+    [madeShown, steps, groups, listFacts.results],
+  );
   const mapColumn =
     mapSettings && mapActive ? (
       <SessionMapColumn
@@ -2569,8 +2578,11 @@ function SandboxPageBody() {
         selected={mapSelected}
         onSelect={select}
         shownLine={mapSettings.onBuildPage ? "Shown on build page" : "Not on build page"}
+        canvas={{
+          width: mapLayout.width,
+          node: <MapCanvas layout={mapLayout} steps={steps as Step[]} groups={groups as SessionGroup[]} files={mapFiles} making={madeShown} results={listFacts.results as ListResult[]} mode="maker" selected={selectedId} onSelect={(id) => (id ? select(id) : undefined)} />,
+        }}
         controls={{
-          onDirection: (direction) => changeMap({ ...mapSettings, direction }),
           onBuildPage: mapSettings.onBuildPage,
           onToggleBuildPage: (onBuildPage) => changeMap({ ...mapSettings, onBuildPage }),
           onRemove: () => changeMap({ ...mapSettings, on: false }),
@@ -2587,7 +2599,9 @@ function SandboxPageBody() {
         <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={select} />
       </Suspense>
     ) : null;
-  const mapPanel = mapSettings && mapActive ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
+  // MS-05: the canvas takes the panel's width in the Sessions view; the Architecture view keeps the panel beside it.
+  const architectureShown = Boolean(architectureColumn) && mapViewOf(made, true, savedGroups.length) === "architecture";
+  const mapPanel = mapSettings && mapActive && architectureShown ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
 
   /** The handlers Details had, which its tiles' windows now call (CA-18). */
   const detailsHandlers: DetailsHandlers = {
