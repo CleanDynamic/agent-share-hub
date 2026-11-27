@@ -32,7 +32,7 @@ export const SKELETON_CEILING_MS = 8000;
  * in the loading state's place. The queries keep running: data that arrives later ends `loading`, and the content
  * replaces the failed state. Desktop is not touched.
  */
-function useLoadingCeiling(loading: boolean): boolean {
+export function useLoadingCeiling(loading: boolean): boolean {
   const phone = useIsPhone();
   const [late, setLate] = useState(false);
   useEffect(() => {
