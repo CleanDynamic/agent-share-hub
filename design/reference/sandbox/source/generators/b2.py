@@ -9,26 +9,28 @@ def wire(sx=S, hl=True):
     b1.finished()  # fills b1.G
     G = b1.G
     B, x1, x2, cw, y3, yr, y0 = G["B"], G["xS1"], G["xS2"], G["cw"], G["y3"], G["yr"], G["y0"]
+    hA, h3, hr = G["hA"], 92 + TILE_H["agent"] + 28, 56 + TILE_H["result"] + 28
+    th = [TILE_H["prompt"], TILE_H["code"], TILE_H["check"]]
     def r(x, y, w, h, **k):
         return box(x * sx, y * sx, w * sx, h * sx, **k)
     def t(x, y, w, h):
-        return f'<div style="position:absolute;left:{x * sx}px;top:{y * sx}px;width:{w * sx}px;height:{h * sx}px;border-radius:4px;background:#161917"></div>'
+        return f'<div style="position:absolute;left:{x * sx}px;top:{y * sx}px;width:{w * sx}px;height:{h * sx}px;border-radius:4px;background:#1B1F1C"></div>'
     o = r(16, 16, 1568, 132, title="Intro", r=8)
-    o += r(16, 172, 1568, 598, border="1.5px solid rgba(242,243,242,.6)", fill="transparent", r=10)
+    o += r(16, 172, 1568, hA + 68, border="1.5px solid rgba(242,243,242,.6)", fill="transparent", r=10)
     o += T(26, 172 * sx - 9, "Part A", 10, "#141416", extra=f"background:{INK};padding:0 5px;border-radius:4px;font-weight:600")
-    o += r(32, y0, 756, 530, title="S1 box", meta="Stack")
-    o += r(812, y0, 756, 530, title="S2 box", meta="Stack")
-    for b in B:
-        o += t(x1, b, cw, 110) + t(x2, b, cw, 110)
-    o += r(16, 794, 1568, 570, border="1.5px solid rgba(242,243,242,.6)", fill="transparent", r=10)
-    o += T(26, 794 * sx - 9, "Part B", 10, "#141416", extra=f"background:{INK};padding:0 5px;border-radius:4px;font-weight:600")
-    o += r(32, y3, 1536, 246, title="S3 box", meta="Across")
-    o += t(x1, y3 + 92, cw, 120) + t(x2, y3 + 92, cw, 120)
-    o += r(32, yr, 1536, 232, title="Result box", meta="Span")
-    o += t(x1, yr + 56, x2 + cw - x1, 150)
+    o += r(32, y0, 756, hA, title="S1 box", meta="Stack")
+    o += r(812, y0, 756, hA, title="S2 box", meta="Stack")
+    for b, hh in zip(B, th):
+        o += t(x1, b, cw, hh) + t(x2, b, cw, hh)
+    o += r(16, y3 - 52, 1568, yr + hr + 16 - (y3 - 52), border="1.5px solid rgba(242,243,242,.6)", fill="transparent", r=10)
+    o += T(26, (y3 - 52) * sx - 9, "Part B", 10, "#141416", extra=f"background:{INK};padding:0 5px;border-radius:4px;font-weight:600")
+    o += r(32, y3, 1536, h3, title="S3 box", meta="Across")
+    o += t(x1, y3 + 92, cw, TILE_H["agent"]) + t(x2, y3 + 92, cw, TILE_H["tool"])
+    o += r(32, yr, 1536, hr, title="Result box", meta="Span")
+    o += t(x1, yr + 56, x2 + cw - x1, TILE_H["result"])
     if hl:
-        ln = "".join(f'<path d="M{x * sx} {(y0 + 80) * sx}V{(yr + 210) * sx}" stroke="{MINT}" stroke-width="1.4" stroke-dasharray="5 4"></path>' for x in (x1, x1 + cw, x2, x2 + cw))
-        o += svg(1600 * sx, 1380 * sx, ln)
+        ln = "".join(f'<path d="M{x * sx} {(y0 + 80) * sx}V{(yr + 56 + TILE_H["result"]) * sx}" stroke="{MINT}" stroke-width="1.4" stroke-dasharray="5 4"></path>' for x in (x1, x1 + cw, x2, x2 + cw))
+        o += svg(1600 * sx, 1420 * sx, ln)
     return o
 
 
@@ -42,8 +44,8 @@ def node(x, y, title, meta, w=280, hl=False):
 def build():
     o = H(48, 40, "The layout is a tree of splits, so the canvas is always one full rectangle")
     o += sub(48, 82, "Each split divides a region completely, side by side or one above the other, at proportions the maker drags. Leaves are boxes. Columns are never drawn: they appear where edges line up.")
-    o += canvas(48, 140, int(1600 * S), int(1380 * S), wire(), bg=BG)
-    o += T(48, 140 + int(1380 * S) + 14, "Mint lines: card edges in Part A and Part B line up, so the map reads as two columns. Nobody drew a lane.", 13, TX2, 680)
+    o += canvas(48, 140, int(1600 * S), int(1420 * S), wire(), bg=BG)
+    o += T(48, 140 + int(1420 * S) + 14, "Mint lines: card edges in Part A and Part B line up, so the map reads as two columns. Nobody drew a lane.", 13, TX2, 680)
     # tree
     X0, Y0 = 790, 150
     nodes = [

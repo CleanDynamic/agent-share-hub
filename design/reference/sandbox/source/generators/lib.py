@@ -127,12 +127,14 @@ def box(x, y, w, h, title="", meta="", fill="rgba(255,255,255,.045)", border="1p
 
 
 def chip(x, y, num, text="", w=None, h=26, hl=False, extra=""):
+    """A small tile, in the live tile's paint: Card #1B1F1C radius 8, a round number badge, the title."""
     ww = f"width:{w}px;" if w else ""
     sh = f"box-shadow:0 0 0 1.5px {MINT};" if hl else ""
-    return (f'<div style="position:absolute;left:{x}px;top:{y}px;{ww}height:{h}px;box-sizing:border-box;border-radius:6px;background:#161917;'
-            f'display:flex;align-items:center;gap:6px;padding:0 8px;white-space:nowrap;overflow:hidden;{sh}{extra}">'
-            f'<span style="{MF};font-size:9.5px;color:#EDEFEC;background:#2A2E2B;border-radius:4px;padding:1px 5px">{num}</span>'
-            f'<span style="font-size:11px;color:#D2D5D3;overflow:hidden;text-overflow:ellipsis">{text}</span></div>')
+    bd = max(16, min(20, h - 8))
+    return (f'<div style="position:absolute;left:{x}px;top:{y}px;{ww}height:{h}px;box-sizing:border-box;border-radius:8px;background:#1B1F1C;'
+            f'display:flex;align-items:center;gap:6px;padding:0 7px 0 4px;white-space:nowrap;overflow:hidden;{sh}{extra}">'
+            f'<span style="{MF};flex-shrink:0;min-width:{bd}px;height:{bd}px;border-radius:{bd // 2}px;background:#242925;font-size:9.5px;color:#A4AAA5;display:flex;align-items:center;justify-content:center;padding:0 3px;box-sizing:border-box">{num}</span>'
+            f'<span style="font-size:11px;font-weight:600;color:#EDEFEC;overflow:hidden;text-overflow:ellipsis">{text}</span></div>')
 
 
 def frame(x, y, w, h, name, dashed=False, col="rgba(242,243,242,.7)"):
@@ -167,3 +169,45 @@ def pill(x, y, text, on=False):
 
 def arrow_r(x, y, w=40):
     return svg(w, 12, f'<path d="M0 6H{w - 2}M{w - 8} 1l6 5-6 5" stroke="{TX2}" stroke-width="1.4"></path>', x, y)
+
+
+# ---- the live step tile (BuildList / tileRecipes), measured on the running app, dusk ----
+TL = dict(module="#1B1F1C", control="#242925", border="#2A2F2B", text="#EDEFEC", text2="#A4AAA5", label="#8C938E", well="#121513", hair="#262B27", mint="#6BE2A0", green="#86D193")
+TILE_H = {"prompt": 113, "file": 118, "code": 145, "check": 148, "agent": 140, "tool": 118, "result": 118}
+
+
+def tile(x, y, w, num, kind, eyebrow, title, body="", code=None, foot="", status=None, criteria=None, hl=False, extra="", settings=None, h=None):
+    """A step tile exactly as the List draws it: Card #1B1F1C, radius 12, padded 12 14, parts 8 apart; a round 24 number
+    badge (mono 13), the eyebrow 13 label above the title 15/600; then the body, a code well, or a check's lines; a mono foot."""
+    T = TL
+    if kind == "result":
+        mark = (f'<span style="flex-shrink:0;width:24px;height:24px;border-radius:7px;background:rgba(107,226,160,.16);display:flex;align-items:center;justify-content:center">'
+                f'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" stroke="{T["mint"]}" stroke-width="1.6" fill="none"/></svg></span>')
+    else:
+        mark = (f'<span style="flex-shrink:0;min-width:24px;height:24px;border-radius:12px;background:{T["control"]};{MF};font-size:13px;color:{T["text2"]};'
+                f'display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box">{num}</span>')
+    head = (f'<div style="display:flex;gap:8px;align-items:flex-start;min-width:0">{mark}'
+            f'<div style="display:flex;flex-direction:column;flex-grow:1;min-width:0"><span style="font-size:13px;line-height:17px;color:{T["label"]};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{eyebrow}</span>'
+            f'<span style="font-size:15px;font-weight:600;line-height:20px;color:{T["text"]};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</span></div>'
+            f'<span style="flex-shrink:0;width:26px;height:24px;display:flex;align-items:center;justify-content:center;color:{T["label"]};font-size:14px;letter-spacing:1px">···</span></div>')
+    parts = ""
+    if criteria:
+        parts += f'<div style="font-size:15px;line-height:22px;color:{T["text"]};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-size:13px;color:{T["text2"]}">Pass criteria: </span>{criteria}</div>'
+    if status:
+        parts += f'<div style="display:flex;align-items:center;gap:7px;font-size:15px;line-height:22px;color:{T["text"]}"><span style="width:7px;height:7px;border-radius:50%;background:{T["green"]}"></span>{status}</div>'
+    if body:
+        parts += f'<div style="font-size:15px;line-height:22px;color:{T["text"]};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{body}</div>'
+    if code:
+        lines = code.split("\n")[:3]
+        parts += (f'<div style="display:grid;grid-template-columns:28px minmax(0,1fr);background:{T["well"]};border:1px solid {T["border"]};border-radius:8px;padding:8px 0;{MF};font-size:13px;line-height:18px;overflow:hidden">'
+                  f'<span style="white-space:pre;text-align:right;padding-right:8px;color:{T["label"]};border-right:1px solid {T["hair"]}">' + "\n".join(str(i + 1) for i in range(len(lines))) + '</span>'
+                  f'<pre style="margin:0;padding-left:8px;color:{T["text"]};white-space:pre;overflow:hidden;{MF};font-size:13px;line-height:18px">' + "\n".join(lines) + '</pre></div>')
+    if settings:
+        parts += (f'<div style="background:{T["well"]};border-radius:10px;overflow:hidden">' + "".join(
+            f'<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 12px;{"" if i == 0 else "border-top:1px solid " + T["hair"] + ";"}font-size:13px;line-height:17px">'
+            f'<span style="color:{T["text2"]}">{a}</span><span style="{MF};color:{T["text"]}">{b}</span></div>' for i, (a, b) in enumerate(settings)) + '</div>')
+    if foot:
+        parts += f'<div style="{MF};font-size:13px;line-height:19px;color:{T["label"]};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{foot}</div>'
+    ring = f"box-shadow:0 0 0 2px #3A3D3B,0 0 0 4px {T['mint']};" if hl else ""
+    return (f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h or TILE_H.get(kind, 113)}px;box-sizing:border-box;border-radius:12px;background:{T["module"]};'
+            f'padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;{ring}{extra}">{head}{parts}</div>')

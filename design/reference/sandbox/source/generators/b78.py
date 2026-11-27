@@ -35,12 +35,9 @@ def inside():
                ok(344, 182, "Indenting never changes the order: an indented tile still follows the one above.", 316))
     # show
     sh = (box(10, 10, 280, 210, "S2", "", r=6, tsize=10.5) +
-          f'<div style="position:absolute;left:22px;top:38px;width:256px;height:150px;box-sizing:border-box;border-radius:8px;background:#161917;padding:10px 12px">'
-          f'<div style="display:flex;gap:6px;align-items:center"><span style="{MF};font-size:9.5px;color:#EDEFEC;background:#2A2E2B;border-radius:4px;padding:1px 5px">4</span><span style="{MF};font-size:9px;color:#858C87">PROMPT</span><span style="font-size:11.5px;color:#EDEFEC">Write the refund rules</span></div>'
-          f'<div style="margin-top:6px;font-size:10.5px;color:#A4AAA5">Turn the refund policy into rules a script can check.</div>'
-          f'<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px">'
-          + "".join(f'<div style="display:flex;gap:6px;height:16px;align-items:center"><span style="width:70px;font-size:9px;color:#858C87">{a}</span><span style="flex-grow:1;height:16px;border-radius:3px;background:#232624;{MF};font-size:9px;color:#D2D5D3;display:flex;align-items:center;padding:0 5px">{b}</span></div>' for a, b in (("Model", "Opus 5.5"), ("Reasoning effort", "High"))) +
-          '</div></div>')
+          f'<div style="position:absolute;left:20px;top:34px;width:356px;height:240px;transform:scale(.73);transform-origin:0 0">'
+          + tile(0, 0, 356, 4, "prompt", "Prompt", "Write the refund rules", "Turn the refund policy into rules a script can check.", settings=[("Model", "Opus 5.5"), ("Reasoning effort", "High")], h=190)
+          + '</div>')
     bar = (f'<div style="position:absolute;left:344px;top:52px;display:flex;gap:6px;flex-wrap:wrap;width:280px">' +
            "".join(f'<span style="height:30px;padding:0 10px;border-radius:7px;background:{SURF};display:flex;align-items:center;gap:6px;font-size:12.5px;color:{TX}"><i style="font-style:normal;width:13px;height:13px;border-radius:3px;{("background:" + MINT) if on else ("border:1.5px solid " + LAB)};font-size:9px;color:#040504;display:flex;align-items:center;justify-content:center">{"✓" if on else ""}</i>{n}</span>' for n, on in (("Text", True), ("Settings", True), ("Files", False))) + '</div>')
     o += panel(752, 464, 640, 300, label(20, 16, "Show") + canvas(20, 48, 300, 230, sh, r=8) + bar +

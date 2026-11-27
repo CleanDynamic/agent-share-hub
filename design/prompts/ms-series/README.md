@@ -157,10 +157,17 @@ These settle what `MODEL.md` leaves open. Every prompt follows them.
 7. **Measures.** One gutter, 24px, everywhere. Padding inside a box, 20px. A 12-column grid across the canvas width and an 8px rhythm down it. Snap distance 6px. Minimum box width: 2 grid columns at the current width, and never under 160px. Widths: narrow 720, standard 960, wide 1200; min 640, max 1600. These live in `MAP_GRID` and `MAP_WIDTH` in `src/lib/build/mapGeometry.ts` (MS-02) and nowhere else.
 8. **Bands.** Two boxes share a band when their vertical spans overlap by more than half of the shorter one. Bands are worked out per tile from each tile's own slot (MS-03).
 9. **Two-way arrows** join two tiles or two boxes that can be simultaneous: from different sessions, with no chain of links between them either way. They are always level: a straight horizontal line through the gutter. Two boxes are level when they share a band, and two tiles when their slots share a band.
-10. **Colours.** Canvas background presets are stored by key and mapped to values in one table in `canvasRecipes.ts`: grey `#3A3D3B`, dusk `#141416`, slate `#2B3138`, paper `#EDEDE8`. These are canvas paint, like the maker's own part colours, not UI tokens, so this is the one table that holds hex values. Every fill tint is checked against every preset with `contrast` from `src/lib/theme/luminance.ts`: tile text on the tinted box must reach 4.5:1 and box titles 3:1. A tint that fails one preset is changed until it passes, never left out. Selection, snapping guides and allowed drop places use `t.evidence`. Refusals use `t.lit`. Everything else uses the tokens the composer already uses for tiles (`--tile`, `--tile-border`, `--text`, `--text2`, `--label`, `--hairline`).
+10. **Colours.** Canvas background presets are stored by key and mapped to values in one table in `canvasRecipes.ts`: grey `#3A3D3B`, dusk `#141416`, slate `#2B3138`, paper `#EDEDE8`. These are canvas paint, like the maker's own part colours, not UI tokens, so this is the one table that holds hex values. Every fill tint is checked against every preset with `contrast` from `src/lib/theme/luminance.ts`: tile text on the tinted box must reach 4.5:1 and box titles 3:1. A tint that fails one preset is changed until it passes, never left out. Selection, snapping guides and allowed drop places use `t.evidence`. Refusals use `t.lit`. Tiles take every paint from the List's tile recipes (Decision 14), so nothing about a tile's colour is decided here. Box chrome, frames and lines use the canvas ink from `inkFor` (MS-05).
 11. **Numbers.** Build numbers are `Step.number`. Session numbers are `S<session number>·<position in session>`. Part numbers are `<part label>·S<session number>·<position>`, using `partLabelsOf` and `workstreamLabel`. If the composer already has a session-relative number (SV-05), use it and report.
 12. **The map file format** is `openbuilds_map: 1`, named to match the Build File's `openbuilds_build` key. MS-14 defines it exactly.
 13. **Names on screen.** The left column of the Map view is headed "Sources" on the boards. The composer already has a Sources panel (UI-P64, `SourcesPanel.tsx`). If both can be on screen at once, the map's column is headed "On the map" instead, and MS-06 reports it.
+14. **The tile is the List's tile.** A tile on the map is the same step tile the composer's List draws, built from the same pieces in `src/pages/site/compose/tileRecipes.tsx` and the same parts of `BuildList.tsx`, never a second design. As measured on the running app (dark theme), and as `01-finished-map.png` draws it:
+    - **Card:** `tileStyle()`: `t.module` fill, `t.moduleBorder` edge (clear in dark), radius `r.panel` (12), padded 12 by 14, parts 8 apart.
+    - **Head** (`TILE_HEAD`): the round 24px `NumberBadge` (mono 13, `t.text2` on `t.control`; the Result tile shows its tick mark instead), then a column with the kind line (`TILE_EYEBROW`, 13 `t.label`: "Prompt", "Agent · Opus 5.5", "Check", "Result · Inbox") above the title (`TILE_TITLE`, 15/600), then `TileOptions` (the ··· button) at the right.
+    - **Parts**, in the fixed order the List draws them: the text (`PROMPT_TEXT` or `BODY_LINE`, 15/22, cut at two lines); a code tile's `SmallCodeWell` (3 lines, numbered gutter); a check's "Pass criteria:" line and its status line with the coloured dot; settings, files and picture as the List or Details draws them (a settings part with no List form uses `LIST_BOX` and `listRow`); the mono foot (`FOOT_FACTS`: "1 prompt", "30 test cases", "made by prompt 1").
+    - **Not on the map:** the List's drag handle and its reorder controls, "Show full prompt", Uses chips (the lines carry uses), and anything that edits the step. The ··· menu holds the map's own actions (Show, Add note, Remove from box) and "Open in the build".
+    - **Settings sit inside the tile.** Switching on Settings with Show adds the part inside the card, and the tile grows. Nothing floats beside a tile except its note.
+    - If the List's tile can't be rendered outside the List as it is, MS-05 extracts the presentational part into one shared component that both the List and the map use, with the List's tests still passing. It never copies the markup.
 
 ## Vocabulary
 
@@ -173,7 +180,7 @@ Use these words in code, copy and reports, and no others for the same things.
 | region | A branch drawn as a frame round a session or a part | group, container |
 | frame | How a region is drawn: a line with a name tab | border |
 | outline | A line that follows a session's or part's loose boxes | hull |
-| tile | A top-level step of the build | node, step card |
+| tile | A top-level step of the build, drawn as the List's step tile | node, step card, card |
 | band | Tiles or boxes that read as level | row (row means a `down` split's child) |
 | gutter | The 24px space between boxes, where lines run | gap, margin |
 | two-way arrow | A level arrow between simultaneous things | bidirectional link |
@@ -203,6 +210,7 @@ Use these words in code, copy and reports, and no others for the same things.
 ## Done for the whole series
 
 - Every build opens on a correct map in the composer and on the build page, with no write until the maker changes something.
+- Every tile on the map is the List's step tile for the same step, apart from the List-only controls Decision 14 names.
 - No action, file or drag can save a map that leaves a gap, puts a later tile before an earlier one, puts two sessions in one box, or draws a two-way arrow between things in sequence.
 - A map made by a chat from `support-inbox-triage.for-chat.md` and dropped on the canvas looks like `01-finished-map.png` in its structure.
 - A 50-tile build scrolls smoothly in the editor and reads in build order on a phone.

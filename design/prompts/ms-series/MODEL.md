@@ -104,7 +104,7 @@ Order inside a box follows the build. In Stack and Grid, tile 6 can't be placed 
 
 Hierarchy is a second axis. Dragging a tile to the right places it under the one above it, one level in, with a thin bracket. A check sits under the tile it tests; a file sits under the prompt that made it. There are three levels at most, each indented by the same step.
 
-Every tile is drawn in one fixed format: number, kind and title on the first line, then the parts the maker chooses to show (text, settings, files, code, a picture). They can't rearrange those parts, only switch them on or off. That's why fifty tiles can sit on one canvas and still look like one family.
+Every tile is drawn exactly as the build's List draws it: a round number badge, the kind as a small line above a bold title, the ··· menu, then the parts the maker chooses to show (text, settings, files, code, a picture) in the List's fixed order, and the List's mono foot. They can't rearrange those parts, only switch them on or off. That's why fifty tiles can sit on one canvas and still look like one family, and like the build they came from.
 
 Text the maker writes goes in two places only: the explanation under a box or region title, and a note attached to a tile. Free-floating text isn't possible, because there is no empty space for it to float in.
 

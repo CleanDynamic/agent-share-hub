@@ -126,9 +126,9 @@ def editor():
           f'<span style="{MF};font-size:12px;color:{TX2}">60%</span><span style="height:30px;padding:0 11px;border-radius:7px;border:1px solid {EDGE};display:flex;align-items:center;font-size:13px">Fit</span></div></div>')
     # canvas with the finished map
     S = 0.6
-    world = f'<div style="position:absolute;left:12px;top:-60px;width:1600px;height:1380px;transform:scale({S});transform-origin:0 0;background:{BG}">{b1.finished()}</div>'
+    world = f'<div style="position:absolute;left:12px;top:-60px;width:1600px;height:1420px;transform:scale({S});transform-origin:0 0;background:{BG}">{b1.finished()}</div>'
     G = b1.G
-    selx, sely, selw, selh = 12 + 812 * S, -60 + G["y0"] * S, 756 * S, 530 * S
+    selx, sely, selw, selh = 12 + 812 * S, -60 + G["y0"] * S, 756 * S, G["hA"] * S
     hs = "".join(f'<span style="position:absolute;left:calc({a}% - 4px);top:calc({b}% - 4px);width:8px;height:8px;background:{TX};box-shadow:0 0 0 1.5px {MINT}"></span>' for a, b in ((0, 0), (50, 0), (100, 0), (0, 50), (100, 50), (0, 100), (50, 100), (100, 100)))
     sel = f'<div style="position:absolute;left:{selx}px;top:{sely}px;width:{selw}px;height:{selh}px;border-radius:8px;box-shadow:0 0 0 2px {MINT}">{hs}</div>'
     fb = (f'<div style="position:absolute;right:{1006 - (selx + selw)}px;top:{sely - 52}px;height:42px;padding:0 10px;border-radius:10px;background:{MOD};border:1px solid {EDGE};box-shadow:0 14px 30px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;font-size:12.5px;color:{TX2};white-space:nowrap">'

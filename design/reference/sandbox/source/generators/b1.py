@@ -46,67 +46,69 @@ def finished():
             + T(250, 40, "How the support inbox triage is built", 28, INK, 760, 600, lh=1.2)
             + T(250, 82, "9 tiles in 3 sessions. Classify and Refund rules run side by side, then Draft and send uses both.", 14, INK2, 760)
             + T(1110, 44, "PART A · 2 sessions<br>PART B · 1 session<br>Numbers: build order", 12, INK3, 440, mono=True, lh=1.7))
-    # Part A
-    out += frame(16, 172, 1568, 598, "Part A")
     y0 = 224
-    out += box(32, y0, 756, 530, r=12, fill="rgba(255,255,255,.035)")
-    out += box(812, y0, 756, 530, r=12, fill="rgba(107,226,160,.055)")
+    H = TILE_H
+    B = [y0 + 92]
+    h4 = 220
+    B.append(B[0] + h4 + 30)
+    B.append(B[1] + H["code"] + 30)
+    hA = B[2] + H["check"] + 28 - y0
+    out += frame(16, 172, 1568, hA + 68, "Part A")
+    out += box(32, y0, 756, hA, r=12, fill="rgba(255,255,255,.035)")
+    out += box(812, y0, 756, hA, r=12, fill="rgba(107,226,160,.055)")
     out += bxhead(32, y0, 756, 1, "Classify", "Claude Code", "Every email gets one label before anything else.")
     out += bxhead(812, y0, 756, 2, "Refund rules", "Cursor", "Runs alongside Classify. Its rules feed Prompt 3.")
-    B = [y0 + 92, y0 + 242, y0 + 392]  # band tops
     cw = 332
     xS1, xS2 = 788 - 20 - cw, 832
-    # Session 1 tiles on the right of their box, notes on the left: cards face each other across the gutter
-    out += card(xS1, B[0], cw, 120, "1", "PROMPT", "Label the last 200 emails", "Give each support email one label: refund, bug, question or other.")
-    out += card(xS1, B[1], cw, 108, "2", "FILE", "labels.json", '{ "id": 4812, "label": "refund" }\n{ "id": 4813, "label": "bug" }', True)
-    out += card(xS1, B[2], cw, 120, "3", "PROMPT", "Merge the refund rules", "Add the rules from Session 2 to every email labelled refund.")
+    # Session 1 tiles on the right of their box, notes on the left: tiles face each other across the gutter
+    out += tile(xS1, B[0], cw, 1, "prompt", "Prompt", "Label the last 200 emails", "Give each support email one label: refund, bug, question or other.")
+    out += tile(xS1, B[1], cw, 2, "file", "File", "labels.json", "One label for each of the 200 emails.", foot="made by prompt 1")
+    out += tile(xS1, B[2], cw, 3, "prompt", "Prompt", "Merge the refund rules", "Add the rules from Session 2 to every email labelled refund.")
     out += note(52, B[0] + 26, "Starts the build", "Runs at the same time as Prompt 4.", 330, True)
     out += note(52, B[1] + 26, "One label per email", "Made by Prompt 1.", 330, True)
     out += note(52, B[2] + 26, "Waits for the rules", "Uses Prompt 4, so it sits in a later band.", 330, True)
-    # Session 2
-    out += card(xS2, B[0], cw, 120, "4", "PROMPT", "Write the refund rules", "Turn the refund policy into rules a script can check.")
-    out += insp(xS2 + cw + 24, B[0] + 12, [("Model", "Opus 5.5"), ("Effort", "High"), ("Harness", "Cursor")])
-    out += card(xS2, B[1], cw, 108, "5", "CODE", "refundRules.ts", "export const rules = [\n  overFifty, noReceipt, ...\n]", True)
-    out += card(xS2 + 28, B[2], cw - 28, 92, "6", "CHECK", "Rules pass 30 cases", "Tests Code 5 against 30 past refunds.")
-    out += note(xS2 + cw + 24, B[2] + 20, "Sits under Code 5", "Indented one level: it tests it.", 300)
+    out += tile(xS2, B[0], cw, 4, "prompt", "Prompt", "Write the refund rules", "Turn the refund policy into rules a script can check.", settings=[("Model", "Opus 5.5"), ("Effort", "High"), ("Harness", "Cursor")], h=h4)
+    out += note(xS2 + cw + 24, B[0] + 26, "Settings shown", "Picked with Show on this tile.", 300)
+    out += tile(xS2, B[1], cw, 5, "code", "Code", "refundRules.ts", code="export const rules = [\n  overFifty, noReceipt,\n];")
+    out += tile(xS2 + 28, B[2], cw - 28, 6, "check", "Check", "Rules pass 30 cases", criteria="sorts every past refund", status="Passed 30 of 30 runs", foot="30 test cases")
+    out += note(xS2 + cw + 24, B[2] + 30, "Sits under Code 5", "Indented one level: it tests it.", 300)
     # Part B
-    out += frame(16, 794, 1568, 570, "Part B")
-    y3 = 846
-    out += box(32, y3, 1536, 246, r=12, fill="rgba(255,255,255,.035)")
+    y3 = 172 + hA + 68 + 24 + 52
+    h3 = 92 + H["agent"] + 28
+    yr = y3 + h3 + 24
+    hr = 56 + H["result"] + 28
+    out += frame(16, y3 - 52, 1568, (yr + hr) - (y3 - 52) + 16, "Part B")
+    out += box(32, y3, 1536, h3, r=12, fill="rgba(255,255,255,.035)")
     out += bxhead(32, y3, 420, 3, "Draft and send", "Claude Code", "Starts once the labels and rules are merged.")
-    out += card(xS1, y3 + 92, cw, 120, "7", "AGENT", "Reply drafter", "Drafts a reply for each labelled email, under 120 words.")
-    out += card(xS2, y3 + 92, cw, 120, "8", "TOOL", "Gmail", "Reads the inbox and saves the drafts.")
+    out += tile(xS1, y3 + 92, cw, 7, "agent", "Agent · Opus 5.5", "Reply drafter", "Drafts a reply for each labelled email, under 120 words.", foot="1 prompt")
+    out += tile(xS2, y3 + 92, cw, 8, "tool", "Tool", "Gmail", "Reads the inbox and saves the drafts.", foot="MCP server")
     out += note(xS2 + cw + 24, y3 + 118, "Tile 7 uses tile 8", "Side by side: they run together.", 300)
-    yr = 1116
-    out += box(32, yr, 1536, 232, r=12, fill="rgba(255,255,255,.035)")
+    out += box(32, yr, 1536, hr, r=12, fill="rgba(255,255,255,.035)")
     out += (f'<div style="position:absolute;left:52px;top:{yr + 16}px;display:flex;align-items:center;gap:10px"><span style="{MF};font-size:10.5px;color:{INK3};border:1px solid #5E635F;border-radius:5px;padding:1px 6px">S3</span>'
             f'<span style="font-size:16px;font-weight:600;color:{INK}">Result</span><span style="font-size:12px;color:{INK3}">Spans the width · last in reading order</span></div>')
-    rows = "".join(f'<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;background:#1B1F1C"><span style="font-size:13px;flex-grow:1;color:#EDEFEC">{s}</span>'
-                   f'<span style="{MF};font-size:10.5px;color:#A4AAA5">{l}</span><span style="font-size:11.5px;color:{"#E8B86B" if st == "Needs sign-off" else "#6BE2A0"};width:96px;text-align:right">{st}</span></div>'
-                   for s, l, st in (("Order 4812 arrived broken", "refund", "Draft ready"), ("App crashes on sign in", "bug", "Draft ready"), ("Refund for order 4790, £86", "refund", "Needs sign-off")))
-    out += (f'<div style="position:absolute;left:{xS1}px;top:{yr + 56}px;width:{(xS2 + cw) - xS1}px;box-sizing:border-box;border-radius:12px;background:#121513;box-shadow:0 14px 34px rgba(0,0,0,.45),inset 0 0 0 .5px #2C322D;padding:12px 16px;display:flex;flex-direction:column;gap:7px">'
-            f'<div style="display:flex;align-items:center;gap:10px"><span style="{MF};font-size:10.5px;color:#EDEFEC;background:#2A2E2B;border-radius:5px;padding:2px 6px">9</span><span style="{MF};font-size:9.5px;color:#858C87">RESULT</span><span style="font-size:14px;color:#EDEFEC">Support inbox</span><span style="margin-left:auto;font-size:12px;color:#6BE2A0">3 drafts ready</span></div>{rows}</div>')
+    out += tile(xS1, yr + 56, (xS2 + cw) - xS1, 9, "result", "Result · Inbox", "Support inbox", "3 drafts ready, 1 waiting for sign-off.", foot="an inbox · from agent 7")
     # lines: makes (down), uses (gutter), two-way (level), tests (dashed)
     gx = 800
     c1 = xS1 + cw // 2
     c2 = xS2 + cw // 2
-    ln = (line(f"M{c1} {B[0] + 120}V{B[1]}") +
-          line(f"M{c2} {B[0] + 120}V{B[1]}") +
-          line(f"M{xS2 + cw} {B[2] + 46}H{xS2 + cw + 12}V{B[1] + 70}H{xS2 + cw}", dash=True) +
-          line(f"M{xS2} {B[0] + 96}H{gx}V{B[2] + 60}H{xS1 + cw}") +
-          line(f"M{xS1 + cw} {B[0] + 48}H{xS2}", col=MINT, both=True, width=1.6) +
-          line(f"M{c1} {B[2] + 120}V{y3 + 92}") +
-          line(f"M{xS2} {y3 + 152}H{xS1 + cw}") +
-          line(f"M{c1} {y3 + 212}V{yr + 56}") +
-          f'<path d="M{xS2 + 14} {B[1] + 108}V{B[2] + 46}H{xS2 + 28}" stroke="{INK3}" stroke-width="1.2"></path>')
-    out += svg(W, 1370, ln)
-    out += (f'<div style="position:absolute;left:{gx - 34}px;top:{B[0] + 22}px;height:18px;padding:0 6px;border-radius:5px;background:{BG};color:{MINT};font-size:11px;display:flex;align-items:center">same time</div>')
-    G.update(dict(B=B, xS1=xS1, xS2=xS2, cw=cw, y3=y3, yr=yr, y0=y0))
+    ln = (line(f"M{c1} {B[0] + H['prompt']}V{B[1]}") +
+          line(f"M{c2} {B[0] + h4}V{B[1]}") +
+          line(f"M{xS2 + cw} {B[2] + 60}H{xS2 + cw + 12}V{B[1] + 70}H{xS2 + cw}", dash=True) +
+          line(f"M{xS2} {B[0] + 120}H{gx}V{B[2] + 56}H{xS1 + cw}") +
+          line(f"M{xS1 + cw} {B[0] + 30}H{xS2}", col=MINT, both=True, width=1.6) +
+          line(f"M{c1} {B[2] + H['prompt']}V{y3 + 92}") +
+          line(f"M{xS2} {y3 + 92 + 60}H{xS1 + cw}") +
+          line(f"M{c1} {y3 + 92 + H['agent']}V{yr + 56}") +
+          f'<path d="M{xS2 + 14} {B[1] + H["code"]}V{B[2] + 46}H{xS2 + 28}" stroke="{INK3}" stroke-width="1.2"></path>')
+    out += svg(W, yr + hr + 40, ln)
+    out += (f'<div style="position:absolute;left:{gx - 34}px;top:{B[0] + 6}px;height:18px;padding:0 6px;border-radius:5px;background:{BG};color:{MINT};font-size:11px;display:flex;align-items:center">same time</div>')
+    G.update(dict(B=B, xS1=xS1, xS2=xS2, cw=cw, y3=y3, yr=yr, y0=y0, hA=hA, H=yr + hr + 16 + 16))
     return out
 
 
 def build():
-    page("Main.dc.html", "The finished map", W, 1380, finished(), bg=BG)
+    body = finished()
+    page("Main.dc.html", "The finished map", W, G["H"], body, bg=BG)
 
 
 if __name__ == "__main__":

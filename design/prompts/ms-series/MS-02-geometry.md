@@ -29,7 +29,7 @@ interface BoxChrome { head: number; noteWidth: number }  // title + explanation 
 type Measure = { tile(tileId: string, width: number, parts: MapTilePart[]): TileSize; chrome(box: MapBox | MapRegion, width: number): BoxChrome };
 ```
 
-MS-05 supplies a `Measure` that reads real sizes. Tests supply a fixed one.
+MS-05 supplies a `Measure` that reads real sizes from the List's tile as rendered (README Decision 14), so heights always match what the List draws. Tests supply a fixed one, using the heights `01-finished-map.png` was drawn with: prompt 113, file and tool 118, agent 140, code 145, check 148, result 118, and prompt with three settings rows 220.
 
 ## Part 3: `geometryOf(layout, measure)`
 

@@ -27,7 +27,7 @@ Drag a tile right by one step, or press Tab with it selected, to indent it one l
 
 ## Part 4: Show
 
-Selecting a tile shows, on its floating bar, a checkbox for each part it actually has (from the table): Text, Settings, Files, Code, Picture. Parts it doesn't have aren't offered. Each part has one fixed place in the tile's format; switching it on adds it there and the box grows. Store in `show[tileId]`; remove the key when it's back to the default.
+Selecting a tile shows, on its floating bar, a checkbox for each part it actually has (from the table): Text, Settings, Files, Code, Picture. Parts it doesn't have aren't offered. Each part is drawn inside the tile, in the place and form the List gives it (README Decision 14): Settings as rows inside the card, as on `07-inside-a-box.png` and tile 4 of `01-finished-map.png`, never as a panel beside the tile. Switching one on adds it and the tile and its box grow. Store in `show[tileId]`; remove the key when it's back to the default.
 
 ## Part 5: titles, explanations, notes
 
@@ -45,7 +45,7 @@ The toolbar gets **Text**: it splits a new text box (no tiles, a title and expla
 - Layout switches keep build order; Grid with 3 columns fills row by row; Across offers to widen and widens.
 - Reorder offers only allowed slots; keyboard announces refusals.
 - Indent: max depth, first tile refused, order unchanged.
-- Show offers only parts the tile has and grows the box.
+- Show offers only parts the tile has, draws each inside the tile as the List does, and grows the box.
 - Titles, explanations and notes save, respect limits, and placeholders never reach reader mode.
 - A text box can be added, edited, moved, and is ignored by `orderRefusal`.
 

@@ -30,7 +30,7 @@ Tests: every fixture gives a layout that passes `mapLayoutRefusal` and `orderRef
 - The background presets (README Decision 10) and `inkFor(background)`: the text, line and frame colours for that background (light ink on the dark presets, dark ink on paper), each a token where one fits.
 - The fill palette, as tints over the background, with a test that checks every fill on every preset with `contrast` (`src/lib/theme/luminance.ts`): 4.5:1 for tile text, 3:1 for box titles. Change a failing tint until it passes.
 - Box: radius 12 by default, padding from `MAP_GRID`, title 14/500, explanation 12.5/400.
-- Tile: the composer's existing tile card where one fits. Look for the tile recipe the List and the Full prompt window use and reuse it; a new recipe only if none fits, and say why. First line: number badge, kind chip (the mono type chip), title. Then the shown parts.
+- Tile: no recipe here. The map draws the List's step tile (README Decision 14). If MS-00 found it can't render outside the List, extract the presentational part of `BuildList.tsx`'s tile into `src/pages/site/compose/StepTile.tsx`, make the List use it, and keep every List test green; the map then uses the same component with `variant="map"`, which leaves out the drag handle, reorder controls, "Show full prompt" and Uses chips, and takes the parts to show from `show[tileId]`. Snapshot one tile of each kind in both places and assert they match apart from those left-out pieces.
 - Frame: 1.5px line, the name tab on the top edge, part frames dashed and quieter than session frames.
 - Lines: 1.3px, arrowheads 7px, two-way 1.6px in `t.evidence`.
 
@@ -49,7 +49,7 @@ interface MapCanvasProps {
 
 1. **Measure.** Render each tile once off-screen at its slot width to get heights (a hidden measuring layer, `ResizeObserver` for changes), then feed `geometryOf`. Cache by tile id, width and shown parts. Nothing may visibly jump: the first paint uses the measured sizes.
 2. **Draw.** Positioned boxes, regions with frames and tabs, tiles in their slots, notes with leader lines, then one SVG layer on top for lines (`routeLines`) and two-way arrows. The canvas has the layout's background and, when `dotGrid`, the app's dot grid.
-3. **Tiles.** Number badge from the layout's `numbers` scheme (README Decision 11). A tile that no longer exists is drawn as a muted slot reading "Removed from the build" for the maker, and not at all for readers (Decision 6). Clicking a tile in reader mode calls `onOpenTile` (the build page opens the Full prompt window, as `ReaderMap`'s `onRead` does today).
+3. **Tiles.** The List's tile at the slot's width (Decision 14), with its number badge showing the layout's `numbers` scheme (README Decision 11). A tile that no longer exists is drawn as a muted slot reading "Removed from the build" for the maker, and not at all for readers (Decision 6). Clicking a tile in reader mode calls `onOpenTile` (the build page opens the Full prompt window, as `ReaderMap`'s `onRead` does today).
 4. **Accessibility.** The canvas is a list of boxes in reading order (`readingOrder`), each a group named by its title and session, each holding its tiles as list items with their number, kind and title. Lines, frames and outlines are `aria-hidden`; each tile's description says what it uses and what uses it, from the line sentences.
 5. **Performance.** Boxes outside the scroll area plus one screen are drawn as empty rectangles of the right size (MS-13 measures this). Use `content-visibility: auto` if that alone meets MS-13's target.
 

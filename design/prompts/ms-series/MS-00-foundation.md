@@ -21,6 +21,7 @@ Checked at `b5fc29f`. Confirm each in Part 0.
 1. Read every file named above. In `design/audits/map-sandbox/ms-00-before.md`, write the README's `Assumptions` and `Plan`, then three more sections:
    - `Where the map is used`: every importer of `sessionMap.ts`, `SessionMap.tsx`, `SessionMapPanel.tsx` and `ReaderMap.tsx`, and what each uses. Include `BuildsMapsView.tsx`, `buildsMaps.ts`, `DevMap.tsx` and the tests.
    - `What a tile can show`: for each `StepKind`, which of the parts Text, Settings, Files, Code and Picture it has, and the `Step` fields that hold each. MS-10's Show needs this table.
+   - `The tile`: how `BuildList.tsx` draws a step tile for each kind (`TileHeader`, `TileTitle`, `TileFoot`, the code, check and result branches, `SentWithTile`) and which pieces of `tileRecipes.tsx` each uses. Say whether those parts can render outside the List (what props and context they need: `BuildListProps`, rename, nesting, hover), and what extracting a presentational `StepTile` would take. MS-05 depends on this.
    - `Numbers`: how `Step.number` is made, whether the composer already has a session-relative number (SV-05), and what `partLabelsOf` and `workstreamLabel` give.
 2. Check that `builds.making` is JSON (so `map_layout` needs no migration) by reading the column in `supabase/migrations/` and the generated types. If it isn't, stop and report.
 
