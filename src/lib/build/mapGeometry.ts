@@ -5,6 +5,7 @@
 // tile as rendered, tests supply fixed sizes.
 //
 // Only types come from `mapLayout.ts`, which imports `MAP_WIDTH` from here, so the two never import each other at run time.
+// `mapOrder.ts` (MS-03) builds on this module, never the other way round.
 
 import type { Fits, MapBox, MapLayout, MapNode, MapRegion, MapSide, MapTilePart } from "./mapLayout";
 
@@ -440,7 +441,7 @@ export function snapY(geometry: MapGeometry, y: number, ignore: readonly string[
   return { y: Math.round(y / RHYTHM) * RHYTHM, guide: null };
 }
 
-/* ── width changes and phones ── */
+/* ── width changes ── */
 
 export type MapWidthPreset = "narrow" | "standard" | "wide";
 
@@ -460,10 +461,4 @@ export function snapWidth(px: number): number {
   return Math.min(MAP_WIDTH.max, Math.max(MAP_WIDTH.min, snapped));
 }
 
-/**
- * The order the drawn leaves stack in on a phone: reading order. A stand-in from leaf rectangles (top, then left); MS-03
- * replaces it with box order from tile bands.
- */
-export function phoneOrder(layout: MapLayout, geometry: MapGeometry): string[] {
-  return [...geometry.leaves].sort((a, b) => geometry.nodes[a].y - geometry.nodes[b].y || geometry.nodes[a].x - geometry.nodes[b].x);
-}
+// `phoneOrder` lives in `mapOrder.ts` (MS-03): it reads tile bands, and this module never imports that one.
