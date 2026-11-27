@@ -185,6 +185,8 @@ const KitComponents = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitCo
 const KitPages = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPages")) : null;
 /* Prompts 17 and 18: /dev/kit/phone, the phone pieces and the icon set at 390. */
 const KitPhone = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPhone")) : null;
+/* MS-00: /dev/map-sandbox, the map sandbox's fixtures, where every MS prompt shows its work. Guarded the same way. */
+const DevMapSandbox = import.meta.env.DEV ? lazy(() => import("./pages/dev/DevMapSandbox")) : null;
 
 /* BG-P14 — /dev/wide, the wide-layout demo.
 
@@ -605,6 +607,7 @@ const App = () => (
                 />
               )}
               {KitPhone && <Route path="/dev/kit/phone" element={<KitPhone />} />}
+              {DevMapSandbox && <Route path="/dev/map-sandbox" element={<DevMapSandbox />} />}
               {KitPages && (
                 <Route
                   path="/dev/kit/pages/:page"

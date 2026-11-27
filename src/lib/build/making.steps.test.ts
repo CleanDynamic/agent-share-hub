@@ -7,7 +7,8 @@ vi.mock("@/integrations/supabase/client", async () => (await import("./__audit__
 
 import { REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Row } from "./__audit__/fakeSupabase";
 import { getBuild } from "./builds";
-import { patchMaking, setPartOpen, setSessionMeta, setSessionOpen, setWorkstreams } from "./making";
+import { patchMaking, setMapLayout, setMapSettings, setPartOpen, setSessionMeta, setSessionOpen, setWorkstreams } from "./making";
+import { MAP_LAYOUT_COPY, type MapLayout } from "./mapLayout";
 import { setSessionOrder } from "./sessionLayout";
 import { flatNodes, noteRecord, watchBuild, type RawClash } from "./staleWrites";
 
@@ -151,5 +152,61 @@ describe("another tab changes making between this tab's read and its write", () 
     await writing;
     expect(Object.keys(making().sessions_meta as object).sort()).toEqual(["typed-s5", "typed-s6", "typed-s9"]);
     expect(clashes).toHaveLength(0);
+  });
+});
+
+describe("MS-00: the map's layout", () => {
+  const layout = (tiles: string[]): MapLayout => ({
+    v: 1,
+    width: 960,
+    background: "grey",
+    dotGrid: true,
+    numbers: "build",
+    root: { kind: "box", id: "m-1", tiles, layout: "stack", indent: {}, show: {}, notes: {} },
+    outlines: [],
+    twoWay: [],
+    twoWayDismissed: [],
+    hiddenLinks: [],
+    linkGutters: {},
+  });
+
+  beforeEach(() => {
+    open(SLOW);
+  });
+
+  it("writes only map_layout and keeps every other key of making", async () => {
+    const before = { ...making() };
+    const written = await setMapLayout(DRAFT, layout(["p1"]));
+    expect(making()).toEqual({ ...before, map_layout: layout(["p1"]) });
+    expect(written).toEqual(making());
+  });
+
+  it("two writes close together both land: the second starts from the first's result", async () => {
+    const [first, second] = await Promise.all([setMapLayout(DRAFT, layout(["p1"])), setMapSettings(DRAFT, { on: true, direction: "horizontal", onBuildPage: true })]);
+    expect(first.map_layout).toEqual(layout(["p1"]));
+    expect(second.map_layout).toEqual(layout(["p1"]));
+    expect(making().map_layout).toEqual(layout(["p1"]));
+    expect(making().map).toEqual({ on: true, direction: "horizontal", onBuildPage: true });
+
+    const [one, two] = await Promise.all([setMapLayout(DRAFT, layout(["p1", "p2"])), setMapLayout(DRAFT, layout(["p2"]))]);
+    expect(one.map_layout).toEqual(layout(["p1", "p2"]));
+    expect(two).toMatchObject({ map: { on: true }, map_layout: layout(["p2"]) });
+    expect(making().map_layout).toEqual(layout(["p2"]));
+  });
+
+  it("refuses a layout that can't be saved and writes nothing", async () => {
+    await setMapLayout(DRAFT, layout(["p1"]));
+    const before = structuredClone(making());
+    await expect(setMapLayout(DRAFT, layout(["p1", "p1"]))).rejects.toThrow(MAP_LAYOUT_COPY.tileTwice);
+    expect(making()).toEqual(before);
+  });
+
+  it("removes the key when the layout is null, and keeps the rest", async () => {
+    await setMapLayout(DRAFT, layout(["p1"]));
+    const written = await setMapLayout(DRAFT, null);
+    expect(making()).not.toHaveProperty("map_layout");
+    expect(making().workstreams).toHaveLength(3);
+    expect(written).toEqual(making());
+    await expect(setMapLayout(DRAFT, null)).resolves.not.toHaveProperty("map_layout");
   });
 });
