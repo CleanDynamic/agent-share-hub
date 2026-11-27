@@ -47,9 +47,15 @@ export interface PostsPage {
   next: number | null;
 }
 
-/** A space's topics are the root entries in that space (an inner join); every other list includes the topics that are in none. */
-const listSelect = (inSpace: boolean) =>
-  `${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}, post_spaces${inSpace ? "!inner" : ""}(space:spaces(id, slug, name))`;
+/**
+ * A space's topics are the root entries in that space (an inner join); every other list includes the topics that are in none.
+ * `realAuthors` (29g) joins the author as an inner embed so the request can leave out a test account's topics (`is_test_account`).
+ */
+const listSelect = (inSpace: boolean, realAuthors = false) =>
+  `${POST_COLUMNS}, ${realAuthors ? AUTHOR_EMBED.replace(/\(/, "!inner(") : AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}, post_spaces${inSpace ? "!inner" : ""}(space:spaces(id, slug, name))`;
+
+/** Postgres's "undefined column": the database does not have `profiles.is_test_account` yet (20261127140000 is not applied). */
+const UNDEFINED_COLUMN = "42703";
 
 /**
  * Topics, a page at a time. Everyone is every topic that is not hidden, in a space or in none; a space is that space's topics; Following
@@ -90,17 +96,26 @@ export async function listPosts(options: ListPostsOptions): Promise<PostsPage> {
     if (mySpaceIds.length === 0) return { posts: [], next: null };
   }
 
-  let query = db.from("openbuild_posts").select(listSelect(Boolean(options.spaceId) || mySpaceIds !== null)).is("parent_id", null);
-  if (!options.includeHidden) query = query.is("hidden_by", null);
-  if (options.spaceId) query = query.eq("post_spaces.space_id", options.spaceId);
-  if (mySpaceIds) query = query.in("post_spaces.space_id", mySpaceIds);
-  if (authors) query = inMySpaces.length ? query.or(`author_id.in.(${authors.join(",")}),id.in.(${inMySpaces.join(",")})`) : query.in("author_id", authors);
-  if (options.stillOpen) query = query.eq("still_open", true);
-  if (options.order === "pinned_first") query = query.order("pinned_at", { ascending: false, nullsFirst: false });
-  if (options.order === "most_replied") query = query.order("reply_count", { ascending: false });
-  query = query.order("created_at", { ascending: false });
+  // 29g: Everyone, a space and the spaces tab leave out test accounts' topics, in the query so pages and counts agree. Following is
+  // the reader's own choice of people and keeps everything they made.
+  const realAuthors = options.scope !== "following";
+  const read = (excludeTestAccounts: boolean) => {
+    let query = db.from("openbuild_posts").select(listSelect(Boolean(options.spaceId) || mySpaceIds !== null, excludeTestAccounts)).is("parent_id", null);
+    if (excludeTestAccounts) query = query.eq("author.is_test_account", false);
+    if (!options.includeHidden) query = query.is("hidden_by", null);
+    if (options.spaceId) query = query.eq("post_spaces.space_id", options.spaceId);
+    if (mySpaceIds) query = query.in("post_spaces.space_id", mySpaceIds);
+    if (authors) query = inMySpaces.length ? query.or(`author_id.in.(${authors.join(",")}),id.in.(${inMySpaces.join(",")})`) : query.in("author_id", authors);
+    if (options.stillOpen) query = query.eq("still_open", true);
+    if (options.order === "pinned_first") query = query.order("pinned_at", { ascending: false, nullsFirst: false });
+    if (options.order === "most_replied") query = query.order("reply_count", { ascending: false });
+    query = query.order("created_at", { ascending: false });
+    return query.range(from, from + limit - 1);
+  };
 
-  const response = await query.range(from, from + limit - 1);
+  let response = await read(realAuthors);
+  // Before 20261127140000 is applied the column is missing: the list still reads, unfiltered, rather than failing the page.
+  if (realAuthors && response.error && (response.error as { code?: string }).code === UNDEFINED_COLUMN) response = await read(false);
   if (response.error) throw postLayerError("listPosts", response);
   const rows = (response.data ?? []) as unknown as PostRow[];
   return { posts: rows.map(toPost), next: rows.length < limit ? null : from + rows.length };

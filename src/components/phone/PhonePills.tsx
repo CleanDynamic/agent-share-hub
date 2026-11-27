@@ -1,4 +1,4 @@
-// The pill row on a phone (29d): 32 tall pills, padding 0 14, radius 16, 14/20 500; off is Card with Text 2, on is Text with the
+// The pill row on a phone (29d): 32 tall pills, padding 0 14, radius 16, 13/16 500 (29g: labels and pills are 13/16); off is Card with Text 2, on is Text with the
 // Page colour. 8 apart, 16 at the sides, 10 above and below. A row that overflows scrolls sideways and a 40 wide fade to Page
 // stands at its right edge until the end is reached. One Mint element per region stays the round create button.
 // Each pill is a toggle (`aria-pressed`), or a tab when `tabs` is given.
@@ -78,9 +78,9 @@ function LinkPill({ pill, on }: { pill: PhonePill; on: boolean }) {
           background: on ? t.text : t.module,
           color: on ? t.bg : t.text2,
           fontFamily: FIGTREE,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 500,
-          lineHeight: "20px",
+          lineHeight: "16px",
           whiteSpace: "nowrap",
         }}
       >
@@ -158,9 +158,9 @@ export function PhonePills<V extends string = string>({ pills, value, onChange, 
                 borderRadius: PHONE_PILL / 2,
                 background: pill.value === value ? t.text : t.module,
                 color: pill.value === value ? t.bg : t.text2,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 500,
-                lineHeight: "20px",
+                lineHeight: "16px",
               }}
             />
           ),

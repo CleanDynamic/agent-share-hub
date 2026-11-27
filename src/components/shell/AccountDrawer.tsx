@@ -88,8 +88,8 @@ function Switch({ on, label, onToggle }: { on: boolean; label: string; onToggle:
         borderRadius: r.full,
       }}
     >
-      <span aria-hidden="true" style={{ position: "absolute", left: 0, top: 9, width: 44, height: 26, borderRadius: 13, background: on ? t.brandAccent : t.control, transition: feedback("background-color") }}>
-        <span data-motion="bar" style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: 10, background: on ? t.onBrandAccent : t.text, transform: on ? "translateX(18px)" : "none", transition: prefersReducedMotion() ? "none" : `transform ${PHONE_QUICK}ms ${PHONE_EASE}` }} />
+      <span aria-hidden="true" style={{ position: "absolute", left: 0, top: 9, width: 44, height: 26, borderRadius: 13, background: on ? t.text : t.control, transition: feedback("background-color") }}>
+        <span data-motion="bar" style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: 10, background: on ? t.bg : t.text, transform: on ? "translateX(18px)" : "none", transition: prefersReducedMotion() ? "none" : `transform ${PHONE_QUICK}ms ${PHONE_EASE}` }} />
       </span>
     </button>
   );

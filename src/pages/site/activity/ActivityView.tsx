@@ -242,9 +242,9 @@ function Row({ row, now, onOpen, phone = false }: { row: ActivityRow; now: numbe
       {row.unread ? (
         phone ? (
           /* 29f: a 6 round Mint dot, 5 from the left edge, centred on the 40 avatar (12 padding above it). */
-          <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 5, top: 12 + 20 - 3, width: 6, height: 6, borderRadius: "50%", background: t.brandAccent }} />
+          <span data-testid="activity-unread-bar" data-unread-mark="" aria-hidden="true" style={{ position: "absolute", left: 5, top: 12 + 20 - 3, width: 6, height: 6, borderRadius: "50%", background: t.brandAccent }} />
         ) : (
-          <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} />
+          <span data-testid="activity-unread-bar" data-unread-mark="" aria-hidden="true" style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} />
         )
       ) : null}
       <Who row={row} phone={phone} />

@@ -142,7 +142,7 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
           background: viewer?.avatarUrl || !viewer ? t.control : avatarTint(viewer.id ?? name),
           color: viewer?.avatarUrl || !viewer ? t.text2 : avatarInk,
           fontFamily: DM_MONO,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
         }}
       >
@@ -158,6 +158,7 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
         <span
           aria-hidden="true"
           data-testid="phone-unread"
+          data-unread-mark=""
           style={{
             position: "absolute",
             top: 5,
@@ -194,7 +195,7 @@ export function PhoneTopBar({ left, leftAction = null, centre, titleAs = "h1", r
       {progress ? (
         <div role="progressbar" aria-label="Onboarding" aria-valuemin={1} aria-valuemax={progress.of} aria-valuenow={progress.step} data-testid="phone-progress" style={{ display: "flex", gap: 6, padding: "0 16px" }}>
           {Array.from({ length: progress.of }, (_, index) => (
-            <span key={index} data-done={index < progress.step ? "" : undefined} style={{ flex: 1, height: 4, borderRadius: 2, background: index < progress.step ? t.brandAccent : t.control }} />
+            <span key={index} data-done={index < progress.step ? "" : undefined} style={{ flex: 1, height: 4, borderRadius: 2, background: index < progress.step ? t.text : t.control }} />
           ))}
         </div>
       ) : null}

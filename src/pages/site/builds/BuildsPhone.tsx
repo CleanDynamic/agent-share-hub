@@ -19,12 +19,12 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { TableChip } from "./BuildsTableView";
 
-/** A line of the page's own type on a phone: 15/20 for rows, 13/16 for meta. */
-export const phoneText = (px: 12 | 13 | 15 | 17 | 20, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
+/** A line of the page's own type on a phone: 17/22 for titles, 15/20 for rows, 13/16 for meta (29g: no other sizes). */
+export const phoneText = (px: 13 | 15 | 17, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
-  lineHeight: px === 20 ? "24px" : px === 17 ? "22px" : px === 15 ? "20px" : "16px",
+  lineHeight: px === 17 ? "22px" : px === 15 ? "20px" : "16px",
   color,
   ...extra,
 });
@@ -80,7 +80,7 @@ export function PhoneCheckRow({ label, checked, disabled, count, onChange, dim }
   return (
     <label data-ui="phone-check-row" style={{ position: "relative", boxSizing: "border-box", minHeight: TOUCH_MIN, display: "flex", alignItems: "center", gap: 12, padding: `0 ${PHONE_MARGIN}px`, cursor: disabled ? "default" : "pointer", opacity: dim ? 0.5 : 1, ...phoneText(15, 400, checked ? t.text : t.text2) }}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={onChange} {...handlers} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", margin: 0, opacity: 0, cursor: "inherit" }} />
-      <span aria-hidden="true" style={{ boxSizing: "border-box", width: 20, height: 20, flexShrink: 0, borderRadius: 5, display: "inline-flex", alignItems: "center", justifyContent: "center", background: checked ? t.brandAccent : t.module, color: t.onBrandAccent, boxShadow: !checked ? `inset 0 0 0 1px ${t.fieldEdge}` : undefined, ...(state.focusVisible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: 2 } : null) }}>
+      <span aria-hidden="true" style={{ boxSizing: "border-box", width: 20, height: 20, flexShrink: 0, borderRadius: 5, display: "inline-flex", alignItems: "center", justifyContent: "center", background: checked ? t.text : t.module, color: t.bg, boxShadow: !checked ? `inset 0 0 0 1px ${t.fieldEdge}` : undefined, ...(state.focusVisible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: 2 } : null) }}>
         {checked ? <MobileIcon name="check" size={16} strokeWidth={2.5} /> : null}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>{label}</span>

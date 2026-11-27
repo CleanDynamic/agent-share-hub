@@ -329,10 +329,12 @@ describe("the toolbar", () => {
       for (const button of buttons) expect(button.style.height).toBe(`${STYLE_HEIGHT}px`);
       expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["false", "false", "true", "false", "false"]);
       expect(row.style.overflowX).toBe("auto");
-      // Each in its own phone size.
-      expect(within(row).getByText("Title").style.fontSize).toBe("20px");
-      expect(within(row).getByText("Heading").style.fontSize).toBe("18px");
-      expect(within(row).getByText("Body").style.fontSize).toBe("16px");
+      // Each in its own phone size (29g: the phone's post text is 17; a title and a heading are told apart by their 600).
+      expect(within(row).getByText("Title").style.fontSize).toBe("17px");
+      expect(within(row).getByText("Title").style.fontWeight).toBe("600");
+      expect(within(row).getByText("Heading").style.fontSize).toBe("17px");
+      expect(within(row).getByText("Body").style.fontSize).toBe("17px");
+      expect(within(row).getByText("Body").style.fontWeight).toBe("400");
       expect(within(row).getByText("Small").style.fontSize).toBe("13px");
     });
 

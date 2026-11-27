@@ -182,8 +182,10 @@ describe("the editor on a phone", () => {
     expect((within(bar).getByRole("button", { name: "Group" }) as HTMLButtonElement).disabled).toBe(true);
     for (const name of ["Move", "Group", "Colour", "Duplicate", "Remove"]) {
       const button = within(bar).getByRole("button", { name });
-      expect(button.style.width).toBe("52px");
+      // 29g: at least 52 wide, so the 13/16 label of "Duplicate" fits.
+      expect(button.style.minWidth).toBe("52px");
       expect(button.style.height).toBe("52px");
+      expect(button.style.fontSize).toBe("13px");
     }
   });
 

@@ -100,4 +100,9 @@ export const xConnector = (size: XSize) => {
 
 /** The author row's two parts: the name (700, Text) and "@handle · age" (Text 3), at the post size. */
 export const xName = (size: XSize): CSSProperties => ({ fontSize: X_FEED[size].text, fontWeight: 700, lineHeight: `${X_FEED[size].line}px` });
-export const xMeta = (size: XSize): CSSProperties => ({ fontSize: X_FEED[size].text, fontWeight: 400, lineHeight: `${X_FEED[size].line}px` });
+/**
+ * 29g: on a phone, handles and ages are secondary text, 15; the name and the post text stay 17. The line stays the row's 22, so the
+ * author row keeps its height and the two parts share a baseline. The desktop is unchanged: there both are the post size.
+ */
+export const PHONE_META_TEXT = 15;
+export const xMeta = (size: XSize): CSSProperties => ({ fontSize: size === "phone" ? PHONE_META_TEXT : X_FEED[size].text, fontWeight: 400, lineHeight: `${X_FEED[size].line}px` });

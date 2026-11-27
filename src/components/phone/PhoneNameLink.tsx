@@ -1,5 +1,6 @@
 // An author's name on a phone (prompt 21): a link to their profile when they have a handle, plain text when not. The link's hit
-// area is 44 tall by padding 12 above and below, the margin taking it back, so the row looks as it did. 15/600 in Text.
+// area is 44 tall by padding 12 above and below, the margin taking it back, so the row looks as it did. 17/22 700 in Text (29g: names
+// on a phone are 17/22 700).
 
 import type { CSSProperties, ReactNode } from "react";
 
@@ -9,7 +10,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-const NAME: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 };
+const NAME: CSSProperties = { fontFamily: FIGTREE, fontSize: 17, fontWeight: 700, lineHeight: "22px", color: t.text, flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 };
 
 /** `style` sets the name's size and weight where a post's proportions differ (prompt 29a: Home's 17/22 at 700). */
 export function PhoneNameLink({ handle, style, children }: { handle: string | null | undefined; style?: CSSProperties; children: ReactNode }) {

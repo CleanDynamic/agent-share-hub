@@ -58,7 +58,7 @@ export function PhoneFindBar({ find }: { find: BuildFind }) {
   /* A portal: the page's main column is a stacking context of its own, under the top bar this stands over. */
   return createPortal(
     <div role="search" data-testid="phone-find-bar" style={BAR}>
-      <div style={{ flex: "1 1 0", minWidth: 0, boxSizing: "border-box", height: 40, borderRadius: 20, background: t.module, boxShadow: `inset 0 0 0 2px ${t.brandAccent}`, display: "flex", alignItems: "center", gap: 8, padding: "0 8px 0 12px" }}>
+      <div style={{ flex: "1 1 0", minWidth: 0, boxSizing: "border-box", height: 40, borderRadius: 20, background: t.module, boxShadow: `inset 0 0 0 2px ${t.text}`, display: "flex", alignItems: "center", gap: 8, padding: "0 8px 0 12px" }}>
         <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
           <MobileIcon name="search" size={16} />
         </span>

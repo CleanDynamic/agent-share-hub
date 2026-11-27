@@ -662,7 +662,7 @@ function corsHeaders(): Record<string, string> {
  * would carry it is intercepted — but supabase-js parses the payload to read
  * `exp`, so the shape has to be right.
  */
-function fakeJwt(claims: Record<string, unknown>): string {
+export function fakeJwt(claims: Record<string, unknown>): string {
   const b64 = (o: unknown) =>
     Buffer.from(JSON.stringify(o))
       .toString("base64")

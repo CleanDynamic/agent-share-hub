@@ -74,6 +74,7 @@ export {
   postEntriesOf,
   removePostMedia,
   resolveCover,
+  chosenCover,
   setCover,
   setPostMedia,
   setPostMediaText,

@@ -94,6 +94,7 @@ function Slot({ name, label, href, icon, current, unread }: { name: DockTileName
           <span
             aria-hidden="true"
             data-testid="dock-unread"
+            data-unread-mark=""
             style={{
               position: "absolute",
               top: -4,

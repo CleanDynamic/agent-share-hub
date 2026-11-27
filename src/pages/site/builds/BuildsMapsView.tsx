@@ -246,7 +246,7 @@ function PhoneWell({ drawing, note, words }: { drawing: MapDrawing | null; note?
           {drawing.boxes.map((box) => (
             <span
               key={box.key}
-              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: BOX_W, height: BOX_H, boxSizing: "border-box", padding: "0 8px", display: "flex", alignItems: "center", background: t.inset, borderRadius: 8, overflow: "hidden", whiteSpace: "nowrap", ...(box.colour ? { boxShadow: `inset 3px 0 0 ${box.colour}`, paddingLeft: 12 } : null), ...phoneText(12, 400, t.text) }}
+              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: BOX_W, height: BOX_H, boxSizing: "border-box", padding: "0 8px", display: "flex", alignItems: "center", background: t.inset, borderRadius: 8, overflow: "hidden", whiteSpace: "nowrap", ...(box.colour ? { boxShadow: `inset 3px 0 0 ${box.colour}`, paddingLeft: 12 } : null), ...phoneText(13, 400, t.text) }}
             >
               <span style={{ ...ellipsis, display: "block" }}>{sessionWord(box.label)}</span>
             </span>

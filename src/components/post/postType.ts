@@ -51,12 +51,18 @@ const text = (size: number, weight: number, leading: number, tracking: string): 
 
 /** The scale at this width. `phone` is true below 768px. */
 export function postType(phone: boolean): PostTypeScale {
-  const titleSize = 20;
-  const headingSize = phone ? 18 : 20;
+  /* 29g: a phone has four sizes. A post's title, its headings and its body are post text, 17/22 (the title and headings at 600):
+     24 is the page's own title and a post never stands level with it. The desktop keeps 20, 20 and 16 at its own leading. */
+  const titleSize = phone ? 17 : 20;
+  const headingSize = phone ? 17 : 20;
+  const bodySize = phone ? 17 : 16;
+  const titleLeading = phone ? 22 / 17 : 1.1;
+  const headingLeading = phone ? 22 / 17 : 1.2;
+  const bodyLeading = phone ? 22 / 17 : 1.55;
   return {
-    title: { ...text(titleSize, 500, 1.1, "-0.03em"), textWrap: "balance" },
-    heading: { ...text(headingSize, 500, 1.2, "-0.02em"), textWrap: "balance" },
-    body: { ...text(16, 400, 1.55, "0"), textWrap: "pretty" },
+    title: { ...text(titleSize, phone ? 600 : 500, titleLeading, phone ? "0" : "-0.03em"), textWrap: "balance" },
+    heading: { ...text(headingSize, phone ? 600 : 500, headingLeading, phone ? "0" : "-0.02em"), textWrap: "balance" },
+    body: { ...text(bodySize, 400, bodyLeading, "0"), textWrap: "pretty" },
     /* 29f: the phone composer is 17/22 (the row in `12-editor.jpg`); desktop keeps 20. */
     composer: { ...text(phone ? 17 : 20, 400, phone ? 22 / 17 : 1.25, "0"), textWrap: "pretty" },
     small: { ...text(13, 400, 1.5, "0"), color: t.text2, textWrap: "pretty" },
@@ -75,9 +81,9 @@ export function postType(phone: boolean): PostTypeScale {
       whiteSpace: "pre",
     },
     firstLine: {
-      title: titleSize * 1.1,
-      heading: headingSize * 1.2,
-      body: 16 * 1.55,
+      title: titleSize * titleLeading,
+      heading: headingSize * headingLeading,
+      body: bodySize * bodyLeading,
       small: 13 * 1.5,
       composer: phone ? 22 : 20 * 1.25,
     },
@@ -87,7 +93,7 @@ export function postType(phone: boolean): PostTypeScale {
 /** Between two posts of one build on the phone feed (prompt 20): the visible gap between two builds, 12 under and 12 over. */
 export const FEED_THREAD_GAP = 24;
 
-/** The phone feed's scale (prompt 20): post text 15/20, a lead 15/600, meta 13/16. Pictures and lists keep the shared rules. */
+/** The phone feed's scale (prompt 20; 29g: post text 17/22, a lead 17/600, meta 13/16). Pictures and lists keep the shared rules. */
 export function feedType(): PostTypeScale {
   const base = postType(true);
   const line = (size: number, weight: number, leading: string, colour: string = t.text): CSSProperties => ({
@@ -101,10 +107,10 @@ export function feedType(): PostTypeScale {
   return {
     ...base,
     title: { ...line(17, 600, "22px"), letterSpacing: "-0.01em", textWrap: "balance" },
-    heading: { ...line(15, 600, "20px"), textWrap: "balance" },
-    body: { ...line(15, 400, "20px"), textWrap: "pretty" },
+    heading: { ...line(17, 600, "22px"), textWrap: "balance" },
+    body: { ...line(17, 400, "22px"), textWrap: "pretty" },
     small: { ...line(13, 400, "16px", t.text2), textWrap: "pretty" },
-    firstLine: { title: 22, heading: 20, body: 20, small: 16, composer: base.firstLine.composer },
+    firstLine: { title: 22, heading: 22, body: 22, small: 16, composer: base.firstLine.composer },
   };
 }
 

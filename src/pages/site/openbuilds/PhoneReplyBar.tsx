@@ -86,7 +86,7 @@ export function PhoneAttachSheet({
         ) : (
           groups.map((group) => (
             <section key={group.title} aria-label={group.title}>
-              <h2 style={{ margin: 0, padding: `12px ${PHONE_MARGIN}px 4px`, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", color: t.text }}>{heading(group.title, group.rows.length)}</h2>
+              <h2 style={{ margin: 0, padding: `12px ${PHONE_MARGIN}px 4px`, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{heading(group.title, group.rows.length)}</h2>
               {group.rows.map((row) => (
                 <PhoneRow
                   key={[row.size, row.buildId, row.nodeId, row.partKey, row.sessionKey].join("|")}

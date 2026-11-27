@@ -32,6 +32,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("PhoneHome", () => {
+  it("ends the feed with You're up to date in Text 2 and More builds as a Text link, and nothing after (29g)", () => {
+    mount({ feed: { ...visionHomeProps("populated").feed, hasMore: false } });
+    const end = screen.getByTestId("home-feed-end");
+    expect(end).toHaveStyle({ paddingTop: "24px", textAlign: "center" });
+    expect(within(end).getByText("You’re up to date")).toHaveStyle({ fontSize: "15px", lineHeight: "20px", color: "var(--text2)" });
+    const more = within(end).getByRole("link", { name: "More builds" });
+    expect(more).toHaveAttribute("href", "/builds");
+    expect(more).toHaveStyle({ fontSize: "15px", lineHeight: "20px", color: "var(--text)" });
+    // The two small build cards are gone: More builds is the last thing in the end, and the only link.
+    expect(within(end).getAllByRole("link")).toHaveLength(1);
+    expect(end.lastElementChild).toBe(more);
+  });
+
   it("shows the tabs and the posts only: no drafts, sessions, published builds, week or kind pills", () => {
     mount();
     expect(screen.getByRole("heading", { level: 1, name: "Home" }).className).toContain("sr-only");

@@ -22,6 +22,7 @@ import {
   EVIDENCE_NODE_TYPES,
   nodeMediaId,
   resolveCover,
+  chosenCover,
   setCover,
   type CoverSource,
 } from "@/lib/build/cover";
@@ -1125,5 +1126,21 @@ describe("postEntriesOf", () => {
     postEntriesOf(build(), [entry("m-a", 0), entry("m-b", 1)]);
 
     expect(rpcState.calls).toHaveLength(0);
+  });
+});
+
+describe("chosenCover (29g): the maker's pick and nothing guessed", () => {
+  const screenshot = { id: "shot", node_id: "n-evidence" };
+  const tree = [{ id: "n-evidence", type: "screenshot", payload: { media_id: "shot" } as Json, is_gap: false }];
+
+  it("is the post's first picture, then cover_media_id", () => {
+    expect(chosenCover({ cover_media_id: null }, [screenshot, { id: "p0", node_id: null, post_position: 0 }])?.id).toBe("p0");
+    expect(chosenCover({ cover_media_id: "picked" }, [screenshot, { id: "picked", node_id: null }])?.id).toBe("picked");
+  });
+
+  it("never falls through to a session's evidence, which resolveCover would show", () => {
+    expect(resolveCover({ cover_media_id: null, hero_node_id: null }, tree, [screenshot])?.id).toBe("shot");
+    expect(chosenCover({ cover_media_id: null }, [screenshot])).toBeNull();
+    expect(chosenCover(null, [screenshot])).toBeNull();
   });
 });

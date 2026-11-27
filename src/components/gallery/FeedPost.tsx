@@ -40,7 +40,9 @@ import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostThread } from "@/components/post/PostThread";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
-import { splitThread, threadOf, type GalleryBuild, type GalleryMedia, type Post } from "@/lib/build";
+import { chosenCover, splitThread, threadOf, type GalleryBuild, type GalleryMedia, type Post } from "@/lib/build";
+import type { GalleryPostBuild } from "@/lib/build/gallery";
+import { DefaultCover } from "@/components/phone/DefaultCover";
 import { shortAge } from "@/lib/social/time";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
@@ -126,15 +128,18 @@ export function FeedPost({
 
   const doc = useMemo(() => threadOf(build, build.media), [build]);
   const threadPosts = useMemo(() => (doc ? splitThread(doc) : []), [doc]);
-  const cover = useMemo(() => coverMedia(build), [build]);
+  // 29g: on a phone a build's picture is only the one its maker chose (chosenCover), never a guess from its evidence, which can be
+  // a capture of the OpenBuilds editor; with none it draws the default cover. The desktop keeps its chain.
+  const cover = useMemo(() => (phone ? chosenCover(build, build.media) : coverMedia(build)), [build, phone]);
   const threaded = threadPosts.length > 0;
+  const sessionCount = (build as Partial<GalleryPostBuild>).sessionCount;
 
-  // A build with no thread: its title, then its cover.
+  // A build with no thread: its title, then its cover. On a phone a post has no title: the picture alone, or the default cover.
   const titlePosts = useMemo<Post[]>(
     () => [
       {
         content: [
-          { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: title }] },
+          ...(phone ? [] : [{ type: "heading" as const, attrs: { level: 1 as const }, content: [{ type: "text" as const, text: title }] }]),
           ...(cover
             ? [
                 {
@@ -157,9 +162,11 @@ export function FeedPost({
         ],
       },
     ],
-    [build, cover, title],
+    [build, cover, title, phone],
   );
   const posts = threaded ? threadPosts : titlePosts;
+  /** 29g: a phone build with no post and no chosen picture: the default cover stands where the post would. */
+  const defaultCover = phone && !threaded && !cover;
 
   // Show more: the thread opens at once; the pictures of the later posts are asked for once, signed and cached.
   const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: build.id, enabled: threaded && threadPosts.length > 1, preview });
@@ -257,12 +264,12 @@ export function FeedPost({
       ) : (
       <div
         data-feed-author-row=""
-        style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: phoneFeed ? 4 : 6, minHeight: phoneFeed ? 20 : 24, marginBottom: phoneFeed ? 4 : 4, whiteSpace: "nowrap" }}
+        style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: phoneFeed ? 4 : 6, minHeight: phoneFeed ? 22 : 24, marginBottom: phoneFeed ? 4 : 4, whiteSpace: "nowrap" }}
       >
-        <QuietLink to={profileHref} testId="feed-author-name" touch={phone && !phoneFeed} reach={phoneFeed} style={{ flex: phoneFeed ? "0 0 auto" : "0 100 auto", ...(phoneFeed ? { maxWidth: "70%" } : null), fontSize: phoneFeed ? 15 : 13, fontWeight: phoneFeed ? 600 : 500, ...(phoneFeed ? { lineHeight: "20px" } : null), ...ellipsis }} colour={t.text}>
+        <QuietLink to={profileHref} testId="feed-author-name" touch={phone && !phoneFeed} reach={phoneFeed} style={{ flex: phoneFeed ? "0 0 auto" : "0 100 auto", ...(phoneFeed ? { maxWidth: "70%" } : null), ...(phone ? xName("phone") : { fontSize: 13, fontWeight: 500 }), ...ellipsis }} colour={t.text}>
           {name}
         </QuietLink>
-        <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: phoneFeed ? 15 : 13, lineHeight: phoneFeed ? "20px" : 1.4, color: t.label }}>
+        <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: phone ? 15 : 13, lineHeight: phone ? "20px" : 1.4, color: t.label }}>
           {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
           {age ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${age}` : age}</span> : null}
         </span>
@@ -291,8 +298,16 @@ export function FeedPost({
           onClick={buildHref ? (event) => forwardToBuild(event, overlay.current) : undefined}
         >
           {/* CA-07: the draft's pictures open full screen in Preview; a Gallery card is a link to the build instead. */}
-          {preview ? <MediaViewerProvider>{thread}</MediaViewerProvider> : thread}
-          {!threaded && !cover ? (
+          {defaultCover ? (
+            <div aria-hidden="true">
+              <DefaultCover title={title} sessionCount={sessionCount} radius={xm ? xm.pictureRadius : 12} />
+            </div>
+          ) : preview ? (
+            <MediaViewerProvider>{thread}</MediaViewerProvider>
+          ) : (
+            thread
+          )}
+          {!threaded && !cover && !phone ? (
             <div style={{ marginTop: 12, aspectRatio: "3 / 2", borderRadius: 6, overflow: "hidden" }}>
               <CoverFallback seed={build.id} radius={0} />
             </div>
