@@ -22,42 +22,48 @@ describe("DockView", () => {
       </MemoryRouter>,
     );
 
-  /* Prompt 19: New opens the New sheet, so it is a button; the other four are links to the same routes as before. */
-  it("five slots in order: four links to the nav's routes and New between Builds and OpenBuilds", () => {
+  /* 29d: five links, no New slot; each is named by its aria-label alone (the icons carry no words). */
+  it("five unlabelled slots in order: Home, Builds, Import, OpenBuilds, Activity, each a link with its name", () => {
     dock({ current: "home", unread: 0 });
-    const slots = Array.from(screen.getByRole("navigation", { name: "Primary" }).children);
-    expect(slots.map((el) => el.getAttribute("data-testid"))).toEqual([
-      "dock-tile-home",
-      "dock-tile-gallery",
-      "dock-tile-new",
-      "dock-tile-openbuilds",
-      "dock-tile-activity",
-    ]);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    const slots = Array.from(nav.children);
+    expect(slots.map((el) => el.getAttribute("data-testid"))).toEqual(["dock-tile-home", "dock-tile-gallery", "dock-tile-import", "dock-tile-openbuilds", "dock-tile-activity"]);
     const tiles = screen.getAllByRole("link");
-    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/openbuilds", "/notifications"]);
-    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Builds", "OpenBuilds", "Activity"]);
-    expect(screen.getByRole("button", { name: "New" })).toBe(screen.getByTestId("dock-tile-new"));
+    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/import", "/openbuilds", "/notifications"]);
+    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Builds", "Import", "OpenBuilds", "Activity"]);
+    // No labels drawn, and no New slot or button in the dock.
+    expect(nav.textContent).toBe("");
+    expect(screen.queryByRole("button", { name: "New" })).toBeNull();
+    expect(screen.queryByTestId("dock-tile-new")).toBeNull();
   });
 
-  it("marks only the current slot and never New", () => {
+  it("marks only the current slot, Import included", () => {
     dock({ current: "activity", unread: 0 });
     expect(screen.getAllByRole("link", { current: "page" }).map((a) => a.getAttribute("data-testid"))).toEqual(["dock-tile-activity"]);
-    expect(screen.getByTestId("dock-tile-new").getAttribute("aria-current")).toBeNull();
   });
 
-  it("names Activity with the unread count and draws a Mint square, not a number", () => {
+  it("Import is current on its own, drawn as the one icon it has", () => {
+    dock({ current: "import", unread: 0 });
+    expect(screen.getAllByRole("link", { current: "page" }).map((a) => a.getAttribute("data-testid"))).toEqual(["dock-tile-import"]);
+    expect(screen.getByTestId("dock-tile-import").querySelector('[data-icon="import"]')).toBeTruthy();
+  });
+
+  it("Activity keeps its name and shows the unread count in a Mint pill", () => {
     dock({ current: null, unread: 14 });
     const tile = screen.getByTestId("dock-tile-activity");
-    expect(tile.getAttribute("aria-label")).toBe("Activity, 14 unread");
-    expect(tile.textContent).toBe("Activity");
-    expect(screen.getByTestId("dock-unread")).toBeTruthy();
+    expect(tile.getAttribute("aria-label")).toBe("Activity");
+    expect(screen.getByTestId("dock-unread").textContent).toBe("14");
+    // The count is the link's description for a screen reader.
+    const described = tile.getAttribute("aria-describedby") ?? "";
+    expect(tile.querySelector(`#${described}`)?.textContent).toBe("14 unread");
   });
 
-  it("New calls onNew", () => {
-    const onNew = vi.fn();
-    dock({ current: null, unread: 0, onNew });
-    fireEvent.click(screen.getByRole("button", { name: "New" }));
-    expect(onNew).toHaveBeenCalledTimes(1);
+  it("shows 99+ over 99, and nothing at 0", () => {
+    const { unmount } = dock({ current: null, unread: 120 });
+    expect(screen.getByTestId("dock-unread").textContent).toBe("99+");
+    unmount();
+    dock({ current: null, unread: 0 });
+    expect(screen.queryByTestId("dock-unread")).toBeNull();
   });
 });
 
@@ -126,7 +132,7 @@ describe("phone chrome under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
   const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
 
-  it("the dock is the Page shade with no glass, the structural line on its top edge, no lamp and no glow, 5 equal slots, New a 44 by 28 Mint pill", () => {
+  it("the dock is the Page shade with no glass, the structural line on its top edge, no lamp and no glow, 5 equal slots, the unread pill 16 tall in Mint", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
     expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
@@ -134,21 +140,26 @@ describe("phone chrome under the refined look", () => {
     expect(nav).toContain("background:var(--bg)");
     expect(nav).toContain("grid-template-columns:repeat(5, 1fr)");
     expect(nav).toContain("padding-bottom:env(safe-area-inset-bottom)");
+    expect(nav).toContain("box-shadow:inset 0 1px 0 var(--control)");
     expect(nav).not.toMatch(/[;"]border(-top)?:/);
     expect(html).not.toContain("backdrop-filter");
     expect(html).not.toContain("var(--dock)");
     expect(html).not.toContain("nav-lamp");
     expect(html).not.toContain('data-ui="nav-mark"');
-    expect(html).toContain("width:44px;height:28px;border-radius:14px;background:var(--brand-accent);color:var(--on-brand-accent)");
-    expect(html).toContain("width:9px;height:9px;border-radius:3px;background:var(--brand-accent);box-shadow:0 0 0 2px var(--bg)");
+    expect(html).toContain("top:-4px;left:44px;box-sizing:border-box;min-width:16px;height:16px;padding:0 4px;border-radius:8px");
+    expect(html).toContain("background:var(--brand-accent);color:var(--bg)");
+    expect(html).toContain("font-size:11px;font-weight:700;line-height:16px");
   });
 
-  it("the current slot is the filled icon with its label 600 in Text; the others are Text 3 at 500", () => {
+  it("the icons are 26, 12 from the top of the slot; the current one is filled and in Text, the others Text 3", () => {
     render(inRefined(<DockView current="gallery" unread={0} />));
     expect(screen.getByTestId("dock-tile-gallery").querySelector('[data-icon="buildsf"]')).toBeTruthy();
     expect(screen.getByTestId("dock-tile-home").querySelector('[data-icon="home"]')).toBeTruthy();
-    expect(screen.getByTestId("dock-tile-gallery").getAttribute("style")).toContain("font-weight: 600");
-    expect(screen.getByTestId("dock-tile-home").getAttribute("style")).toContain("font-weight: 500");
+    expect(screen.getByTestId("dock-tile-gallery").querySelector("svg")?.getAttribute("width")).toBe("26");
+    expect(screen.getByTestId("dock-tile-gallery").getAttribute("style")).toContain("padding-top: 12px");
+    const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={0} />)).replace(/: /g, ":");
+    expect(html).toMatch(/data-testid="dock-tile-gallery"[^>]*color:var\(--text\)/);
+    expect(html).toMatch(/data-testid="dock-tile-home"[^>]*color:var\(--label\)/);
   });
 
   it("a sheet takes the window recipe over --scrim, and keeps its name and Close", () => {

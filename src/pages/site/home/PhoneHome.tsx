@@ -127,7 +127,7 @@ function Tabs({ scope, onScopeChange, filter, hidden, onKind }: { scope: HomeSco
     >
       <PhoneTabs<HomeScope>
         label="Feed scope"
-        equal
+        centred
         value={scope}
         tabs={[
           { value: "following", label: "Following" },
@@ -138,14 +138,14 @@ function Tabs({ scope, onScopeChange, filter, hidden, onKind }: { scope: HomeSco
         renderLabel={(tab, current) =>
           current ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              {tab.label}
+              <span data-tab-word="">{tab.label}</span>
               {filter !== "all" && kind ? <span style={{ fontWeight: 500, color: t.text2 }}>{`· ${kind.label}`}</span> : null}
               <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
                 <MobileIcon name="chev" size={16} />
               </span>
             </span>
           ) : (
-            tab.label
+            <span data-tab-word="">{tab.label}</span>
           )
         }
       />
@@ -362,7 +362,7 @@ function ReplyGroup({ item }: { item: Extract<HomeFeedItem, { kind: "reply_group
   return (
     <Frame height={200} kind="reply_group">
       <article aria-label={`${item.count} in ${item.topic.heading || "Untitled post"}`} style={xGrid("phone")}>
-        <Avatar size={X_FEED.phone.avatar} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} />
+        <Avatar size={X_FEED.phone.avatar} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} phone />
         <PlainLink to={item.to} style={{ display: "block", minWidth: 0 }}>
           <span style={{ display: "flex", gap: 4, whiteSpace: "nowrap", fontFamily: FIGTREE }}>
             <span style={xName("phone")}>{name}</span>

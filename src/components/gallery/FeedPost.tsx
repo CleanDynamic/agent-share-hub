@@ -234,10 +234,10 @@ export function FeedPost({
             // 44 on a phone, pulled back by its own extra 2 either side so the avatar stays where it was.
             style={xm ? { display: "block", width: xm.avatar, height: xm.avatar, borderRadius: 999 } : { display: "block", width: phone && !phoneFeed ? 44 : 40, height: phone && !phoneFeed ? 44 : 40, margin: phone && !phoneFeed ? -2 : 0, borderRadius: 999 }}
           >
-            <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} />
+            <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} phone={Boolean(xm)} />
           </Link>
         ) : (
-          <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} />
+          <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} phone={Boolean(xm)} />
         )}
       </div>
 

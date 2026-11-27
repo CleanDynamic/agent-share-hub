@@ -5,7 +5,7 @@
 import { SITE_NAME } from "@/lib/site";
 import type { CSSProperties } from "react";
 
-import { initialsOf } from "@/components/brand/Avatar";
+import { avatarTint, initialsOf } from "@/components/brand/Avatar";
 import { BeaverLogo } from "@/components/shell/BeaverLogo";
 import { PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { FrameLink } from "@/components/shell/FrameLink";
@@ -16,7 +16,7 @@ import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { t } from "@/lib/theme/tokens";
+import { avatarInk, t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 export const PHONE_LOGO_WIDTH_BAR = 56;
@@ -48,7 +48,7 @@ export interface PhoneTopBarProps {
   /** Back's or Close's accessible name: "Back to Drafts", "Back", "Close". */
   leftLabel?: string;
   /** The person, for the avatar's initials and the account button's name. */
-  viewer?: { name: string; avatarUrl?: string | null } | null;
+  viewer?: { id?: string; name: string; avatarUrl?: string | null } | null;
   /** Something in Activity is unread: the Mint square on the avatar. */
   unread?: boolean;
   theme?: "dusk" | "noon";
@@ -135,11 +135,11 @@ function AccountButton({ viewer, unread, onClick }: { viewer: PhoneTopBarProps["
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          background: t.control,
-          color: t.text2,
+          background: viewer?.avatarUrl || !viewer ? t.control : avatarTint(viewer.id ?? name),
+          color: viewer?.avatarUrl || !viewer ? t.text2 : avatarInk,
           fontFamily: DM_MONO,
           fontSize: 12,
-          fontWeight: 500,
+          fontWeight: 600,
         }}
       >
         {viewer?.avatarUrl ? (

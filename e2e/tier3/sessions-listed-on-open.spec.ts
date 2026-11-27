@@ -64,9 +64,12 @@ async function fakeBackend(page: Page): Promise<Connector> {
 
 const onPhone = (projectName: string) => projectName === "mobile";
 
-/** The header's New build, or the phone dock's New: a client-side navigation, as the reader makes it. */
+/** The header's New build, or the phone's round New button and its sheet's New build: a client-side navigation, as the reader makes it. */
 async function openNewBuild(page: Page, phone: boolean) {
-  if (phone) await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "New" }).click();
+  if (phone) {
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("dialog", { name: "New" }).getByRole("button", { name: "New build" }).click();
+  }
   else await page.getByRole("button", { name: "New build" }).click();
   await expect(page).toHaveURL(/\/compose\/new$/);
 }

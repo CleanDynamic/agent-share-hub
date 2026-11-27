@@ -106,7 +106,7 @@ describe("PhonePills", () => {
     render(<PhonePills pills={[{ value: "all", label: "All" }, { value: "web", label: "Web app" }]} value="all" onChange={onChange} label="Kind" />);
     const row = screen.getByRole("group", { name: "Kind" });
     expect(row.style.gap).toBe("8px");
-    expect(row.style.padding).toBe("12px 16px");
+    expect(row.style.padding).toBe("10px 16px");
     const all = screen.getByRole("button", { name: "All" });
     expect(all.getAttribute("aria-pressed")).toBe("true");
     expect(all.style.height).toBe("32px");

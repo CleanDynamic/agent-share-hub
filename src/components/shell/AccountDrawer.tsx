@@ -162,7 +162,7 @@ export function AccountDrawer({ open, onOpenChange, viewer, dark, onToggleDark, 
           <Dialog.Title style={VISUALLY_HIDDEN}>Account</Dialog.Title>
           <div style={{ padding: `0 ${PHONE_MARGIN}px 12px`, display: "flex", flexDirection: "column", gap: 2 }}>
             <span style={{ marginBottom: 10, display: "inline-flex" }}>
-              <Avatar userId={viewer.id} name={viewer.name} src={viewer.avatarUrl ?? undefined} alt="" size={48} />
+              <Avatar userId={viewer.id} name={viewer.name} src={viewer.avatarUrl ?? undefined} alt="" size={48} phone />
             </span>
             <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>Signed in as</span>
             <span style={{ fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>@{viewer.handle}</span>

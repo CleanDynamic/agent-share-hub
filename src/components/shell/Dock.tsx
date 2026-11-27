@@ -1,60 +1,65 @@
-// The dock (prompt 19): the phone's bottom bar, five equal slots on Page. Home, Builds, New, OpenBuilds, Activity.
+// The dock (29d): the phone's bottom bar, five equal slots on Page, icons only. Home, Builds, Import, OpenBuilds, Activity.
 //
-// `<nav aria-label="Primary">`, fixed to the bottom edge, full width, no glass, no blur, no lamp, no glow. The current slot is
-// the filled icon with its label in Text; New is a Mint pill that opens the New sheet; Activity's unread state is a Mint
-// square at the icon and its accessible name says the count. Hidden where a pinned footer replaces it (`dockHiddenFor`), and
-// under 480 tall it scrolls with the page (`SHORT_WINDOW`).
+// `<nav aria-label="Primary">`, fixed to the bottom edge, full width, no glass, no blur, no lamp, no glow, with one structural
+// line along its top. The current slot is the filled icon in Text; the rest are Text 3. Each slot is a link whose `aria-label`
+// names it and that says `aria-current="page"` when current. There is no New slot: the round create button is the one way to
+// create (`CreateButton`, drawn beside the dock on Home, Builds, OpenBuilds and Activity). Activity's unread state is a Mint
+// count pill at the icon's top right. Hidden where a pinned footer replaces it (`dockHiddenFor`), and under 480 tall it
+// scrolls with the page (`SHORT_WINDOW`).
 //
 // `DockView` is pure; `Dock` reads the route and the unread count. `placement` is `fixed` everywhere except the catalogue.
 
 import { useShortWindow } from "./useMinWidth";
 import { memo, useState, type CSSProperties } from "react";
-import { useLocation } from "react-router-dom";
-import { useCurrentPath } from "@/lib/routing/go";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useCurrentPath, useGo } from "@/lib/routing/go";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import type { MobileIconName } from "@/components/brand/mobileIcons";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { CreateButton } from "@/components/phone/CreateButton";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
-import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
+import { isActivityPath, isImportPath, SITE_NAV, sectionForPath, showsCreateButton } from "./siteNav";
 import { PHONE_DOCK } from "./chromeSize";
 import { NewSheet } from "./NewSheet";
 import { dockAwayFor, dockHiddenFor } from "./phoneTopBar";
 import { move } from "@/lib/theme/motion";
 
-export type DockTileName = "home" | "gallery" | "new" | "openbuilds" | "activity";
+export type DockTileName = "home" | "gallery" | "import" | "openbuilds" | "activity";
 
 const TILES: readonly { name: DockTileName; label: string; href: string; icon: MobileIconName }[] = [
   { name: "home", label: "Home", href: SITE_NAV.home, icon: "home" },
   { name: "gallery", label: "Builds", href: SITE_NAV.gallery, icon: "builds" },
-  { name: "new", label: "New", href: SITE_NAV.create, icon: "new" },
+  { name: "import", label: "Import", href: SITE_NAV.import, icon: "import" },
   { name: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds, icon: "ob" },
   { name: "activity", label: "Activity", href: SITE_NAV.activity, icon: "bell" },
 ];
 
 export interface DockViewProps {
-  /** The current slot, or none. New is never current. */
-  current: Exclude<DockTileName, "new"> | null;
+  /** The current slot, or none. */
+  current: DockTileName | null;
   unread: number;
   /** `absolute` only where the dock is drawn inside a strip (the catalogue). */
   placement?: "fixed" | "absolute" | "static";
-  /** New opens the New sheet. */
-  onNew?: () => void;
   /** Prompt 21: slid down out of sight (a topic's reply bar stands where it was). */
   away?: boolean;
 }
 
-/* Prompt 19: the dock on the phone. Fixed to the bottom edge, full width, on Page: no glass, no blur, no lamp, no glow, no
-   line. 49 tall plus the safe-area inset, a grid of five equal slots. Each slot is the icon at 24 over its label (13/16 500),
-   3 apart, in Text 3; the current slot is the filled icon with its label 600 in Text. New is a 44 by 32 Mint pill with the plus
-   at 20 in On-mint, and it opens the New sheet. Activity's unread state is a 9px Mint square with a 2px Page ring at the icon's
-   top right; the accessible name says the count. */
-const filled = (icon: MobileIconName, current: boolean): MobileIconName => (current && icon !== "new" ? (`${icon}f` as MobileIconName) : icon);
+/* 29d: the dock on the phone. 49 tall plus the safe-area inset, a grid of five equal slots, no labels. Each icon is 26, centred
+   in its slot 12 from the top, Text 3; the current one is the filled icon in Text. Activity's unread state is a 16 tall Mint
+   pill (min width 16, padding 0 4, radius 8) with the count in 11/16 700 Page colour at top -4, left 44 of the slot; over 99
+   it reads "99+". The accessible name stays "Activity" and the count is its description. */
+const ICON = 26;
+const ICON_TOP = 12;
+const BADGE_MAX = 99;
+
+const filled = (icon: MobileIconName, current: boolean): MobileIconName => (current && icon !== "import" ? (`${icon}f` as MobileIconName) : icon);
 
 const SLOT: CSSProperties = {
   position: "relative",
@@ -62,33 +67,63 @@ const SLOT: CSSProperties = {
   height: PHONE_DOCK,
   boxSizing: "border-box",
   display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
   justifyContent: "center",
-  gap: 3,
-  border: 0,
-  background: "transparent",
-  padding: 0,
-  fontFamily: FIGTREE,
-  fontSize: 13,
-  lineHeight: "16px",
+  alignItems: "flex-start",
+  paddingTop: ICON_TOP,
   textDecoration: "none",
   cursor: "pointer",
 };
 
-function NewSlot({ onNew }: { onNew?: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+function Slot({ name, label, href, icon, current, unread }: { name: DockTileName; label: string; href: string; icon: MobileIconName; current: boolean; unread: number }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const badged = name === "activity" && unread > 0;
+  const countId = "dock-unread-count";
   return (
-    <button type="button" data-testid="dock-tile-new" aria-haspopup="dialog" aria-label="New" onClick={onNew} {...handlers} style={{ ...SLOT, color: t.label, fontWeight: 500, ...ring(state.focusVisible) }}>
-      <span aria-hidden="true" style={{ width: 44, height: 28, borderRadius: 14, background: t.brandAccent, color: t.onBrandAccent, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <MobileIcon name="new" size={18} />
-      </span>
-      <span aria-hidden="true">New</span>
-    </button>
+    <FrameLink
+      to={href}
+      data-testid={`dock-tile-${name}`}
+      aria-current={current ? "page" : undefined}
+      aria-label={label}
+      aria-describedby={badged ? countId : undefined}
+      {...handlers}
+      style={{ ...SLOT, color: current ? t.text : t.label, ...ring(state.focusVisible) }}
+    >
+      <MobileIcon name={filled(icon, current)} size={ICON} />
+      {badged && (
+        <>
+          <span
+            aria-hidden="true"
+            data-testid="dock-unread"
+            style={{
+              position: "absolute",
+              top: -4,
+              left: 44,
+              boxSizing: "border-box",
+              minWidth: 16,
+              height: 16,
+              padding: "0 4px",
+              borderRadius: 8,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: t.brandAccent,
+              color: t.bg,
+              fontFamily: DM_MONO,
+              fontSize: 11,
+              fontWeight: 700,
+              lineHeight: "16px",
+            }}
+          >
+            {unread > BADGE_MAX ? "99+" : unread}
+          </span>
+          <span id={countId} style={VISUALLY_HIDDEN}>{`${unread} unread`}</span>
+        </>
+      )}
+    </FrameLink>
   );
 }
 
-function RefinedDockView({ current, unread, placement = "fixed", onNew, away = false }: DockViewProps) {
+function RefinedDockView({ current, unread, placement = "fixed", away = false }: DockViewProps) {
   return (
     <nav
       data-testid="dock"
@@ -112,33 +147,9 @@ function RefinedDockView({ current, unread, placement = "fixed", onNew, away = f
         boxShadow: `inset 0 1px 0 ${t.control}`,
       }}
     >
-      {TILES.map(({ name, label, href, icon }) => {
-        if (name === "new") return <NewSlot key={name} onNew={onNew} />;
-        const isCurrent = name === current;
-        const badged = name === "activity" && unread > 0;
-        return (
-          <FrameLink
-            key={name}
-            to={href}
-            data-testid={`dock-tile-${name}`}
-            aria-current={isCurrent ? "page" : undefined}
-            aria-label={badged ? `Activity, ${unread} unread` : label}
-            style={{ ...SLOT, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.label }}
-          >
-            <span style={{ position: "relative", display: "inline-flex" }}>
-              <MobileIcon name={filled(icon, isCurrent)} size={24} />
-              {badged && (
-                <span
-                  aria-hidden="true"
-                  data-testid="dock-unread"
-                  style={{ position: "absolute", top: -1, right: -3, width: 9, height: 9, borderRadius: 3, background: t.brandAccent, boxShadow: `0 0 0 2px ${t.bg}` }}
-                />
-              )}
-            </span>
-            <span aria-hidden="true">{label}</span>
-          </FrameLink>
-        );
-      })}
+      {TILES.map((tile) => (
+        <Slot key={tile.name} {...tile} current={tile.name === current} unread={unread} />
+      ))}
     </nav>
   );
 }
@@ -155,18 +166,23 @@ function DockContainer() {
   const section = sectionForPath(pathname);
   const current: DockViewProps["current"] = isActivityPath(pathname)
     ? "activity"
-    : section === "home" || section === "gallery" || section === "openbuilds"
-      ? section
-      : null;
+    : isImportPath(pathname)
+      ? "import"
+      : section === "home" || section === "gallery" || section === "openbuilds"
+        ? section
+        : null;
   // G22: in a short window the dock follows the page instead of covering its foot.
   const short = useShortWindow();
   const { search } = useLocation();
   const [newOpen, setNewOpen] = useState(false);
+  const navigate = useNavigate();
+  const go = useGo() ?? navigate;
   // Prompt 19: a pinned footer or a full-screen task (the editor, a sheet's reply bar, sign in) replaces the dock.
   if (dockHiddenFor(pathname, search)) return null;
   return (
     <>
-      <DockView current={current} unread={count} placement={short ? "static" : "fixed"} away={dockAwayFor(pathname)} onNew={() => setNewOpen(true)} />
+      <DockView current={current} unread={count} placement={short ? "static" : "fixed"} away={dockAwayFor(pathname)} />
+      {showsCreateButton(pathname) ? <CreateButton expanded={newOpen} onTap={() => setNewOpen(true)} onHold={() => go(SITE_NAV.create)} /> : null}
       <NewSheet open={newOpen} onOpenChange={setNewOpen} />
     </>
   );

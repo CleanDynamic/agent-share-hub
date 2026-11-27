@@ -77,7 +77,7 @@ export function RebuildPost({ item, srcByPath, now, size, onNear, onMore }: { it
 
   return (
     <article ref={ref} aria-label={item.build.title} data-x={size} style={xGrid(size)}>
-      <Avatar size={m.avatar} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
+      <Avatar size={m.avatar} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} phone={size === "phone"} />
       <div style={{ minWidth: 0 }}>
         <div data-feed-author-row="" style={{ display: "flex", alignItems: "center", gap: 4, minHeight: m.line, marginBottom: X_ROW_GAP, whiteSpace: "nowrap", minWidth: 0 }}>
           {phone ? (

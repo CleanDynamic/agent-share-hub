@@ -78,8 +78,12 @@ async function channelsJoined(stub: StubHandle) {
 /** The count the header's bell or the dock's tile says in its name. */
 async function expectBadge(page: Page, unread: number) {
   const name = unread > 0 ? `Activity, ${unread} unread` : "Activity";
-  if (isPhone(page)) await expect(page.getByTestId("dock-tile-activity")).toHaveAttribute("aria-label", name);
-  else await expect(page.getByTestId("site-header").getByRole("link", { name, exact: true })).toBeVisible();
+  if (isPhone(page)) {
+    // 29d: the dock's slot is named "Activity" and draws the count in a pill (99+ over 99).
+    await expect(page.getByTestId("dock-tile-activity")).toHaveAttribute("aria-label", "Activity");
+    if (unread > 0) await expect(page.getByTestId("dock-unread")).toHaveText(unread > 99 ? "99+" : String(unread));
+    else await expect(page.getByTestId("dock-unread")).toHaveCount(0);
+  } else await expect(page.getByTestId("site-header").getByRole("link", { name, exact: true })).toBeVisible();
 }
 
 /** The count the page itself says: the list's subtitle on desktop, the heading on a phone. */

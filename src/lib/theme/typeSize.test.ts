@@ -62,6 +62,8 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
   { file: "src/components/shell/PhoneSearchPage.tsx", has: "fontSize: 16,", why: "prompt 19: the phone search field's text is 16, the size an input needs so the phone does not zoom in on it" },
   { file: "src/components/gallery/xFeed.ts", has: "fontWeight: 700", why: "mobile prompt 29a: the author's name on a Home post is 700, at X's proportions" },
   { file: "src/pages/site/home/RebuildPost.tsx", has: "fontWeight: 700", why: "mobile prompt 29a: the source's maker in a rebuild's \"Rebuilt from\" Card is 700, as the author row's name" },
+  { file: "src/components/shell/Dock.tsx", has: "fontSize: 11,", why: "mobile 29d: the dock's unread count is 11/16 700 in a 16 tall pill, as the Synth mobile pack draws it" },
+  { file: "src/components/shell/Dock.tsx", has: "fontWeight: 700,", why: "mobile 29d: the dock's unread count is 11/16 700 in a 16 tall pill" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontSize: 17,", why: "the build editor's bar: the lockup word, a logo (and the build editor is outside the type prompt)" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontSize: 15,", why: "the build editor's bar: its title, outside the type prompt" },
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontWeight: 600,", why: "the build editor's bar: its title and context line, outside the type prompt" },

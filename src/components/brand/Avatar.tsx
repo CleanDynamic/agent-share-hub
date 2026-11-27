@@ -17,14 +17,23 @@ import type { CSSProperties } from "react";
 
 import { cropInCell } from "@/components/post/media/cropStyle";
 import { cropFromUrl } from "@/lib/profile/avatarCrop";
-import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { avatarInk, avatarTints, t } from "@/lib/theme/tokens";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 /* Synth 06: a rounded square, size / radius 96/20, 56/12, 40/9, 32/7, 24/6; the radius follows the size at about .22. Initials in mono 13. */
 const AVATAR_RADIUS: Record<number, number> = { 96: 20, 56: 12, 40: 9, 32: 7, 24: 6 };
 const avatarRadius = (size: number): number => AVATAR_RADIUS[size] ?? Math.round(size * 0.22);
 
 import { hashSeed } from "./hash";
+
+/* 29d, phone only: the radius and the initials' size by drawn size (32 in the bar, 40 in rows, 48 in feeds). */
+const PHONE_RADIUS: Record<number, number> = { 32: 8, 40: 9, 48: 11 };
+const PHONE_INITIALS: Record<number, number> = { 32: 12, 40: 13, 48: 15 };
+
+/** The tint a phone avatar without a picture sits on: one of six, by a stable hash of the user id. */
+export function avatarTint(userId: string): string {
+  return avatarTints[hashSeed(userId) % avatarTints.length];
+}
 
 /** The six hues, the same in both themes. */
 export const AVATAR_HUES = ["#5C5480", "#3F7A8C", "#9A5B4A", "#4B3F8C", "#3E6B55", "#8C4A6A"] as const;
@@ -45,6 +54,8 @@ export interface AvatarProps {
   src?: string | null;
   /** UX-10 P3: the picture's ALT (`avatar_alt`); "" where the name sits beside it. Absent: the name, as before. */
   alt?: string;
+  /** 29d: the phone's look. Without a picture, mono initials at 62% white on one of six tints (`avatarTints`). Desktop leaves it off. */
+  phone?: boolean;
   style?: CSSProperties;
 }
 
@@ -64,13 +75,13 @@ export function avatarHue(userId: string, hue?: number): string {
   return AVATAR_HUES[hashSeed(userId) % AVATAR_HUES.length];
 }
 
-export function Avatar({ size, name, src, alt, style }: AvatarProps) {
+export function Avatar({ size, userId, name, src, alt, phone = false, style }: AvatarProps) {
   /* UI-P87: the refined look draws the size it is given (the header's 26); the density table is the current look's. */
   const box = size;
   const circle: CSSProperties = {
     width: box,
     height: box,
-    borderRadius: avatarRadius(size),
+    borderRadius: phone ? (PHONE_RADIUS[size] ?? avatarRadius(size)) : avatarRadius(size),
     flexShrink: 0,
     ...style,
   };
@@ -105,13 +116,17 @@ export function Avatar({ size, name, src, alt, style }: AvatarProps) {
       style={{
         ...circle,
         /* UI-P84: initials on `--avatar-fill` in `--on-avatar`, Geist 500 at size × .38 (10 at the least). */
-        background: t.control,
         boxSizing: "border-box",
-        color: t.text2,
-        /* Synth 16: initials are letters, so the UI face; mono is for numbers only. */
-        fontFamily: FIGTREE,
-        fontSize: 13,
-        fontWeight: 400,
+        ...(phone
+          ? { background: avatarTint(userId), color: avatarInk, fontFamily: DM_MONO, fontSize: PHONE_INITIALS[size] ?? 13, fontWeight: 600 }
+          : {
+              background: t.control,
+              color: t.text2,
+              /* Synth 16: initials are letters, so the UI face; mono is for numbers only. */
+              fontFamily: FIGTREE,
+              fontSize: 13,
+              fontWeight: 400,
+            }),
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
