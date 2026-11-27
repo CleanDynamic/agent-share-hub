@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The map file</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:Geist;src:url(/_blob/892e988e002169cfe0b7b64b8ebf2104) format("woff2");font-weight:100 900}
+@font-face{font-family:"Geist Mono";src:url(/_blob/b1b554415468c74abd124c7e0c720d61) format("woff2");font-weight:100 900}
+body{margin:0}
+</style>
+</helmet>
+<div style="width:1440px;height:1000px;box-sizing:border-box;background:#141416;color:#EDEDEF;font-family:Geist,sans-serif;position:relative;overflow:hidden">
+<div style="position:absolute;left:48px;top:40px;width:1300px;font-size:26px;font-weight:600;color:#EDEDEF;line-height:1.25;letter-spacing:-0.01em">A map file is rows of boxes on a 12-column grid, with tiles named by number</div><div style="position:absolute;left:48px;top:82px;width:1300px;font-size:15px;font-weight:400;color:#A0A0A6;line-height:1.5;">Plain Markdown that a person can read and edit. The canvas works out exact sizes, bands and lines.</div><section style="position:absolute;left:48px;top:140px;width:620px;height:820px;box-sizing:border-box;border-radius:14px;background:#1E1E21;border:1px solid #2A2A2E"><div style="position:absolute;left:20px;top:16px;white-space:nowrap;font-size:13px;font-weight:600;color:#EDEDEF;line-height:1.45;">support-inbox-triage.map.md</div><pre style="position:absolute;left:20px;top:46px;right:20px;margin:0;font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.62;color:#A0A0A6;white-space:pre-wrap">openbuilds_map: 1
+build: support-inbox-triage
+width: standard
+background: grey
+numbers: build
+
+## Row
+- Text · cols 12
+  How the support inbox triage is built. 9 tiles in 3 sessions. Classify and Refund rules run side by side, then Draft and send uses both.
+
+## Row
+Frame: Part A
+- Box S1 · cols 6 · tiles 1 2 3 · Stack · notes left
+  Title: Classify
+  Explanation: Every email gets one label before anything else.
+  Note 1: Starts the build. Runs at the same time as Prompt 4.
+  Note 3: Waits for the rules.
+- Box S2 · cols 6 · tiles 4 5 6 · Stack · notes right · indent 6 · fill green
+  Title: Refund rules
+  Explanation: Runs alongside Classify. Its rules feed Prompt 3.
+  Note 6: Indented one level: it tests Code 5.
+
+## Row
+Frame: Part B
+- Column · cols 12
+  - Box S3 · cols 12 · tiles 7 8 · Across
+    Title: Draft and send
+    Explanation: Starts once the labels and rules are merged.
+  - Box S3 · cols 12 · tiles 9
+    Title: Result
+
+## Two-way
+- 1 &lt;-&gt; 4
+</pre></section><section style="position:absolute;left:692px;top:140px;width:700px;height:420px;box-sizing:border-box;border-radius:14px;background:#1E1E21;border:1px solid #2A2A2E"><div style="position:absolute;left:20px;top:16px;white-space:nowrap;font-size:13px;font-weight:600;color:#EDEDEF;line-height:1.45;">What the canvas makes from it</div><div style="position:absolute;left:20px;top:52px;width:400px;height:340px;border-radius:8px;background:#3A3D3B;overflow:hidden;"><div style="position:absolute;left:0;top:0;width:200px;height:170px;transform:scale(2.0);transform-origin:0 0"><div style="position:absolute;left:6px;top:6px;width:188px;height:20px;box-sizing:border-box;border-radius:5px;border:1px solid #5E635F;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:6px;top:32px;width:92px;height:84px;box-sizing:border-box;border-radius:5px;border:1px solid #5E635F;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:102px;top:32px;width:92px;height:84px;box-sizing:border-box;border-radius:5px;border:1px solid #5E635F;background:rgba(107,226,160,.10)"></div><div style="position:absolute;left:6px;top:122px;width:188px;height:22px;box-sizing:border-box;border-radius:5px;border:1px solid #5E635F;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:6px;top:148px;width:188px;height:16px;box-sizing:border-box;border-radius:5px;border:1px solid #5E635F;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:54px;top:42px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:108px;top:42px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:54px;top:66px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:108px;top:66px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:54px;top:90px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:108px;top:90px;width:40px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:40px;top:126px;width:50px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:110px;top:126px;width:50px;height:14px;border-radius:3px;background:#161917"></div><div style="position:absolute;left:70px;top:150px;width:60px;height:10px;border-radius:3px;background:#161917"></div><svg aria-hidden="true" width="200" height="170" viewBox="0 0 200 170" style="position:absolute;left:0px;top:0px;overflow:visible" fill="none"><path d="M94 49H108" stroke="#6BE2A0" stroke-width="1.4"></path></svg></div></div><div style="position:absolute;left:444px;top:52px;width:236px;"><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">Header</span><span style="font-size:12.5px;color:#A0A0A6">Build, width, background, numbers</span></div><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">## Row</span><span style="font-size:12.5px;color:#A0A0A6">A full-width strip, read top to bottom</span></div><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">- Box</span><span style="font-size:12.5px;color:#A0A0A6">Session, columns out of 12, tiles by number</span></div><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">- Column</span><span style="font-size:12.5px;color:#A0A0A6">Stacks boxes inside one column</span></div><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">Frame:</span><span style="font-size:12.5px;color:#A0A0A6">Draws a part frame round the row</span></div><div style="display:flex;flex-direction:column;gap:2px;height:52px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#EDEDEF">## Two-way</span><span style="font-size:12.5px;color:#A0A0A6">Pairs that can run at the same time</span></div></div></section><section style="position:absolute;left:692px;top:584px;width:700px;height:376px;box-sizing:border-box;border-radius:14px;background:#1E1E21;border:1px solid #2A2A2E"><div style="position:absolute;left:20px;top:16px;white-space:nowrap;font-size:13px;font-weight:600;color:#EDEDEF;line-height:1.45;">The drop check</div><div style="position:absolute;left:20px;top:46px;width:660px;"><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#E8B86B">Refused</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">A different build, an unknown version, or no tiles placed at all.</span></div><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#6BE2A0">Fixed and listed</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">Columns that don't add up to 12 are scaled. A tile listed twice keeps its first place.</span></div><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#6BE2A0">Fixed and listed</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">Tiles from two sessions in one box are split into one box per session.</span></div><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#6BE2A0">Fixed and listed</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">A box above a tile it depends on moves down to the first row where order holds.</span></div><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#6BE2A0">Fixed and listed</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">Two-way pairs that depend on each other are removed. Ends that aren't level slide into the same band.</span></div><div style="display:flex;gap:14px;padding:9px 0;border-top:1px solid #2A2A2E"><span style="width:130px;flex-shrink:0;font-size:12.5px;color:#A0A0A6">Left out and listed</span><span style="font-size:12.5px;color:#A0A0A6;line-height:1.45">Tiles not in the file stay unplaced in Sources. Lines written by the chat are ignored: lines come from the build.</span></div></div></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

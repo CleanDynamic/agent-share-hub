@@ -25,6 +25,7 @@ This file is `design/prompts/ms-series/README.md`. Every prompt of the series si
   | `12-map-from-a-chat.png` | Copy for chat, the chat, the drop, the check | MS-14 |
   | `13-map-file.png` | The map file and the drop check | MS-14 |
 
+- **`design/reference/sandbox/source/`**: the boards' HTML sources and the Python that wrote them. `design/reference/sandbox/README.md` maps each board to its source.
 - **`design/reference/sandbox/examples/`**: `support-inbox-triage.for-chat.md` (what Copy for chat produces) and `support-inbox-triage.map.md` (a map file a chat would return). MS-14 turns both into test fixtures.
 
 ## Order
