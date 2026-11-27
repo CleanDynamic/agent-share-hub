@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { normaliseHex } from "@/lib/theme/partColour";
 import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuildInStep } from "./builds";
+import { mapLayoutRefusal, type MapLayout } from "./mapLayout";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { openOf, openRefusal, type OpenRequest } from "./openRequest";
 import { extrasOf, extrasRefusal, type SessionExtras } from "./sessionFacts";
@@ -213,6 +214,8 @@ export interface Making {
   part_labels?: PartLabels;
   /** CA-17 P1: the map of sessions. Absent: see `mapOf`. */
   map?: MapSettings;
+  /** MS-00: the map sandbox's split tree, read with `mapLayoutOf`. Absent: the plain arrangement from the build (MS-05). */
+  map_layout?: MapLayout;
 }
 
 /**
@@ -849,6 +852,23 @@ export async function setMapSettings(buildId: string, map: MapSettings): Promise
     // SV-27 P10: a change that does not say the view keeps the stored one.
     const view = map.view ?? mapOf(making)?.view;
     return { map: { on: map.on, direction: map.direction, onBuildPage: map.onBuildPage, ...(view ? { view } : null) } };
+  });
+}
+
+/**
+ * MS-00: save the map sandbox's layout, or remove it (null), in one step of the build's write queue. Refused with a plain
+ * message before anything is written; only `making.map_layout` changes. Resolves with `making` as written.
+ */
+export function setMapLayout(buildId: string, layout: MapLayout | null): Promise<Record<string, unknown>> {
+  return makingStep(buildId, "setMapLayout", ({ making }) => {
+    if (layout) {
+      const why = mapLayoutRefusal(layout);
+      if (why) throw buildLayerError("setMapLayout", new Error(why));
+    }
+    if (!layout && !Object.prototype.hasOwnProperty.call(making, "map_layout")) return { patch: null, result: making };
+    const { map_layout: _was, ...rest } = making;
+    const next = layout ? { ...rest, map_layout: layout } : rest;
+    return { patch: { making: next } as unknown as BuildPatch, result: next };
   });
 }
 
