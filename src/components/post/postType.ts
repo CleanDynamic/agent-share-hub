@@ -106,3 +106,19 @@ export function feedType(): PostTypeScale {
     firstLine: { title: 22, heading: 20, body: 20, small: 16, composer: base.firstLine.composer },
   };
 }
+
+/**
+ * Prompt 29a: Home's posts at X's proportions. The phone's text is 17/22, desktop's 15/20; a lead (a heading) is the same size at
+ * 600. Pictures and lists keep the shared rules.
+ */
+export function xFeedType(size: number, leading: number): PostTypeScale {
+  const base = feedType();
+  const line = `${leading}px`;
+  return {
+    ...base,
+    title: { ...base.title, fontSize: size, fontWeight: 600, lineHeight: line, letterSpacing: "0" },
+    heading: { ...base.heading, fontSize: size, fontWeight: 600, lineHeight: line },
+    body: { ...base.body, fontSize: size, lineHeight: line },
+    firstLine: { ...base.firstLine, title: leading, heading: leading, body: leading },
+  };
+}

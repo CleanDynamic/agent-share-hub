@@ -68,6 +68,7 @@ import { feedback, scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { tabular, DM_MONO } from "@/lib/theme/type";
+import { X_FEED, type XSize } from "@/components/gallery/xFeed";
 
 /** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
@@ -98,6 +99,22 @@ const FEED_ICON: Record<string, [MobileIconName, MobileIconName]> = {
   save: ["save", "savef"],
 };
 
+/**
+ * Prompt 29a: Home's row at X's proportions: 20 tall, Comment (or a topic's Like) at 0, the second at 20.7% (phone) or 22.5%
+ * (desktop), the third at 42% or 45.3% of the text column, Save at its right edge. Each button's hit area reaches round its icon
+ * through negative margins, so the row stays 20.
+ */
+const X_ROW: CSSProperties = { position: "relative", display: "block", height: 20, width: "100%", maxWidth: "none", marginInlineStart: 0, marginTop: 12 };
+
+/** Where action `index` of `count` stands in the X row: Save (the last of four, or a topic's third) at the right edge. */
+function xPlace(size: XSize, index: number, last: boolean): CSSProperties {
+  const m = X_FEED[size];
+  const pad = (m.hit - m.icon) / 2;
+  const base: CSSProperties = { position: "absolute", top: -pad, height: m.hit, minHeight: m.hit, minWidth: m.hit, padding: `0 ${pad}px`, gap: 6 };
+  if (last) return { ...base, right: -pad, justifyContent: "flex-end" };
+  return { ...base, left: `calc(${Math.round((m.positions[index] ?? 0) * 1000) / 10}% - ${pad}px)`, justifyContent: "flex-start" };
+}
+
 /** Between an icon and its count. */
 const ICON_TO_COUNT = 4;
 
@@ -122,6 +139,8 @@ export interface EngagementRowProps {
   style?: CSSProperties;
   /** Prompt 20: the phone feed's row: 44 tall buttons spread across the text column, the phone icons at 20 in Text 3, counts in mono 13. */
   phoneFeed?: boolean;
+  /** Prompt 29a: Home's row at X's proportions (see `X_ROW`). */
+  x?: XSize;
 }
 
 /** One build's share of its list's engagement: what a card or header passes on. */
@@ -129,7 +148,7 @@ export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved
 
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
-export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, compact = false, style, phoneFeed = false }: EngagementRowProps) {
+export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, compact = false, style, phoneFeed = false, x }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
   const phone = useIsPhone();
   const navigate = useNavigate();
@@ -294,11 +313,12 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
         marginInlineStart: compact || phoneFeed ? 0 : -PAD_INLINE,
         ...(variant === "card" ? { marginTop: 6 } : null),
         ...(phoneFeed ? FEED_ROW : null),
+        ...(x ? X_ROW : null),
         ...style,
       }}
     >
-      {actions.map(({ id, ...action }) => (
-        <Action key={id} phone={phone} compact={compact} feed={phoneFeed} {...action} />
+      {actions.map(({ id, ...action }, index) => (
+        <Action key={id} phone={phone} compact={compact} feed={phoneFeed} x={x} place={x ? xPlace(x, index, id === "save") : undefined} {...action} />
       ))}
     </div>
   );
@@ -320,9 +340,11 @@ export interface TopicEngagementRowProps {
   style?: CSSProperties;
   /** Prompt 20: the phone feed's row (see `EngagementRowProps.phoneFeed`). */
   phoneFeed?: boolean;
+  /** Prompt 29a: Home's row at X's proportions: Like, Reply and Save at Comment's, Rebuild's and Save's places. */
+  x?: XSize;
 }
 
-export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, save, style, phoneFeed = false }: TopicEngagementRowProps) {
+export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, save, style, phoneFeed = false, x }: TopicEngagementRowProps) {
   const phone = useIsPhone();
   const actions: ActionSpec[] = [
     { id: "like", label: liked ? "Unlike" : "Like", pressed: liked, count: likes, noun: ["like", "likes"], onPress: onLike, glyph: "heart" },
@@ -330,9 +352,9 @@ export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, sav
     ...(save ? [{ id: "save", label: save.saved ? "Unsave" : "Save", pressed: save.saved, onPress: save.onSave, glyph: "save" as const }] : []),
   ];
   return (
-    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", maxWidth: 425, marginInlineStart: phoneFeed ? 0 : -PAD_INLINE, marginTop: 12, ...(phoneFeed ? FEED_ROW : null), ...style }}>
-      {actions.map(({ id, ...action }) => (
-        <Action key={id} phone={phone} feed={phoneFeed} {...action} />
+    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", maxWidth: 425, marginInlineStart: phoneFeed ? 0 : -PAD_INLINE, marginTop: 12, ...(phoneFeed ? FEED_ROW : null), ...(x ? X_ROW : null), ...style }}>
+      {actions.map(({ id, ...action }, index) => (
+        <Action key={id} phone={phone} feed={phoneFeed} x={x} place={x ? xPlace(x, index, id === "save") : undefined} {...action} />
       ))}
     </div>
   );
@@ -372,14 +394,14 @@ interface ActionSpec {
   noun?: readonly [string, string];
 }
 
-type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean; feed?: boolean };
+type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean; feed?: boolean; x?: XSize; place?: CSSProperties };
 
 /** One tertiary action: the glyph, and its count where it has one. */
-function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone, compact = false, feed = false }: ActionProps) {
+function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone, compact = false, feed = false, x, place }: ActionProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement | HTMLAnchorElement>();
   const active = pressed === true;
   /* UX-03 Part 8's zero rule, in the compact foot: a count of nothing is not drawn. */
-  const hasCount = count !== undefined && !((compact || feed) && !count);
+  const hasCount = count !== undefined && !((compact || feed || x) && !count);
   const name = slot ?? label.toLowerCase();
   // UX-03 P8: a zero is not printed; a count above it is, and the name says it once ("Like, 2 likes").
   const shown = typeof count === "number" && count > 0 ? count : null;
@@ -406,7 +428,10 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
     transition: feedback("color", "background-color", "border-color"),
     ...ring(state.focusVisible),
     ...(feed ? { minWidth: 44, minHeight: 44, padding: 0, background: "transparent", color: t.label, gap: 6 } : null),
+    ...(x ? { border: 0, background: "transparent", color: t.label, ...place } : null),
   };
+  // The phone's icons are the mobile set; desktop keeps Lucide (prompt 17's rule).
+  const mobileIcons = feed || x === "phone";
   const [rest, filled] = FEED_ICON[glyph] ?? ["heart", "heartf"];
 
   const content = (
@@ -418,11 +443,15 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
         style={{
           display: "inline-flex",
           flexShrink: 0,
-          color: active ? (feed ? (glyph === "heart" ? t.brandAccent : t.text) : t.action) : "currentColor",
+          color: active ? (mobileIcons ? (glyph === "heart" ? t.brandAccent : t.text) : t.action) : "currentColor",
           transition: feedback("color"),
         }}
       >
-        {feed ? <MobileIcon name={active ? filled : rest} size={20} /> : <Glyph name={glyph} size={compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />}
+        {mobileIcons ? (
+          <MobileIcon name={active ? filled : rest} size={x ? X_FEED[x].icon : 20} />
+        ) : (
+          <Glyph name={glyph} size={x ? X_FEED[x].icon : compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
+        )}
       </span>
       {hasCount ? (
         // UX-03 P8: the slot keeps two digits' width whether it holds a number or not, so the row does not shift when a Like
@@ -432,11 +461,11 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
           aria-hidden="true"
           style={{
             fontFamily: DM_MONO,
-            fontSize: 13,
+            fontSize: x ? X_FEED[x].count : 13,
             fontWeight: 400,
-            lineHeight: 1.3,
+            lineHeight: x ? "20px" : 1.3,
             color: t.label,
-            minWidth: feed ? undefined : "2ch",
+            minWidth: feed || x ? undefined : "2ch",
             textAlign: "left",
             ...tabular,
           }}

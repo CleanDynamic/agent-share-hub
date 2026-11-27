@@ -452,3 +452,6 @@ export function writeHomeSeen(at: number): void {
     /* private window: the count is a nicety */
   }
 }
+
+/** Prompt 29a: what the phone's pull to refresh announces when it ends: the count of new posts that fed the pill, or that nothing is new. */
+export const refreshedLine = (count: number): string => (count > 0 ? `${count} new since you looked` : "You\u2019re up to date");

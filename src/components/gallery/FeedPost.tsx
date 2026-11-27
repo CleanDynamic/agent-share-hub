@@ -49,6 +49,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { coverMedia, mediaAlt, type MediaSrcMap } from "./cardMedia";
 import { useThreadRest } from "./useThreadRest";
+import { X_FEED, X_ROW_GAP, xConnector, xGrid, xMeta, xName, type XSize } from "./xFeed";
 
 export interface FeedPostProps {
   build: GalleryBuild;
@@ -78,6 +79,12 @@ export interface FeedPostProps {
   /** Prompt 20: the phone Home's post: 15/600 name, 15 meta, the phone feed's type, pictures and actions, and a More button that calls `onMore`. */
   phoneFeed?: boolean;
   onMore?: () => void;
+  /**
+   * Prompt 29a: Home's post at X's proportions, "phone" below 768px or "desktop" in the 600 centre column: the avatar 48 or 40,
+   * the text column 8 to its right, the author row and post text 17/22 or 15/20, pictures at radius 14 or 16, the actions at X's
+   * places. The item frame holds the padding. Absent: the post as before (the Gallery, the profile, the composer's preview).
+   */
+  x?: XSize;
 }
 
 const column: CSSProperties = { minWidth: 0 };
@@ -102,9 +109,11 @@ export function FeedPost({
   preview = false,
   phoneFeed = false,
   onMore,
+  x,
 }: FeedPostProps) {
   const windowPhone = useIsPhone();
-  const phone = phoneFeed || (phoneOverride ?? windowPhone);
+  const phone = x ? x === "phone" : phoneFeed || (phoneOverride ?? windowPhone);
+  const xm = x ? X_FEED[x] : null;
   const handle = (makerHandle ?? "").trim();
   const name = (makerName ?? "").trim() || handle || "Maker";
   const profileHref = handle && !preview ? `/profile/${encodeURIComponent(handle)}` : null;
@@ -189,9 +198,10 @@ export function FeedPost({
       rest={restState}
       onRetry={retry}
       clampLines={FEED_TEXT_LINES}
-      connector={{ x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone && !phoneFeed ? -4 : 16 }}
+      connector={x ? xConnector(x) : { x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone && !phoneFeed ? -4 : 16 }}
       phone={phone}
       feed={phoneFeed}
+      x={x}
       resetKey={build.id}
       headingLink={headed && buildHref ? (words) => <HeadingLink to={buildHref}>{words}</HeadingLink> : undefined}
     />
@@ -201,18 +211,20 @@ export function FeedPost({
       data-feed-post=""
       data-open={isOpen ? "" : undefined}
       aria-label={title}
+      data-x={x}
       style={{
         display: "grid",
         gridTemplateColumns: "40px minmax(0, 1fr)",
         columnGap: 12,
-        padding: phoneFeed ? 0 : "4px 0",
+        ...(x ? xGrid(x) : null),
+        padding: phoneFeed || x ? 0 : "4px 0",
         boxSizing: "border-box",
         width: "100%",
         color: t.text,
       }}
     >
       {/* Author column: the avatar, and the line down the open thread. */}
-      <div data-feed-author-column="" style={{ gridColumn: 1, gridRow: "1 / 3", position: "relative", width: 40 }}>
+      <div data-feed-author-column="" style={{ gridColumn: 1, gridRow: "1 / 3", position: "relative", width: xm ? xm.avatar : 40 }}>
         {profileHref ? (
           // The name beside it is the same link; this one stays out of the tab order and the reader's way.
           <Link
@@ -220,16 +232,29 @@ export function FeedPost({
             tabIndex={-1}
             aria-hidden="true"
             // 44 on a phone, pulled back by its own extra 2 either side so the avatar stays where it was.
-            style={{ display: "block", width: phone && !phoneFeed ? 44 : 40, height: phone && !phoneFeed ? 44 : 40, margin: phone && !phoneFeed ? -2 : 0, borderRadius: 999 }}
+            style={xm ? { display: "block", width: xm.avatar, height: xm.avatar, borderRadius: 999 } : { display: "block", width: phone && !phoneFeed ? 44 : 40, height: phone && !phoneFeed ? 44 : 40, margin: phone && !phoneFeed ? -2 : 0, borderRadius: 999 }}
           >
-            <Avatar size={40} userId={build.creator_id} name={name} src={makerAvatar} />
+            <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} />
           </Link>
         ) : (
-          <Avatar size={40} userId={build.creator_id} name={name} src={makerAvatar} />
+          <Avatar size={xm ? xm.avatar : 40} userId={build.creator_id} name={name} src={makerAvatar} />
         )}
       </div>
 
       {/* Author row: name, @handle · age, the tools. */}
+      {x && xm ? (
+        <div data-feed-author-row="" style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: 4, minHeight: xm.line, marginBottom: X_ROW_GAP, whiteSpace: "nowrap" }}>
+          <QuietLink to={profileHref} testId="feed-author-name" reach={phone} style={{ flex: "0 1 auto", maxWidth: "70%", ...xName(x), ...ellipsis }} colour={t.text}>
+            {name}
+          </QuietLink>
+          <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, ...xMeta(x), color: t.label }}>
+            {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
+            {age ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${age}` : age}</span> : null}
+          </span>
+          {onMore ? <span style={{ flex: 1 }} /> : null}
+          {onMore ? <MoreButton onPress={onMore} box={xm.moreBox} hit={xm.moreHit} /> : null}
+        </div>
+      ) : (
       <div
         data-feed-author-row=""
         style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: phoneFeed ? 4 : 6, minHeight: phoneFeed ? 20 : 24, marginBottom: phoneFeed ? 4 : 4, whiteSpace: "nowrap" }}
@@ -244,6 +269,7 @@ export function FeedPost({
         {phoneFeed && onMore ? <span style={{ flex: 1 }} /> : null}
         {phoneFeed && onMore ? <MoreButton onPress={onMore} /> : null}
       </div>
+      )}
 
       {/* The post. */}
       <div data-feed-post-body="" style={{ ...column, gridColumn: 2, gridRow: 2, position: "relative" }}>
@@ -275,13 +301,13 @@ export function FeedPost({
       </div>
 
       {/* The build line, then the actions. */}
-      <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: phoneFeed ? 4 : 12 }}>
+      <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: xm ? xm.gap : phoneFeed ? 4 : 12 }}>
         <div data-feed-build-line="" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
-          <QuietLink to={buildHref} tabIndex={headed ? -1 : undefined} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
+          <QuietLink to={buildHref} tabIndex={headed ? -1 : undefined} testId="feed-build-title" touch={phone && !x} reach={x === "phone"} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...(x ? { lineHeight: "16px" } : null), ...ellipsis }}>
             {title}
           </QuietLink>
           {facts ? (
-            <span data-testid="feed-build-facts" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: phoneFeed ? t.text2 : t.label, minWidth: 0 }}>
+            <span data-testid="feed-build-facts" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: x ? "16px" : 1.4, color: phoneFeed || x ? t.text2 : t.label, minWidth: 0 }}>
               {facts}
             </span>
           ) : null}
@@ -301,8 +327,9 @@ export function FeedPost({
             counts={engagement.counts}
             liked={engagement.liked}
             saved={engagement.saved}
-            style={phoneFeed ? undefined : { marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
-            phoneFeed={phoneFeed}
+            style={phoneFeed || x ? undefined : { marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
+            phoneFeed={phoneFeed && !x}
+            x={x}
           />
         ) : null}
       </div>
@@ -311,7 +338,7 @@ export function FeedPost({
 }
 
 /** The phone feed's More: three dots at 18 in Text 3, in a 32 hit area at the right edge (the 44 target is its row's height). */
-function MoreButton({ onPress }: { onPress: () => void }) {
+export function MoreButton({ onPress, box = 32, hit = 44 }: { onPress: () => void; box?: number; hit?: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -324,11 +351,11 @@ function MoreButton({ onPress }: { onPress: () => void }) {
         onPress();
       }}
       {...handlers}
-      style={{ flex: "none", position: "relative", width: 32, height: 32, margin: "-6px -8px -6px 0", padding: 0, border: 0, borderRadius: 999, background: "transparent", color: t.label, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ flex: "none", position: "relative", width: box, height: box, margin: box === 32 ? "-6px -8px -6px 0" : `${-Math.max(0, box - 20) / 2}px 0`, padding: 0, border: 0, borderRadius: 999, background: "transparent", color: t.label, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <MobileIcon name="more" size={18} />
-      {/* Touch: the hit area reaches 44 by 44 without moving the dots. */}
-      <span aria-hidden="true" style={{ position: "absolute", inset: -6 }} />
+      {/* Touch: the hit area reaches 44 by 44 (32 on desktop) without moving the dots. */}
+      <span aria-hidden="true" style={{ position: "absolute", inset: -(hit - box) / 2 }} />
     </button>
   );
 }

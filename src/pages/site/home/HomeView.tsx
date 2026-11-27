@@ -13,7 +13,7 @@
    items at the top at once. */
 
 import { PriorityImageScope } from "@/components/post/media/priorityImage";
-import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -25,12 +25,9 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
 import { FeedPost } from "@/components/gallery/FeedPost";
+import { X_FEED, xGrid } from "@/components/gallery/xFeed";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
-import { useThreadRest } from "@/components/gallery/useThreadRest";
-import { PostThread } from "@/components/post/PostThread";
-import { splitThread, threadOf, type GalleryMedia } from "@/lib/build";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { EngagementRow } from "@/components/social/EngagementRow";
 import { PostCard } from "@/components/post/PostCard";
 import { ReplyAnatomy } from "@/pages/site/openbuilds/PostReplies";
 import { SectionHead } from "@/components/vision/SectionHead";
@@ -43,6 +40,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { PhoneHome } from "./PhoneHome";
+import { RebuildPost } from "./RebuildPost";
 import { useNear } from "./useNear";
 import { FeedBones, HomeColumns, HomeControl, HomeLoadingView, Rule, SectionBones, ellipsis, text, useHomeLayout } from "./HomeFrame";
 import {
@@ -129,6 +127,8 @@ export interface HomeViewProps {
   /** Prompt 20: up to three authors of those items, for the phone's floating pill. */
   newAuthors?: readonly HomePerson[];
   onShowNew: () => void;
+  /** Prompt 29a: the phone's pull to refresh: refetch the feed and its count of new posts, and resolve with how many arrived. */
+  onRefresh?: () => Promise<number>;
   /** Signed once for the page: the posts' pictures. */
   srcByPath: MediaSrcMap;
   /** Build ids whose post came within a screen of view. */
@@ -534,21 +534,11 @@ export function NewPill({ count, onShow }: { count: number; onShow: () => void }
   );
 }
 
-/** An item of the feed: 16 at the sides, skipped by the renderer while it is off screen. `divided` is the profile's note, which keeps its hairline. */
+/** An item of the feed: 12 above and below and 16 at the sides (prompt 29a: two items are 24 apart, no line), skipped by the renderer while it is off screen. `divided` is the profile's note, which keeps its hairline. */
 function FeedItemFrame({ height, divided = false, children, ...rest }: { height: number; divided?: boolean; children: ReactNode; "data-kind": string; "data-testid"?: string }) {
   return (
-    <div {...rest} style={{ padding: "0 16px", borderBottom: divided ? `1px solid ${t.hairline}` : undefined, contentVisibility: "auto", containIntrinsicSize: `auto ${height}px` }}>
+    <div {...rest} style={{ padding: divided ? "0 16px" : X_FEED.desktop.padding, borderBottom: divided ? `1px solid ${t.hairline}` : undefined, contentVisibility: "auto", containIntrinsicSize: `auto ${height}px` }}>
       {children}
-    </div>
-  );
-}
-
-/** The author row of a rebuild: name, then "@handle · age". */
-function AuthorRow({ name, line }: { name: string; line: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
-      <span style={text(13, 500, t.text, { lineHeight: 1.4 })}>{name}</span>
-      <span style={{ ...text(13, 400, t.label, { lineHeight: 1.4 }), ...ellipsis, minWidth: 0 }}>{line}</span>
     </div>
   );
 }
@@ -569,6 +559,7 @@ export function BuildItem({ item, srcByPath, now, onNear }: { item: HomeBuildPos
           classification={item.classification}
           engagement={item.engagement}
           now={now}
+          x="desktop"
         />
       </div>
     </FeedItemFrame>
@@ -612,87 +603,10 @@ export function NoteItem({ item, now, heading }: { item: HomeReproNote; now: num
   );
 }
 
-/** The build line under a rebuild: its name, as the feed post's build line draws it. */
-function BuildLine({ title, href }: { title: string; href: string }) {
-  return (
-    <div style={{ marginTop: 12 }}>
-      <PlainLink to={href} style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>
-        {title}
-      </PlainLink>
-    </div>
-  );
-}
-
 export function RebuildItem({ item, srcByPath, now, onNear }: { item: HomeRebuildPost; srcByPath: MediaSrcMap; now: number; onNear?: (ids: string[]) => void }) {
-  const ref = useNear<HTMLDivElement>(item.build.id, onNear);
-  const source = atHandle(item.source.handle);
-  const handle = atHandle(item.maker.handle);
-  const age = shortAgo(item.at, now);
-  const line = [handle, age].filter(Boolean).join(" · ");
-  const phone = useIsPhone();
-
-  /* The rebuild's own thread, when its write-up has more than one post. The note and the "Rebuilt from" card are its first
-     post's place, so the thread opens with the posts after it. */
-  const doc = useMemo(() => threadOf(item.build, item.build.media), [item.build]);
-  const posts = useMemo(() => (doc ? splitThread(doc) : []), [doc]);
-  const threaded = posts.length > 1;
-  const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: item.build.id, enabled: threaded });
-  const mediaById = useMemo(() => {
-    const map = new Map<string, GalleryMedia>(item.build.media.map((row) => [row.id, row]));
-    for (const row of rest?.rows ?? []) map.set(row.id, row);
-    return map;
-  }, [item.build.media, rest]);
-  const srcAll = useMemo<MediaSrcMap>(() => (rest && rest.src.size > 0 ? new Map([...srcByPath, ...rest.src]) : srcByPath), [srcByPath, rest]);
-
-  const start = (
-    <>
-      {item.note ? <p style={text(15, 400, t.text, { margin: 0 })}>{item.note}</p> : null}
-      <div style={{ marginTop: 12, padding: 12, background: t.module, borderRadius: r.card }}>
-        <span style={{ display: "block", ...rowMeta() }}>Rebuilt from</span>
-        <span style={{ display: "block", ...text(15, 500, t.text), ...ellipsis }}>{item.source.title}</span>
-        {source ? <span style={{ display: "block", ...rowMeta() }}>{source}</span> : null}
-      </div>
-    </>
-  );
   return (
     <FeedItemFrame height={320} data-kind="rebuild" data-testid="home-feed-item">
-      <article ref={ref} aria-label={item.build.title} style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "4px 0" }}>
-        <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
-        <div style={{ minWidth: 0 }}>
-          <AuthorRow name={item.maker.name} line={line} />
-          {threaded ? (
-            <PostThread
-              posts={posts}
-              first={start}
-              mediaById={mediaById}
-              srcByPath={srcAll}
-              mode={phase === "open" ? "open" : "closed"}
-              onOpen={open}
-              onClose={close}
-              onIntent={warm}
-              rest={restState}
-              onRetry={retry}
-              connector={{ x: -(40 + 12) + 20, top: 16 }}
-              phone={phone}
-              resetKey={item.build.id}
-            />
-          ) : (
-            start
-          )}
-          <BuildLine title={item.build.title} href={`/b2/${item.build.slug}`} />
-          {item.engagement ? (
-            <EngagementRow
-              variant="card"
-              withRebuild
-              build={{ id: item.build.id, slug: item.build.slug, title: item.build.title, rebuild_count: item.build.rebuild_count }}
-              counts={item.engagement.counts}
-              liked={item.engagement.liked}
-              saved={item.engagement.saved}
-              style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
-            />
-          ) : null}
-        </div>
-      </article>
+      <RebuildPost item={item} srcByPath={srcByPath} now={now} size="desktop" onNear={onNear} />
     </FeedItemFrame>
   );
 }
@@ -703,6 +617,7 @@ export function TopicItem({ item, actions }: { item: HomeTopicPost; actions?: Ho
     <FeedItemFrame height={260} data-kind="topic" data-testid="home-feed-item">
       <div>
         <PostCard
+          x="desktop"
           card={item.card}
           topic={
             actions
@@ -718,7 +633,7 @@ export function TopicItem({ item, actions }: { item: HomeTopicPost; actions?: Ho
           }
         />
         {actions?.box?.at === item.postId ? (
-          <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, paddingBottom: 16 }}>
+          <div style={{ ...xGrid("desktop"), paddingTop: 12 }}>
             <div data-testid="home-reply-box" style={{ gridColumn: 2, minWidth: 0 }}>
               {actions.box.node}
             </div>
@@ -739,7 +654,7 @@ export function ReplyGroupItem({ item }: { item: HomeReplyGroup }) {
   const line = [atHandle(item.topic.author.handle), item.topic.age].filter(Boolean).join(" · ");
   return (
     <FeedItemFrame height={200} data-kind="reply_group" data-testid="home-feed-item">
-      <article aria-label={`${item.count} in ${item.topic.heading || "Untitled post"}`} style={{ padding: "4px 0" }}>
+      <article aria-label={`${item.count} in ${item.topic.heading || "Untitled post"}`}>
         <PlainLink to={item.to} data-testid="home-reply-group-link" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12, color: t.text, textDecoration: "none" }}>
           <Avatar size={24} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} />
           <span style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0, whiteSpace: "nowrap" }}>
@@ -809,7 +724,7 @@ function FeedBody(props: HomeViewProps) {
   return (
     <>
       <PriorityImageScope>
-        <div data-testid="home-feed" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "4px 0 16px" }}>
+        <div data-testid="home-feed" style={{ display: "flex", flexDirection: "column", padding: "0 0 16px" }}>
           {visible.map((item) =>
             item.kind === "build" ? (
               <BuildItem key={item.key} item={item} srcByPath={srcByPath} now={now} onNear={onPostsNear} />

@@ -15,6 +15,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
 import { mediaAttrsOf, type MediaWarning, type PostMediaAttrs } from "@/lib/build/thread";
+import { X_FEED, type XSize } from "@/components/gallery/xFeed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -34,6 +35,9 @@ export const BLOCK_RATIO = 16 / 9;
 export const FEED_MIN_RATIO = 1;
 export const FEED_MAX_RATIO = 16 / 9;
 export const FEED_MAX_HEIGHT = 300;
+/** Prompt 29a: Home's single picture at X's proportions, at its own shape between 4:5 and 16:9. */
+export const X_MIN_RATIO = 4 / 5;
+export const X_MAX_RATIO = 16 / 9;
 export const GRID_GAP = 2;
 export const GRID_RADIUS = 16;
 
@@ -57,12 +61,13 @@ export interface GridLayout {
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
 /** The grid's shape for these pictures, known from their sizes and crops alone. */
-export function gridLayout(sources: readonly CropSource[], feed = false): GridLayout {
+export function gridLayout(sources: readonly CropSource[], feed = false, x = false): GridLayout {
   const count = sources.length;
   if (count <= 1) {
     const own = croppedRatio(sources[0] ?? { w: null, h: null, crop: null });
     // The phone feed holds one picture between 16:9 and 1:1.
-    const ratio = feed ? clamp(own, FEED_MIN_RATIO, FEED_MAX_RATIO) : clamp(own, MIN_RATIO, MAX_RATIO);
+    // Home at X's proportions holds it between 4:5 and 16:9.
+    const ratio = x ? clamp(own, X_MIN_RATIO, X_MAX_RATIO) : feed ? clamp(own, FEED_MIN_RATIO, FEED_MAX_RATIO) : clamp(own, MIN_RATIO, MAX_RATIO);
     return { ratio, columns: "1fr", rows: "1fr", cells: [{ ratio, align: own < MIN_RATIO ? "top" : "middle", area: {} }] };
   }
   if (count === 2) {
@@ -111,10 +116,12 @@ export interface GridFrameProps {
   renderCell: (index: number, style: CSSProperties, cell: GridCell) => ReactNode;
   /** Prompt 20: the phone feed's frame: Card fill, no hairline, at most 300 tall. */
   feed?: boolean;
+  /** Prompt 29a: Home at X's proportions: radius 14 (phone) or 16 (desktop), Card fill, no hairline, no height cap. */
+  x?: XSize;
 }
 
 /** The block itself: radius 16, the hairline round it and between the pictures, its shape reserved. */
-export function GridFrame({ layout, count, renderCell, feed = false }: GridFrameProps) {
+export function GridFrame({ layout, count, renderCell, feed = false, x }: GridFrameProps) {
   return (
     <div
       role="group"
@@ -129,9 +136,9 @@ export function GridFrame({ layout, count, renderCell, feed = false }: GridFrame
         aspectRatio: String(Math.round(layout.ratio * 1e4) / 1e4),
         width: "100%",
         boxSizing: "border-box",
-        borderRadius: GRID_RADIUS,
+        borderRadius: x ? X_FEED[x].pictureRadius : GRID_RADIUS,
         overflow: "hidden",
-        ...(feed ? { maxHeight: FEED_MAX_HEIGHT, background: t.module } : { border: `1px solid ${t.hairline}`, background: t.well }),
+        ...(x ? { background: t.module } : feed ? { maxHeight: FEED_MAX_HEIGHT, background: t.module } : { border: `1px solid ${t.hairline}`, background: t.well }),
       }}
     >
       {layout.cells.map((cell, index) =>
@@ -151,6 +158,8 @@ export interface PostMediaGridProps {
   compact?: boolean;
   /** Prompt 20: the phone feed's pictures (see `GridFrameProps.feed`). */
   feed?: boolean;
+  /** Prompt 29a: Home at X's proportions (see `GridFrameProps.x`). */
+  x?: XSize;
 }
 
 /** The tallest a picture is drawn in a compact thread. */
@@ -166,12 +175,12 @@ export const READER_COPY = {
 const WARNING_NAMES: Record<MediaWarning, string> = { nudity: "Nudity", violence: "Violence", sensitive: "Sensitive" };
 
 /** A reader's grid: the ALT badge opens the description, a flagged picture is covered, and (inside a MediaViewerProvider) a picture opens full screen. */
-export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false, feed = false }: PostMediaGridProps) {
+export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false, feed = false, x }: PostMediaGridProps) {
   const attrs = pictures.map(mediaAttrsOf);
   const viewer = useMediaViewer();
   const [alt, setAlt] = useState<{ index: number; from: HTMLElement } | null>(null);
   if (attrs.length === 0) return null;
-  const layout = gridLayout(sourcesOf(attrs, mediaById), feed);
+  const layout = gridLayout(sourcesOf(attrs, mediaById), feed, Boolean(x));
   const items = attrs.map((one) => ({ attrs: one, media: mediaById.get(one.mediaId) }));
   if (compact) {
     return (
@@ -219,6 +228,7 @@ export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false,
     <>
       <GridFrame
         feed={feed}
+        x={x}
         layout={layout}
         count={attrs.length}
         renderCell={(index, style, cell) => (

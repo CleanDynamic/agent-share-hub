@@ -65,4 +65,38 @@ describe("PhoneHome", () => {
     expect(rows[0].textContent).toContain("2 open in your spaces");
     expect(rows[0].getAttribute("href")).toBe("/openbuilds?open=1");
   });
+
+  /* Prompt 29a. */
+  it("has no new-posts pill in either form: new posts arrive with the pull to refresh", () => {
+    mount({ newCount: 3, newAuthors: [{ id: "p1", handle: "maya", name: "Maya" }] });
+    expect(screen.queryByTestId("home-new-pill")).toBeNull();
+    expect(screen.queryByTestId("home-new-pill-floating")).toBeNull();
+    expect(screen.queryByText(/new since you looked/)).toBeNull();
+  });
+
+  it("pads each post 12 16 12 12 with no line, and draws its posts at the phone's X proportions", () => {
+    mount();
+    for (const item of screen.getAllByTestId("home-feed-item")) {
+      expect(item.style.padding).toBe("12px 16px 12px 12px");
+      expect(item.style.borderBottom).toBe("");
+    }
+    const posts = document.querySelectorAll<HTMLElement>("[data-feed-post]");
+    expect(posts.length).toBeGreaterThan(0);
+    for (const post of posts) expect(post.dataset.x).toBe("phone");
+  });
+
+  it("draws a rebuild with 'Rebuilt from' as a Card: padding 14, radius 14, the source's name in the post text size", () => {
+    mount();
+    const card = screen.getAllByTestId("rebuilt-from")[0];
+    expect(card).toHaveStyle({ padding: "14px", borderRadius: "14px" });
+    expect(card.textContent).toContain("Rebuilt from");
+  });
+
+  it("puts the pull to refresh round the tabs and the feed, with a Refresh button first", () => {
+    mount({ onRefresh: () => Promise.resolve(0) });
+    const content = screen.getByTestId("ptr-content");
+    expect(content.firstElementChild).toBe(screen.getByRole("button", { name: "Refresh" }));
+    expect(content.contains(screen.getByTestId("home-phone-tabs"))).toBe(true);
+    expect(content.contains(screen.getByTestId("home-feed"))).toBe(true);
+  });
 });
