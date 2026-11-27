@@ -7,7 +7,6 @@ import { SESSION_TITLE_MAX } from "./making";
 import {
   MAP_LAYOUT_COPY,
   MAP_LIMITS,
-  MAP_WIDTH,
   boxOfTile,
   boxes,
   evenOut,
@@ -45,6 +44,7 @@ import {
   type TileOptions,
   type TreeResult,
 } from "./mapLayout";
+import { MAP_WIDTH } from "./mapGeometry";
 
 /* ── builders ── */
 
