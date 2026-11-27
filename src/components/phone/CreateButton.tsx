@@ -10,7 +10,7 @@ import { useBarsHidden } from "@/components/shell/phoneBars";
 import { hapticLight } from "@/components/feed/haptics";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { PHONE_EASE, PHONE_STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
+import { phoneSlide, phoneSlideOpacity } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
@@ -54,6 +54,7 @@ export function CreateButton({ onTap, onHold, expanded = false }: CreateButtonPr
 
   return (
     <button
+      data-motion="bar"
       type="button"
       aria-label="New"
       aria-haspopup="dialog"
@@ -102,8 +103,8 @@ export function CreateButton({ onTap, onHold, expanded = false }: CreateButtonPr
         WebkitTouchCallout: "none",
         userSelect: "none",
         transform: away ? `translateY(${PHONE_FAB + PHONE_MARGIN}px)` : "translateY(0)",
-        transition: prefersReducedMotion() ? `opacity ${PHONE_STANDARD}ms ${PHONE_EASE}` : `transform ${PHONE_STANDARD}ms ${PHONE_EASE}`,
-        opacity: away && prefersReducedMotion() ? 0 : 1,
+        transition: phoneSlide(),
+        opacity: phoneSlideOpacity(away),
         ...ring(state.focusVisible),
       }}
     >

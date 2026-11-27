@@ -125,6 +125,8 @@ export type Go = (to: To, options?: NavigateOptions) => void;
 
 export interface PageChange {
   go: Go;
+  /** 29e: one step back through the history, drawn as a phone back (the pushed page leaves to the right). Absent in a test's own value. */
+  back?: () => void;
   /** The one transition is waiting: the new page's code (or a heavy first render) is not in yet. */
   isPending: boolean;
 }

@@ -68,7 +68,8 @@ import { CrumbTitleProvider } from "./useBreadcrumb";
 import { useHeaderHeight } from "./useHeaderCompact";
 import { useIsPhone, useShortWindow } from "./useMinWidth";
 import { useBarsHidden } from "./phoneBars";
-import { move, PHONE_STANDARD } from "@/lib/theme/motion";
+import { phoneSlide, phoneSlideOpacity } from "@/lib/theme/motion";
+import { PhoneEdgeSwipe, PhoneReadingAnchor } from "./PhoneEdgeSwipe";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -260,8 +261,9 @@ export function SiteFrameView({
           zIndex: 20,
           minHeight: phone ? undefined : barHeight,
           background: t.frame,
-          ...(phone ? { transform: barsHidden ? `translateY(-${PHONE_TOPBAR}px)` : "translateY(0)", transition: move(PHONE_STANDARD) } : null),
+          ...(phone ? { transform: barsHidden ? `translateY(-${PHONE_TOPBAR}px)` : "translateY(0)", transition: phoneSlide(), opacity: phoneSlideOpacity(barsHidden) } : null),
         }}
+        data-motion={phone ? "bar" : undefined}
       >
         {phone ? mobileHeader : header}
         {progress}
@@ -326,6 +328,8 @@ export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }
       >
         {children}
       </SiteFrameView>
+      <PhoneEdgeSwipe />
+      <PhoneReadingAnchor />
       </ConnectorDialogProvider>
     </CrumbTitleProvider>
   );

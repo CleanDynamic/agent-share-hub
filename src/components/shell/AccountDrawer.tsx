@@ -14,7 +14,7 @@ import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { PageLink } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { FAST, feedback, move } from "@/lib/theme/motion";
+import { PHONE_EASE, PHONE_QUICK, feedback, prefersReducedMotion } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -89,7 +89,7 @@ function Switch({ on, label, onToggle }: { on: boolean; label: string; onToggle:
       }}
     >
       <span aria-hidden="true" style={{ position: "absolute", left: 0, top: 9, width: 44, height: 26, borderRadius: 13, background: on ? t.brandAccent : t.control, transition: feedback("background-color") }}>
-        <span style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: 10, background: on ? t.onBrandAccent : t.text, transform: on ? "translateX(18px)" : "none", transition: move(FAST) }} />
+        <span data-motion="bar" style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: 10, background: on ? t.onBrandAccent : t.text, transform: on ? "translateX(18px)" : "none", transition: prefersReducedMotion() ? "none" : `transform ${PHONE_QUICK}ms ${PHONE_EASE}` }} />
       </span>
     </button>
   );

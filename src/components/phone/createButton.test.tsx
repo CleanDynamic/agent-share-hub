@@ -137,7 +137,7 @@ describe("Home's centred tabs", () => {
     expect(screen.queryByTestId("phone-tab-bar")).toBeNull();
   });
 
-  it("the indicator is 3 tall, radius 2, in Text, and slides on left and width over 160ms", () => {
+  it("the indicator is 3 tall, radius 2, in Text, and slides by transform over 160ms", () => {
     const rect = (left: number, width: number) => ({ left, width, top: 0, right: left + width, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
     const spy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
       return this.hasAttribute("data-tab-word") ? rect(120, 64) : rect(0, 390);
@@ -148,8 +148,8 @@ describe("Home's centred tabs", () => {
     expect(style).toContain("height: 3px");
     expect(style).toContain("border-radius: 2px");
     expect(style).toContain("width: 64px");
-    expect(style).toContain("left: 120px");
-    expect(style).toContain("left 160ms cubic-bezier(.2,.8,.2,1)");
+    expect(style).toContain("translateX(120px)");
+    expect(style).toContain("transform 160ms cubic-bezier(.2,.8,.2,1)");
     // Text, not Mint: jsdom drops var(), so read the markup.
     const html = markup(<PhoneTabs centred label="Feed scope" tabs={tabs} value="everyone" onChange={vi.fn()} />);
     expect(html).not.toContain("var(--brand-accent)");

@@ -19,10 +19,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { ErrorState } from "@/components/brand/ErrorState";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { BLOCKS_OUT_MS, CONTENT_IN_MS } from "@/pages/site/compose/loadingBlocks";
-import { STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
+import { PHONE_EASE, PHONE_QUICK, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 
 // The dots fade out over BLOCKS_OUT_MS while the content fades in over CONTENT_IN_MS, in place.
-const IN = `bgPageIn ${CONTENT_IN_MS}ms ${STANDARD} both`;
+// 29e: on a phone content arriving is one PHONE_QUICK fade on PHONE_EASE, in and out.
+const inFor = (phone: boolean) => (phone ? `bgPageIn ${PHONE_QUICK}ms ${PHONE_EASE} both` : `bgPageIn ${CONTENT_IN_MS}ms ${STANDARD} both`);
+const outFor = (phone: boolean) => (phone ? `bgPageOut ${PHONE_QUICK}ms ${PHONE_EASE} both` : `bgPageOut ${BLOCKS_OUT_MS}ms ${STANDARD} both`);
 
 /** 29c: on a phone no loading state stays longer than this. Then the page's failed state is drawn in its place. */
 export const SKELETON_CEILING_MS = 8000;
@@ -63,6 +65,8 @@ export function PageArrival({
 }) {
   const queryClient = useQueryClient();
   const timedOut = useLoadingCeiling(loading);
+  const phone = useIsPhone();
+  const IN = inFor(phone);
   const [was] = useState(loading);
   const [reduced] = useState(() => prefersReducedMotion() || typeof Element.prototype.animate !== "function");
   const [place, setPlace] = useState<CSSProperties | null>(null);
@@ -85,7 +89,7 @@ export function PageArrival({
       window.clearTimeout(fallback);
       if (content.style.animation === IN) content.style.animation = "";
     };
-  }, [fading]);
+  }, [fading, IN]);
 
   return (
     <>
@@ -100,7 +104,7 @@ export function PageArrival({
           aria-hidden="true"
           data-testid="page-arrival-placeholder"
           onAnimationEnd={() => setDone(true)}
-          style={{ position: "absolute", ...place, overflow: "hidden", pointerEvents: "none", animation: `bgPageOut ${BLOCKS_OUT_MS}ms ${STANDARD} both` }}
+          style={{ position: "absolute", ...place, overflow: "hidden", pointerEvents: "none", animation: outFor(phone) }}
         >
           {placeholder}
         </div>

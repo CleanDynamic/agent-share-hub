@@ -306,13 +306,13 @@ describe("PhoneBottomSheet", () => {
     expect(onClose).toHaveBeenLastCalledWith(false);
   });
 
-  it("closes when the handle is dragged down more than 80px, not less", () => {
+  it("closes when the handle is dragged down more than a third of the sheet (80px where it has no height), or flicked, not less (29e)", () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
     const grab = screen.getByTestId("sheet-grabber");
     fireEvent.pointerDown(grab, { clientY: 100, pointerId: 1 });
-    fireEvent.pointerMove(grab, { clientY: 130, pointerId: 1 });
-    fireEvent.pointerUp(grab, { clientY: 130, pointerId: 1 });
+    fireEvent.pointerMove(grab, { clientY: 108, pointerId: 1 });
+    fireEvent.pointerUp(grab, { clientY: 108, pointerId: 1 });
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.pointerDown(grab, { clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(grab, { clientY: 200, pointerId: 1 });

@@ -15,6 +15,7 @@ import { useResolvedTheme, useTheme } from "@/contexts/ThemeContext";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 
+import { usePageChange } from "@/lib/routing/go";
 import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 
 import type { FrameViewer } from "./frameTypes";
@@ -88,9 +89,10 @@ function MobileHeaderContainer() {
 
   const spec = phoneBarFor(pathname);
   const signIn = () => navigate(openOver(pathname, window.location.search), { state: deeper(locationState) });
+  const change = usePageChange();
   const back = () => {
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
-    if (idx > 0) navigate(-1);
+    if (idx > 0) (change?.back ?? (() => navigate(-1)))();
     else navigate(page.backTo ?? spec.backTo ?? "/");
   };
 
