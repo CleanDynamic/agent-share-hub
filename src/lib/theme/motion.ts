@@ -112,6 +112,12 @@ export const PHONE_STANDARD = 280;
 /** The phone's one curve. */
 export const PHONE_EASE = "cubic-bezier(.2,.8,.2,1)";
 
+/** 29c: a phone list that is being read again keeps its old rows on screen at 60%, and they fade back over PHONE_QUICK. */
+export const PHONE_UPDATING_OPACITY = 0.6;
+export function phoneUpdating(updating: boolean | undefined): CSSProperties {
+  return { opacity: updating ? PHONE_UPDATING_OPACITY : 1, transition: `opacity ${PHONE_QUICK}ms ${PHONE_EASE}` };
+}
+
 /** Every duration this system knows, by name. */
 export const DURATION = {
   fast: FAST,

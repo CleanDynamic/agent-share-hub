@@ -43,6 +43,12 @@ const room = dotPalette;
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const now = () => performance.now() / 1000;
 
+/* 29c: on a phone the loading dots are quieter than the content they stand for: 35% of their brightness, and after
+   QUIET_AFTER_S the motion stops (the blocks stay, drawn still). Desktop draws as before. */
+export const PHONE_DOT_ALPHA = 0.35;
+export const QUIET_AFTER_S = 2;
+const phoneQuiet = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches;
+
 /**
  * How a shape is drawn (Synth 06, DotSkeleton):
  * - "block": solid dots over the whole box with its real radius (avatars, pictures; the default);
@@ -223,6 +229,11 @@ export class FluidRegion {
   private height = 0;
   private ratio = 1;
   private dirty = true;
+  /** 29c: the phone's dots stopped moving; the still frame is drawn again only when the layout changes. */
+  frozen = false;
+  get needsLayout(): boolean {
+    return this.dirty;
+  }
   visible = true;
   shownAt = now();
   /** When the next frame may be drawn (the 30 frames a second). */
@@ -394,7 +405,7 @@ export class FluidRegion {
       const shade = tone + jitter;
       this.batch.add(shadeOf(shade), lx + dx, ly + dy, radius);
     }
-    ctx.globalAlpha = fadeIn * fadeOut;
+    ctx.globalAlpha = fadeIn * fadeOut * (this.mode === "loader" || !phoneQuiet() ? 1 : PHONE_DOT_ALPHA);
     this.batch.flush(ctx, colours);
     ctx.globalAlpha = 1;
   }
@@ -437,6 +448,14 @@ function frame(t: number): boolean | void {
   while (splashes.length && t - splashes[0].at > SPLASH_S) splashes.shift();
   for (const region of regions) {
     if (!region.visible) continue;
+    if (region.mode !== "loader" && region.goneAt === null && phoneQuiet() && t - region.shownAt > QUIET_AFTER_S) {
+      if (!region.frozen || region.needsLayout) {
+        region.frozen = true;
+        region.draw(STILL_T, true);
+      }
+      continue;
+    }
+    region.frozen = false;
     region.step();
     region.draw(t, false);
   }

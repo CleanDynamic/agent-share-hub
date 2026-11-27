@@ -24,6 +24,7 @@ import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { phoneUpdating } from "@/lib/theme/motion";
 import { tokenAlpha } from "@/lib/theme/tokens";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -342,7 +343,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
         {cards.length === 0 && empty ? (
           <div style={{ margin: "20px 16px 0" }}>{empty}</div>
         ) : (
-          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...(updating ? { opacity: 0.5 } : null) }}>
+          <div data-testid="builds-cards" aria-busy={updating === true} style={{ paddingTop: 12, ...phoneUpdating(updating) }}>
             {cards.map((card, index) => (
               <PhoneMapCard key={card.id} card={card} direction={direction} index={index} />
             ))}

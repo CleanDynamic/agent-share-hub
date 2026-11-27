@@ -29,7 +29,7 @@ import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { PhoneCardSkeletons } from "./BuildsPhoneSkeletons";
+import { PhoneCardSkeletons, PhoneRowSkeletons } from "./BuildsPhoneSkeletons";
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {
@@ -340,7 +340,7 @@ export function BuildsLoadingView() {
         head={<BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
         main={
           phone ? (
-            <PhoneCardSkeletons count={6} height={112} />
+            <PhoneRowSkeletons count={10} />
           ) : (
           <>
             <div style={{ height: 36, borderBottom: `1px solid ${t.hairline}` }} />

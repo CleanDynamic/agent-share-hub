@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { OPENBUILDS_SEO } from "./openBuildsSeo";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
@@ -65,7 +66,10 @@ export default function OpenBuildsFeedPage() {
   /* G1: a read that never answers fails at READ_TIMEOUT_MS by itself, so the page keeps no timer of its own. A failed
      read is reported once, by the query client's global report (lib/errors/wire.ts). */
   const out = (query: { status: string; fetchStatus: string }) => query.status === "pending" && query.fetchStatus !== "idle";
-  const arriving = authLoading || out(feed) || (viewerId !== null && out(mine)) || out(busy);
+  /* 29c: "Busy this week" is below the first screen on a phone. Waiting for it held the whole page on its skeleton when that
+     read was slow; on a phone the page arrives with the feed and the list comes in after. Desktop waits for it as before. */
+  const phone = useIsPhone();
+  const arriving = authLoading || out(feed) || (viewerId !== null && out(mine)) || (!phone && out(busy));
   usePageReady("openbuilds", !arriving);
   /* G9: every region failed (the posts, and, signed in, the reader's spaces). */
   const regionReads: ReadLike[] = [feed, ...(viewerId !== null ? [mine] : [])];
@@ -116,7 +120,7 @@ export default function OpenBuildsFeedPage() {
   return (
     <>
       <SeoHead title={OPENBUILDS_SEO.title} description={OPENBUILDS_SEO.description} path="/openbuilds" />
-      <PageArrival loading={arriving} placeholder={<OpenBuildsFeedLoadingView />}>
+      <PageArrival loading={arriving} placeholder={<OpenBuildsFeedLoadingView />} region="OpenBuilds" onRetry={() => void feed.refetch()}>
         {arriving ? (
           <OpenBuildsFeedLoadingView />
         ) : (
