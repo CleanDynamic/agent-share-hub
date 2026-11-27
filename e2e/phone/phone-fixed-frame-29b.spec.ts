@@ -51,4 +51,23 @@ test.describe("phone fixed frame at 390 x 844", () => {
       await expect(page.getByTestId("site-footer")).toHaveCount(0);
     }
   });
+
+  test("Builds' view pills stick right under the bar and carry the line; the New slot fits the dock", async ({ page }) => {
+    await page.goto("/builds");
+    const bar = page.getByTestId("phone-top-bar");
+    await expect(bar).toBeVisible();
+    const row = page.getByRole("navigation", { name: "View" });
+    await expect(row).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 300));
+    const barBox = (await bar.boundingBox())!;
+    const rowBox = (await row.boundingBox())!;
+    expect(Math.abs(rowBox.y - (barBox.y + barBox.height))).toBeLessThanOrEqual(1);
+    expect(rowBox.height).toBeGreaterThanOrEqual(52);
+    // One line under the fixed header: the bar draws none while the row draws it.
+    expect(await bar.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
+    const tile = (await page.getByTestId("dock-tile-new").boundingBox())!;
+    const dock = (await page.getByTestId("dock").boundingBox())!;
+    expect(tile.height).toBeLessThanOrEqual(dock.height);
+    expect(await page.getByTestId("dock-tile-new").evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+  });
 });

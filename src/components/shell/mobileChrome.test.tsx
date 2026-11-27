@@ -126,7 +126,7 @@ describe("phone chrome under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
   const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
 
-  it("the dock is the Page shade with no glass, no line, no lamp and no glow, 5 equal slots, New a 44 by 32 Mint pill", () => {
+  it("the dock is the Page shade with no glass, the structural line on its top edge, no lamp and no glow, 5 equal slots, New a 44 by 28 Mint pill", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
     expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
@@ -139,7 +139,7 @@ describe("phone chrome under the refined look", () => {
     expect(html).not.toContain("var(--dock)");
     expect(html).not.toContain("nav-lamp");
     expect(html).not.toContain('data-ui="nav-mark"');
-    expect(html).toContain("width:44px;height:32px;border-radius:16px;background:var(--brand-accent);color:var(--on-brand-accent)");
+    expect(html).toContain("width:44px;height:28px;border-radius:14px;background:var(--brand-accent);color:var(--on-brand-accent)");
     expect(html).toContain("width:9px;height:9px;border-radius:3px;background:var(--brand-accent);box-shadow:0 0 0 2px var(--bg)");
   });
 
