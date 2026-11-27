@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { useState } from "react";
@@ -48,6 +48,19 @@ describe("PhoneTopBar", () => {
     expect(home.querySelector("img")?.getAttribute("width")).toBe("56");
     expect(screen.getByRole("button", { name: "Maya Okafor, account menu" })).toBeTruthy();
     expect(screen.getByTestId("phone-avatar").textContent).toBe("MO");
+  });
+
+  it("29f: draws a second icon before the right slot, the beaver at the width it is given, and the bar title at 700", () => {
+    const more = vi.fn();
+    const skip = vi.fn();
+    render(wrap(<PhoneTopBar left="back" centre="logo" logoWidth={44} extra={{ icon: "more", label: "More", onClick: more }} right={{ text: "Skip to build", label: "Skip to build", onClick: skip }} />));
+    expect(screen.getByRole("link", { name: "OpenBuilds.ai home" }).querySelector("img")?.getAttribute("width")).toBe("44");
+    const names = within(screen.getByTestId("phone-top-bar")).getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent);
+    expect(names).toEqual(["Back", "More", "Skip to build"]);
+    fireEvent.click(screen.getByRole("button", { name: "Skip to build" }));
+    expect(skip).toHaveBeenCalled();
+    cleanup();
+    expect(markup(<PhoneTopBar left="account" centre="Builds" titleAs="p" />)).toContain("font-size:17px;font-weight:700;line-height:22px");
   });
 
   it("draws the unread square only when something is unread", () => {

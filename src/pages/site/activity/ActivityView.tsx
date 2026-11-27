@@ -22,8 +22,10 @@ import { useId, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { WaterField } from "@/components/brand/FluidField";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PHONE_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
+import { PHONE_DOCK, PHONE_PILL_ROW, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { PhonePills, type PhonePill } from "@/components/phone/PhonePills";
 import type { PanelFailure } from "@/components/pagestate/PageState";
 import { FrameLink } from "@/components/shell/FrameLink";
@@ -166,7 +168,8 @@ function Square({ square, ring = false, ringColour = t.surface, style }: { squar
 
 /** The actor, with the kind's square on their top right shoulder. Hidden from assistive tech: the row's words name both. */
 function Who({ row, phone = false }: { row: ActivityRow; phone?: boolean }) {
-  const square = squareOf(row);
+  /* 29f: on a phone the avatar stands alone: no kind square, and an unread row is marked by a dot at the row's edge. */
+  const square = phone ? null : squareOf(row);
   return (
     <span aria-hidden="true" style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
       <Avatar size={40} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} phone={phone} />
@@ -180,12 +183,13 @@ function Who({ row, phone = false }: { row: ActivityRow; phone?: boolean }) {
 }
 
 /** Who did what, then the build's name, set as the line's other strong word. */
-function Line({ row }: { row: ActivityRow }) {
+function Line({ row, phone = false }: { row: ActivityRow; phone?: boolean }) {
   const lead = row.actorLabel && row.who.startsWith(row.actorLabel) ? row.actorLabel : null;
   const words = lead ? row.who.slice(lead.length) : row.who;
+  /* 29f: on a phone the person's name is 700 and the words around it are in Text. */
   return (
-    <span style={text(15, 400, row.unread ? t.text : t.text2, { overflowWrap: "anywhere" })}>
-      {lead ? <span style={{ fontWeight: 600, color: t.text }}>{lead}</span> : null}
+    <span style={text(15, 400, row.unread || phone ? t.text : t.text2, { overflowWrap: "anywhere" })}>
+      {lead ? <span style={{ fontWeight: phone ? 700 : 600, color: t.text }}>{lead}</span> : null}
       {words}
       {row.title ? (
         <>
@@ -235,10 +239,17 @@ const rowStyle: CSSProperties = {
 function Row({ row, now, onOpen, phone = false }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void; phone?: boolean }) {
   return (
     <RowFrame row={row} onOpen={onOpen} style={rowStyle}>
-      {row.unread ? <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: phone ? 14 : 12, bottom: phone ? 14 : 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} /> : null}
+      {row.unread ? (
+        phone ? (
+          /* 29f: a 6 round Mint dot, 5 from the left edge, centred on the 40 avatar (12 padding above it). */
+          <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 5, top: 12 + 20 - 3, width: 6, height: 6, borderRadius: "50%", background: t.brandAccent }} />
+        ) : (
+          <span data-testid="activity-unread-bar" aria-hidden="true" style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 3, borderRadius: "0 2px 2px 0", background: t.brandAccent }} />
+        )
+      ) : null}
       <Who row={row} phone={phone} />
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <Line row={row} />
+        <Line row={row} phone={phone} />
         {row.detail ? <span style={text(13, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
         <time dateTime={row.at} style={text(13, 400, t.label, tnum)}>
           {shortAgo(row.at, now)}
@@ -250,13 +261,15 @@ function Row({ row, now, onOpen, phone = false }: { row: ActivityRow; now: numbe
 
 /** A day's heading, 13/500 Text 3. */
 function DayHeading({ day, phone = false }: { day: ReactNode; phone?: boolean }) {
-  return <h2 style={text(13, 500, t.label, { margin: 0, padding: phone ? `12px ${PAD}px 2px` : `8px ${PAD}px 4px` })}>{day}</h2>;
+  /* 29f: the stills carry no day heads on a phone; the groups keep their heading for screen readers. */
+  if (phone) return <h2 className="sr-only">{day}</h2>;
+  return <h2 style={text(13, 500, t.label, { margin: 0, padding: `8px ${PAD}px 4px` })}>{day}</h2>;
 }
 
-function RowSkeleton() {
+function RowSkeleton({ phone = false }: { phone?: boolean }) {
   return (
     <div style={rowStyle}>
-      <Skeleton width={40} height={40} radius="50%" />
+      <Skeleton width={40} height={40} radius={phone ? 9 : "50%"} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <Skeleton width="66%" height={14} />
         <Skeleton width={36} height={12} />
@@ -267,6 +280,22 @@ function RowSkeleton() {
 
 /** Today's three rows and yesterday's four while the list loads. */
 const LOADING_DAYS = [3, 4] as const;
+
+/** 29f: nothing yet, on a phone: the water ripple and the line, centred in the space between the pills and the dock. */
+function PhoneEmpty({ line }: { line: string }) {
+  return (
+    <div
+      data-ui="empty-state"
+      data-testid="activity-empty"
+      style={{ minHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${PHONE_TOPBAR + PHONE_PILL_ROW + PHONE_DOCK}px)`, boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: `0 ${PAD}px` }}
+    >
+      <span aria-hidden="true" style={{ position: "relative", width: 120, height: 120, display: "block", borderRadius: "50%", overflow: "hidden" }}>
+        <WaterField />
+      </span>
+      <p style={text(15, 400, t.text2, { margin: 0, textAlign: "center" })}>{line}</p>
+    </div>
+  );
+}
 
 function NoneOfThese({ hasMore }: { hasMore: boolean }) {
   return <p style={text(15, 400, t.text2, { margin: 0, padding: `0 ${PAD}px` })}>None of these among the latest.{hasMore ? " Show more to look further back." : ""}</p>;
@@ -284,18 +313,20 @@ function MoreButton({ list, phone }: { list: ActivityListProps; phone: boolean }
 }
 
 function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: ActivityListProps; live: boolean; chosen: ReadonlySet<ActivityKind>; now: number; phone: boolean; onOpen: (row: ActivityRow) => void }) {
-  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16, minWidth: 0 };
+  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: phone ? 0 : 16, minWidth: 0 };
   const day: CSSProperties = { display: "flex", flexDirection: "column" };
 
   const skeleton = (
     <LoadingRegion what="your activity" data-testid="activity-loading" style={column}>
       {(phone ? [3] : LOADING_DAYS).map((rows, index) => (
         <div key={index} style={day}>
-          <div style={{ padding: `8px ${PAD}px 4px` }}>
-            <Skeleton width={72} height={12} />
-          </div>
+          {phone ? null : (
+            <div style={{ padding: `8px ${PAD}px 4px` }}>
+              <Skeleton width={72} height={12} />
+            </div>
+          )}
           {Array.from({ length: rows }, (_, i) => (
-            <RowSkeleton key={i} />
+            <RowSkeleton key={i} phone={phone} />
           ))}
         </div>
       ))}
@@ -303,16 +334,19 @@ function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: Activi
   );
 
   const groups = filterGroups(list.groups, chosen);
+  const emptyLine = "All caught up.";
   return (
     <PageState
       read={list.read ?? (list.status === "error" ? readOf("error", undefined, list.onRetry, list.error) : list.status === "loading" ? readOf("loading") : readOf("ready", list.groups))}
       thing="your activity"
       region="Your activity"
       skeleton={skeleton}
-      empty={{ when: () => list.groups.length === 0 && live, line: "All caught up.", testId: "activity-empty" }}
+      empty={phone ? undefined : { when: () => list.groups.length === 0 && live, line: emptyLine, testId: "activity-empty" }}
     >
       {() =>
-        list.groups.length === 0 ? null : (
+        list.groups.length === 0 ? (
+          phone && live ? <PhoneEmpty line={emptyLine} /> : null
+        ) : (
           <div data-testid="activity-list" style={column}>
             {groups.map((group) => (
               <section key={group.day} data-testid="activity-day" style={day}>
@@ -337,7 +371,15 @@ function ActivityList({ list, chosen, now, phone, onOpen, live }: { list: Activi
 
 /* ── the head ── */
 
-function LiveState({ live }: { live: boolean }) {
+function LiveState({ live, phone = false }: { live: boolean; phone?: boolean }) {
+  /* 29f: no "live" label with its dot on a phone. Inserts still arrive as rows; the state is said to screen readers only. */
+  if (phone) {
+    return (
+      <span className="sr-only" data-testid="activity-live" role="status">
+        {live ? "Live" : "Reconnecting"}
+      </span>
+    );
+  }
   return (
     <span data-testid="activity-live" style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: live ? t.brandAccent : t.warn, whiteSpace: "nowrap" }}>
       {live ? "● live" : "Reconnecting"}
@@ -346,26 +388,35 @@ function LiveState({ live }: { live: boolean }) {
 }
 
 function Head({ unread, live, onMarkAllRead, phone }: { unread: number | null; live: boolean; onMarkAllRead: () => void; phone: boolean }) {
+  const unreadWords =
+    unread === null ? null : (
+      /* The unread count, for screen readers: the dots on the rows say it to the eye. */
+      <span className="sr-only" data-testid="activity-unread">
+        {unreadLine(unread, live)}
+      </span>
+    );
+  if (phone) {
+    /* Prompt 19 and 29f: the top bar names the page and carries "Mark all read", so the heading is for screen readers only and
+       the head draws no box: the first row stands right under the pills. */
+    return (
+      <>
+        <h1 className="sr-only" style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
+        <LiveState live={live} phone />
+        {unreadWords}
+      </>
+    );
+  }
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? `4px ${PAD}px 0` : `0 ${PAD}px 8px`, minHeight: phone ? 24 : 40, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `0 ${PAD}px 8px`, minHeight: 40, flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-        {/* Prompt 19: on a phone the top bar names the page, so the heading is for screen readers only. */}
-        <h1 className={phone ? "sr-only" : undefined} style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
+        <h1 style={text(20, 600, t.text, { margin: 0 })}>Activity</h1>
         <LiveState live={live} />
-        {/* The unread count, for screen readers: the bars on the rows say it to the eye. */}
-        {unread === null ? null : (
-          <span className="sr-only" data-testid="activity-unread">
-            {unreadLine(unread, live)}
-          </span>
-        )}
+        {unreadWords}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {/* On a phone "Mark all read" is the top bar's right slot (the page registers it). */}
-        {phone ? null : (
-          <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
-            Mark all read
-          </Button>
-        )}
+        <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+          Mark all read
+        </Button>
       </div>
     </div>
   );

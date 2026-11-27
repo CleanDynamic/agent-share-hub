@@ -20,6 +20,10 @@ export interface PhoneBarSpec {
   backLabel?: string;
   /** Where Back goes when the page was opened directly and there is no history to step back through. */
   backTo?: string;
+  /** 29f: a second icon that stands before the right slot (Builds: More before Search; the editor: More before "Skip to build"). */
+  extra?: "more";
+  /** 29f: the beaver's width in the bar where it is not the default 56 (the editor draws it at 44). */
+  logoWidth?: number;
 }
 
 const logo: BarCentre = { kind: "logo" };
@@ -27,13 +31,15 @@ const none: BarCentre = { kind: "none" };
 const title = (text: string): BarCentre => ({ kind: "title", text });
 
 /** The pages that show Search at the right: the three primary sections. */
-const PRIMARY_ROUTES = new Set<string>([SITE_NAV.home, SITE_NAV.gallery, "/gallery", SITE_NAV.openbuilds]);
+const PRIMARY_ROUTES = new Set<string>([SITE_NAV.home, SITE_NAV.openbuilds]);
 
 /** The route's bar. `pathname` has no query. A trailing slash is ignored. */
 export function phoneBarFor(pathname: string): PhoneBarSpec {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
 
   if (PRIMARY_ROUTES.has(path)) return { left: "account", centre: logo, right: "search" };
+  /* 29f: Builds names itself in the bar; its views and table controls sit in More, before Search. */
+  if (path === SITE_NAV.gallery || path === "/gallery") return { left: "account", centre: title("Builds"), right: "search", extra: "more" };
   if (path === SITE_NAV.activity) return { left: "account", centre: title("Activity"), right: "markAll" };
 
   // Sign in, consent, onboarding.
@@ -42,7 +48,8 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
 
   // Editor, Start a build, Rebuild.
   if (path.startsWith("/rebuild/")) return { left: "back", centre: logo, right: "more", backTo: SITE_NAV.gallery };
-  if (path === SITE_NAV.create || path.startsWith("/compose")) return { left: "back", centre: logo, right: "more", backLabel: "Back to Drafts", backTo: SITE_NAV.drafts };
+  /* 29f: the editor's bar is back, the beaver at 44 and "Skip to build" (the page registers it); More stands before it. */
+  if (path === SITE_NAV.create || path.startsWith("/compose")) return { left: "back", centre: logo, right: "skip", extra: "more", logoWidth: 44, backLabel: "Back to Drafts", backTo: SITE_NAV.drafts };
 
   // A build, its Lineage and Compare.
   if (path.startsWith("/b2/")) {

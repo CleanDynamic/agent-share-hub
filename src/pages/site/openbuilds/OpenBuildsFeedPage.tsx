@@ -40,7 +40,7 @@ export default function OpenBuildsFeedPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const viewerId = user?.id ?? null;
   const address = readFeedAddress(params, viewerId !== null);
   const now = Date.now();
@@ -133,6 +133,7 @@ export default function OpenBuildsFeedPage() {
             space={address.space}
             onShow={(next) => move(next)}
             onPost={onPost}
+            viewer={user ? { id: user.id, name: profile?.display_name || profile?.username || "", avatarUrl: profile?.avatar_url } : null}
             onMakeSpace={onMakeSpace}
             signInTo={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
             pageFailed={pageFailed}

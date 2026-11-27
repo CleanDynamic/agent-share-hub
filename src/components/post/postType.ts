@@ -57,7 +57,8 @@ export function postType(phone: boolean): PostTypeScale {
     title: { ...text(titleSize, 500, 1.1, "-0.03em"), textWrap: "balance" },
     heading: { ...text(headingSize, 500, 1.2, "-0.02em"), textWrap: "balance" },
     body: { ...text(16, 400, 1.55, "0"), textWrap: "pretty" },
-    composer: { ...text(phone ? 18 : 20, 400, 1.25, "0"), textWrap: "pretty" },
+    /* 29f: the phone composer is 17/22 (the row in `12-editor.jpg`); desktop keeps 20. */
+    composer: { ...text(phone ? 17 : 20, 400, phone ? 22 / 17 : 1.25, "0"), textWrap: "pretty" },
     small: { ...text(13, 400, 1.5, "0"), color: t.text2, textWrap: "pretty" },
     code: {
       fontFamily: DM_MONO,
@@ -78,7 +79,7 @@ export function postType(phone: boolean): PostTypeScale {
       heading: headingSize * 1.2,
       body: 16 * 1.55,
       small: 13 * 1.5,
-      composer: (phone ? 18 : 20) * 1.25,
+      composer: phone ? 22 : 20 * 1.25,
     },
   };
 }

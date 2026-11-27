@@ -87,7 +87,7 @@ const selection = (size = 0) => ({ items: size ? [{ kind: "tile", id: "s5" }] : 
 
 function Bar() {
   const bar = usePageBar();
-  return <ul data-testid="bar">{(bar.more ?? []).map((row) => <li key={row.label} data-disabled={row.disabled ? "true" : undefined}>{row.label}</li>)}{bar.bare ? <li>bare</li> : null}</ul>;
+  return <ul data-testid="bar" data-skip={bar.skip ? bar.skipLabel : undefined}>{(bar.more ?? []).map((row) => <li key={row.label} data-disabled={row.disabled ? "true" : undefined}>{row.label}</li>)}{bar.bare ? <li>bare</li> : null}</ul>;
 }
 
 function draw(over: Partial<PhoneEditorProps> = {}, ctx: { history?: BuildHistoryApi; actions?: BuildActions; selection?: BuildSelection } = {}) {
@@ -216,3 +216,32 @@ describe("the editor on a phone", () => {
     expect(await screen.findByRole("dialog", { name: "Details" })).toBeTruthy();
   });
 });
+
+/* 29f, `12-editor.jpg`. */
+describe("the editor on a phone (29f)", () => {
+  it("registers \"Skip to build\" for the bar's right slot", () => {
+    draw();
+    expect(screen.getByTestId("bar").getAttribute("data-skip")).toBe("Skip to build");
+  });
+
+  it("keeps View as a More row (after Redo) that opens its sheet, and draws no View button beside the pills", () => {
+    draw({ viewSheet: ({ open }) => (open ? <div role="dialog" aria-label="View sheet">rows</div> : null) });
+    const rows = within(screen.getByTestId("bar")).getAllByRole("listitem").map((row) => row.textContent);
+    expect(rows.slice(0, 3)).toEqual(["Nothing to undo", "Nothing to redo", "View"]);
+    expect(screen.queryByTestId("sandbox-view")).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "View sheet" })).toBeNull();
+  });
+
+  it("pins its footer to the bottom on the Page shade, 50 and the inset, the ready line at the left and a 44 tall Mint Publish", () => {
+    draw();
+    const footer = screen.getByTestId("phone-editor-footer");
+    expect(footer.style.position).toBe("fixed");
+    expect(footer.style.bottom).toBe("0px");
+    expect(footer.style.minHeight).toContain("50px");
+    const publish = within(footer).getByRole("button", { name: "Publish" });
+    expect([publish.style.height, publish.style.borderRadius, publish.style.fontSize, publish.style.fontWeight]).toEqual(["44px", "22px", "16px", "650"]);
+    expect(publish.getAttribute("data-variant")).toBe("main");
+    expect(footer.querySelector("svg")).toBeTruthy();
+  });
+});
+

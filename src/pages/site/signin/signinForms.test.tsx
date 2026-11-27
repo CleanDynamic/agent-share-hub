@@ -124,8 +124,8 @@ describe("AuthField", () => {
   it("is 48 tall on a phone", () => {
     setViewport("phone");
     const { container } = render(field());
-    // UI-P52 density pass: 48 → 39 by the table, held at the 44px touch floor.
-    expect(container.querySelector("label > span:last-child")!.getAttribute("style")).toContain("height: 44px");
+    // 29f: 48 tall on a phone, on Card with no edge until focused.
+    expect(container.querySelector("label > span:last-child")!.getAttribute("style")).toContain("height: 48px");
   });
 
   it("sets the input in 14px Figtree on --text, and leaves the 16px below 768px to the stylesheet's own rule", () => {

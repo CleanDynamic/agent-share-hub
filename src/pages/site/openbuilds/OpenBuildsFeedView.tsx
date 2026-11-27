@@ -23,6 +23,8 @@ import { SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { PhonePills } from "@/components/phone/PhonePills";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { Avatar } from "@/components/brand/Avatar";
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { PANEL_GUTTER, PHONE_TOPBAR } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
@@ -73,6 +75,8 @@ export interface OpenBuildsFeedViewProps {
   space?: string | null;
   onShow?: (next: { open: boolean; space: string | null }) => void;
   onPost: () => void;
+  /** 29f: the reader, for the post box's avatar on a phone. Absent when signed out. */
+  viewer?: FeedViewer | null;
   onMakeSpace: () => void;
   /** Where Sign in goes and comes back to. */
   signInTo: string;
@@ -248,6 +252,38 @@ export function FeedIntro({ post }: { post: ReactNode }) {
   );
 }
 
+export interface FeedViewer {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
+/** 29f: the post box on a phone is one 44 row under the header: the reader's avatar at 32, then "Post anything" in 17/22 Text 3.
+    Tapping it opens the post window (the same one the round button's New post opens); signed out, it asks to sign in. */
+function PhonePostBox({ onPost, viewer }: { onPost: () => void; viewer?: FeedViewer | null }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      data-testid="phone-post-box"
+      aria-label="Post anything"
+      aria-haspopup="dialog"
+      onClick={onPost}
+      {...handlers}
+      style={{ boxSizing: "border-box", width: "100%", minHeight: 44, margin: "6px 0", padding: "0 16px", display: "flex", alignItems: "center", gap: 12, border: 0, background: "transparent", textAlign: "left", cursor: "pointer", color: t.label, fontFamily: FIGTREE, fontSize: 17, lineHeight: "22px", fontWeight: 400, ...ring(state.focusVisible) }}
+    >
+      {viewer ? (
+        <Avatar size={32} userId={viewer.id} name={viewer.name || "You"} src={viewer.avatarUrl} phone />
+      ) : (
+        <span aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 8, background: t.control, color: t.text2, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <MobileIcon name="account" size={16} />
+        </span>
+      )}
+      <span>Post anything</span>
+    </button>
+  );
+}
+
 /** Prompt 20 Part B: the feed on a phone: the tabs, the reader's spaces as pills (Make a space last), the topics, and the round post button. "Most new posts this week" is not here. */
 function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
   useColumnPanels(true);
@@ -281,6 +317,7 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
         <PageFailed reads={view.pageFailed} region="OpenBuilds" style={{ padding: 16 }} />
       ) : (
         <>
+          <PhonePostBox onPost={view.onPost} viewer={view.viewer} />
           <PhonePills pills={pills} value={view.space ? `space:${view.space}` : view.open ? "open" : "all"} onChange={pick} label="Show" />
           <Posts view={view} phone />
         </>

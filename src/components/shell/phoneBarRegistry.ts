@@ -31,8 +31,9 @@ export interface PageBar {
   settings?: () => void;
   /** Activity's write. `disabled` while nothing is unread. */
   markAll?: { run: () => void; disabled: boolean };
-  /** Onboarding's Skip. */
+  /** Onboarding's Skip; the editor's "Skip to build" (its words in `skipLabel`). */
   skip?: () => void;
+  skipLabel?: string;
   /** Onboarding's place: the bar draws "1 of 3" in mono and a segment each, the done ones Mint. */
   progress?: { step: number; of: number };
   /** Prompt 23: the More sheet holds only the page's rows, in its order (the editor has no Copy link or Share). */
@@ -58,7 +59,7 @@ export function useRegisterPageBar(bar: PageBar | null): void {
   const latest = useRef(bar);
   latest.current = bar;
   const key = bar
-    ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, bar.more?.map((item) => [item.label, item.to, item.tone, item.disabled, !!item.onSelect, item.icon]), !!bar.settings, bar.markAll?.disabled, !!bar.markAll, !!bar.skip, !!bar.bare, bar.progress?.step, bar.progress?.of])
+    ? JSON.stringify([bar.title, bar.backLabel, bar.backTo, bar.more?.map((item) => [item.label, item.to, item.tone, item.disabled, !!item.onSelect, item.icon]), !!bar.settings, bar.markAll?.disabled, !!bar.markAll, !!bar.skip, bar.skipLabel, !!bar.bare, bar.progress?.step, bar.progress?.of])
     : "";
   useEffect(() => {
     if (!latest.current) return;
@@ -70,6 +71,7 @@ export function useRegisterPageBar(bar: PageBar | null): void {
       settings: latest.current.settings ? () => latest.current?.settings?.() : undefined,
       markAll: latest.current.markAll ? { disabled: latest.current.markAll.disabled, run: () => latest.current?.markAll?.run() } : undefined,
       skip: latest.current.skip ? () => latest.current?.skip?.() : undefined,
+      skipLabel: latest.current.skipLabel,
       progress: latest.current.progress,
       bare: latest.current.bare,
     };

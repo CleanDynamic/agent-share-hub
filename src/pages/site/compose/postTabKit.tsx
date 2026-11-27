@@ -1,6 +1,6 @@
 // PT-05 — shared by the Post tab's suites: small documents, a fake thread, and a mounted tab.
 
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { Editor } from "@tiptap/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
@@ -48,6 +48,13 @@ export function mountPostTab(initial: ThreadDoc, { phone = false, ...over }: Par
   const dom = document.querySelector('[contenteditable="true"]') as (HTMLElement & { editor: Editor }) | null;
   if (!dom) throw new Error("no editor");
   return { thread, editor: dom.editor, dom, view };
+}
+
+/** 29f: on a phone the composer's tools are drawn only once the editor has focus. Gives it focus, as a tap on the row does. */
+export function focusEditor(editor: Editor): void {
+  act(() => {
+    (editor.view.dom as HTMLElement).focus();
+  });
 }
 
 /** The ProseMirror position at the start of the top-level block at `index`. */

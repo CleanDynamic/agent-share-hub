@@ -7,8 +7,12 @@ const none = { kind: "none" };
 const title = (text: string) => ({ kind: "title", text });
 
 describe("phoneBarFor (prompt 19's table)", () => {
-  it.each(["/", "/builds", "/gallery", "/openbuilds"])("%s: account, the logo, Search", (path) => {
+  it.each(["/", "/openbuilds"])("%s: account, the logo, Search", (path) => {
     expect(phoneBarFor(path)).toEqual({ left: "account", centre: logo, right: "search" });
+  });
+
+  it.each(["/builds", "/gallery"])("%s: account, Builds, More then Search (29f: the views and table controls are in More)", (path) => {
+    expect(phoneBarFor(path)).toEqual({ left: "account", centre: title("Builds"), right: "search", extra: "more" });
   });
 
   it("Activity: account, its title, Mark all read", () => {
@@ -58,9 +62,9 @@ describe("phoneBarFor (prompt 19's table)", () => {
     expect(phoneBarFor("/profile")).toEqual({ left: "back", centre: none, right: "more" });
   });
 
-  it("the editor, Start a build and Rebuild: back, the logo, More", () => {
-    expect(phoneBarFor("/compose/abc")).toEqual({ left: "back", centre: logo, right: "more", backLabel: "Back to Drafts", backTo: "/drafts" });
-    expect(phoneBarFor("/compose/new")).toMatchObject({ left: "back", centre: logo, right: "more" });
+  it("the editor and Start a build: back, the beaver at 44, More, then \"Skip to build\" (29f); Rebuild: back, the logo, More", () => {
+    expect(phoneBarFor("/compose/abc")).toEqual({ left: "back", centre: logo, right: "skip", extra: "more", logoWidth: 44, backLabel: "Back to Drafts", backTo: "/drafts" });
+    expect(phoneBarFor("/compose/new")).toMatchObject({ left: "back", centre: logo, right: "skip", extra: "more" });
     expect(phoneBarFor("/rebuild/invoice-triage")).toEqual({ left: "back", centre: logo, right: "more", backTo: "/builds" });
   });
 
@@ -70,8 +74,9 @@ describe("phoneBarFor (prompt 19's table)", () => {
     expect(phoneBarFor("/auth/callback")).toEqual({ left: "close", centre: none, right: "none" });
   });
 
-  it("never repeats the section's name: the three primary sections show the logo, not a title", () => {
-    for (const path of ["/", "/builds", "/openbuilds"]) expect(phoneBarFor(path).centre).toEqual(logo);
+  it("Home and OpenBuilds show the logo; Builds names itself (29f, `07-builds.jpg`)", () => {
+    for (const path of ["/", "/openbuilds"]) expect(phoneBarFor(path).centre).toEqual(logo);
+    expect(phoneBarFor("/builds").centre).toEqual(title("Builds"));
   });
 
   it("ignores a trailing slash", () => {

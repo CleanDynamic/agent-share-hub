@@ -101,7 +101,7 @@ export interface PostDraft {
 const NO_DRAFT: PostDraft = { build: null, title: "", maker: null };
 
 /** The avatar beside each post, and the gap between it and the words. */
-export const RAIL_AVATAR = { desktop: 40, phone: 36 } as const;
+export const RAIL_AVATAR = { desktop: 40, phone: 32 } as const;
 export const RAIL_GAP = { desktop: 12, phone: 12 } as const;
 /** CA-07: a post's first line starts this far below the top of its avatar, as X sets it. */
 export const FIRST_LINE_DROP = 8;
@@ -206,7 +206,7 @@ function ThreadRail({ editor, maker, size, focused, onTops }: { editor: Editor |
       })}
       {tops.map((top, index) => (
         <span key={`avatar-${index}`} data-rail-avatar={index} style={{ position: "absolute", left: 0, top, ...fade(index) }}>
-          <Avatar size={size} userId={maker?.id ?? ""} name={name} src={maker?.avatar ?? null} />
+          <Avatar size={size} userId={maker?.id ?? ""} name={name} src={maker?.avatar ?? null} phone={size === RAIL_AVATAR.phone} />
         </span>
       ))}
     </div>

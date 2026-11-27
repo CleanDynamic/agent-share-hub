@@ -52,7 +52,7 @@ function rightAction(
     case "messageSettings":
       return { icon: "gear", label: "Messages settings", to: SITE_NAV.settings };
     case "skip":
-      return page.skip ? { text: "Skip", label: "Skip", onClick: page.skip } : null;
+      return page.skip ? { text: page.skipLabel ?? "Skip", label: page.skipLabel ?? "Skip", onClick: page.skip } : null;
     default:
       return null;
   }
@@ -109,6 +109,8 @@ function MobileHeaderContainer() {
         centre={centre}
         titleAs="p"
         right={rightAction(spec.right, page, () => setSearchOpen(true), () => setMoreOpen(true))}
+        extra={spec.extra === "more" ? rightAction("more", page, () => setSearchOpen(true), () => setMoreOpen(true)) : null}
+        logoWidth={spec.logoWidth}
         viewer={viewer}
         unread={unread > 0}
         theme={resolved}

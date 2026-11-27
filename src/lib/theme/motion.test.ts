@@ -326,6 +326,9 @@ describe("no stylesheet declares its own duration", () => {
         .filter(([, line]) => /transition(?:-duration)?\s*:/.test(line))
         .filter(([, line]) => /[0-9]/.test(line))
         .filter(([, line]) => !line.includes("0.01ms") && !line.includes("0s"))
+        /* 29f: the autofill rule's `transition: background-color 9999s` is not an animation: it holds the browser's own autofill
+           fill off for good, so a field stays on Card. The prompt gives it as written. */
+        .filter(([, line]) => !line.includes("background-color 9999s"))
         .filter(([, line]) => !line.includes("var(--motion-"))
         .map(([number, line]) => `${file.rel}:${number} — ${line.trim().slice(0, 100)}`),
     );
@@ -357,6 +360,8 @@ describe("every hover effect is pointer-gated", () => {
     for (const file of SCANNED.filter((candidate) => candidate.rel.endsWith(".css"))) {
       for (const [index, line] of file.code.split("\n").entries()) {
         if (!line.includes(":hover")) continue;
+        /* 29f: `:-webkit-autofill:hover` keeps an autofilled field on Card while the pointer is over it; it is not a hover effect. */
+        if (line.includes(":-webkit-autofill:hover")) continue;
 
         // The block this line sits in, back to the nearest @media.
         const before = file.code.split("\n").slice(0, index).join("\n");

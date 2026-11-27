@@ -12,6 +12,8 @@
 import { useRef, useState, type DragEvent } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { hoverFill } from "@/lib/theme/refinedControl";
@@ -33,7 +35,13 @@ import {
   EMPTY_NAMES,
   EMPTY_ROW,
   EMPTY_RULE,
+  PHONE_EMPTY_BOX,
+  PHONE_EMPTY_DETAIL,
+  PHONE_EMPTY_HEADING,
+  PHONE_EMPTY_NAME,
+  PHONE_EMPTY_ROW,
   emptyDrop,
+  phoneEmptyDrop,
 } from "./emptyBuildRecipes";
 import { size } from "@/lib/theme/space";
 
@@ -49,8 +57,22 @@ export interface EmptyBuildProps {
   onPick: () => void;
 }
 
-function Row({ name, detail, onClick, disabled, testId }: { name: string; detail?: string; onClick?: () => void; disabled?: boolean; testId: string }) {
+function Row({ name, detail, onClick, disabled, testId, phone = false, icon }: { name: string; detail?: string; onClick?: () => void; disabled?: boolean; testId: string; phone?: boolean; icon?: MobileIconName }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  if (phone) {
+    /* 29f: the row's own icon at 20 in Text 2 in place of the grey square, and no chevron. */
+    return (
+      <button type="button" data-testid={testId} disabled={disabled} onClick={onClick} {...handlers} style={{ ...PHONE_EMPTY_ROW, ...(disabled ? { cursor: "default" } : null), ...ring(state.focusVisible) }}>
+        <span aria-hidden="true" style={{ display: "inline-flex", width: 24, justifyContent: "center", flexShrink: 0, color: t.text2 }}>
+          {icon ? <MobileIcon name={icon} size={20} /> : null}
+        </span>
+        <span style={EMPTY_NAMES}>
+          <span style={PHONE_EMPTY_NAME}>{name}</span>
+          {detail ? <span style={PHONE_EMPTY_DETAIL}>{detail}</span> : null}
+        </span>
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -72,13 +94,14 @@ function Row({ name, detail, onClick, disabled, testId }: { name: string; detail
   );
 }
 
-function DropZone({ fine, onDropFiles, onPick }: Pick<EmptyBuildProps, "fine" | "onDropFiles" | "onPick">) {
+function DropZone({ fine, onDropFiles, onPick, phone = false }: Pick<EmptyBuildProps, "fine" | "onDropFiles" | "onPick"> & { phone?: boolean }) {
+  const drop = phone ? phoneEmptyDrop : emptyDrop;
   const [over, setOver] = useState(false);
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
   if (!fine) {
     return (
-      <button type="button" data-testid="empty-build-drop" onClick={onPick} {...handlers} style={{ ...emptyDrop(false), cursor: "pointer", ...ring(state.focusVisible) }}>
+      <button type="button" data-testid="empty-build-drop" onClick={onPick} {...handlers} style={{ ...drop(false), cursor: "pointer", ...ring(state.focusVisible) }}>
         {EMPTY_BUILD_COPY.drop}
       </button>
     );
@@ -113,7 +136,7 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<EmptyBuildProps, "fine" | 
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) onDropFiles(files);
       }}
-      style={emptyDrop(over)}
+      style={drop(over)}
     >
       {EMPTY_BUILD_COPY.drop}
     </div>
@@ -128,18 +151,19 @@ export function EmptyBuild({ phone, fine, available, addSession, onDropFiles, on
   return (
     <MotionBoundary motion={motion} slide={NO_SLIDE}>
       <div ref={root} data-testid="empty-build" style={EMPTY_COLUMN}>
-        <h2 style={EMPTY_HEADING}>{EMPTY_BUILD_COPY.heading}</h2>
-        <div style={EMPTY_BOX}>
+        <h2 style={phone ? PHONE_EMPTY_HEADING : EMPTY_HEADING}>{EMPTY_BUILD_COPY.heading}</h2>
+        <div style={phone ? PHONE_EMPTY_BOX : EMPTY_BOX}>
           <ChatsPicker props={{ ...addSession, phone }} open={picking} onOpenChange={setPicking}>
-            <Row testId="empty-build-chats" name={EMPTY_BUILD_COPY.fromChats} detail={EMPTY_BUILD_COPY.availableOf(available)} disabled={addSession.adding} onClick={() => setPicking(!picking)} />
+            <Row phone={phone} icon="import" testId="empty-build-chats" name={EMPTY_BUILD_COPY.fromChats} detail={EMPTY_BUILD_COPY.availableOf(available)} disabled={addSession.adding} onClick={() => setPicking(!picking)} />
           </ChatsPicker>
-          <div aria-hidden="true" style={EMPTY_RULE} {...{ [SLIDE_ATTR]: "empty:rule" }} />
+          {/* 29f: no rule between the rows on a phone; the spacing separates them. */}
+          {phone ? null : <div aria-hidden="true" style={EMPTY_RULE} {...{ [SLIDE_ATTR]: "empty:rule" }} />}
           <div {...{ [SLIDE_ATTR]: "empty:new" }}>
-            <Row testId="empty-build-new" name={EMPTY_BUILD_COPY.startNew} disabled={addSession.adding} onClick={() => addSession.onStartNew()} />
+            <Row phone={phone} icon="session" testId="empty-build-new" name={EMPTY_BUILD_COPY.startNew} disabled={addSession.adding} onClick={() => addSession.onStartNew()} />
           </div>
         </div>
         <div {...{ [SLIDE_ATTR]: "empty:drop" }}>
-          <DropZone fine={fine} onDropFiles={onDropFiles} onPick={onPick} />
+          <DropZone phone={phone} fine={fine} onDropFiles={onDropFiles} onPick={onPick} />
         </div>
       </div>
     </MotionBoundary>

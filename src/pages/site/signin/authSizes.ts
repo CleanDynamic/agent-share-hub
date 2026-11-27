@@ -19,7 +19,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 /* Synth 13: one-line fields 40 tall; the main button and the providers 40 tall, radius 20, on every width. */
 const DESKTOP = { phone: false, field: 40, provider: 40, providerFont: 15, primary: 40, ruleGap: 8, ruleMargin: "0", gap: 14 } as const;
 /* Mobile prompt 27 Part B: on a phone the card is 10 between its parts, the providers and the main button 48. */
-const PHONE = { phone: true, field: 44, provider: 48, providerFont: 15, primary: 48, ruleGap: 8, ruleMargin: "0", gap: 10 } as const;
+const PHONE = { phone: true, field: 48, provider: 48, providerFont: 15, primary: 48, ruleGap: 8, ruleMargin: "0", gap: 10 } as const;
 
 /** The sizes for the viewport the page is being drawn in. */
 export function useAuthSizes() {

@@ -32,6 +32,7 @@ import { SELECTION_COPY } from "@/lib/build/buildSelection";
 import { CLEAR_COPY } from "@/lib/build/componentMenus";
 import { readyLine, type ChecklistItem } from "@/lib/build/publishChecklist";
 import { useRegisterPageBar, type MoreItem } from "@/components/shell/phoneBarRegistry";
+import { focusBuild } from "../SkipToBuild";
 import { ring } from "@/lib/theme/controls";
 import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -58,8 +59,8 @@ import { usePhoneSwipe } from "./usePhoneSwipe";
 import { KIND_ICON, notReadyRows, phoneCountsLine, PHONE_EDITOR_COPY, type PhoneMapModel } from "./phoneEditorModel";
 import type { StepKind } from "@/lib/build/graph";
 
-/** The footer: 12 + a 48 button + 12, plus the inset. */
-export const PHONE_EDITOR_FOOTER = 72;
+/** The footer (29f): 50 of content, with the 44 Publish centred in it, plus the inset (84 on the boards, where the inset is 34). */
+export const PHONE_EDITOR_FOOTER = 50;
 const FOOTER_BOTTOM = `calc(${PHONE_EDITOR_FOOTER}px + env(safe-area-inset-bottom))`;
 
 /** What only the phone needs from the page, beyond the view's own props. The page builds it on a phone and nowhere else. */
@@ -114,8 +115,9 @@ export interface PhoneEditorProps {
   emptyBuild: ReactNode | null;
   post: ReactNode;
   sessionList: ReactNode;
-  /** The View menu (Session list, part labels, Collapse all): kept on a phone, at the right of the views. */
-  viewMenu?: ReactNode;
+  /** 29f: the View sheet (Session list, part labels, Collapse all), drawn closed until the bar's More sheet has its "View" row
+      chosen. The page hands the sheet a way to be held open from here. Absent: there is no View row. */
+  viewSheet?: (sheet: { open: boolean; onOpenChange: (open: boolean) => void }) => ReactNode;
   detailsBody: ReactNode;
   onEditSelected?: () => void;
   selectedKey: string | null;
@@ -239,11 +241,13 @@ const FOOTER: CSSProperties = {
   zIndex: 20,
   boxSizing: "border-box",
   minHeight: `calc(${PHONE_EDITOR_FOOTER}px + env(safe-area-inset-bottom))`,
-  padding: `12px ${PHONE_MARGIN}px calc(12px + env(safe-area-inset-bottom))`,
+  padding: `0 ${PHONE_MARGIN}px env(safe-area-inset-bottom)`,
   display: "flex",
   alignItems: "center",
   gap: 12,
-  background: t.surface,
+  /* The Page shade, with the dock's own structural line along its top: the footer stands where the dock would. */
+  background: t.bg,
+  boxShadow: `inset 0 1px 0 ${t.control}`,
 };
 
 function ChooseButton({ icon, label, onClick, danger = false, disabled = false, testId }: { icon: MobileIconName; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; testId: string }) {
@@ -301,6 +305,7 @@ export function PhoneEditor(props: PhoneEditorProps) {
   const [moveOpen, setMoveOpen] = useState(false);
   const [asking, setAsking] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [stillOpenAsking, setStillOpenAsking] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -354,6 +359,7 @@ export function PhoneEditor(props: PhoneEditorProps) {
   const more: MoreItem[] = [
     { icon: "undo", label: history?.canUndo ? HISTORY_COPY.undoStep(history.undoSentence ?? "") : HISTORY_COPY.nothingToUndo, disabled: !history?.canUndo, onSelect: () => void history?.undo() },
     { icon: "redo", label: history?.canRedo ? HISTORY_COPY.redoStep(history.redoSentence ?? "") : HISTORY_COPY.nothingToRedo, disabled: !history?.canRedo, onSelect: () => void history?.redo() },
+    ...(props.viewSheet ? [{ icon: "listv" as const, label: "View", onSelect: () => setViewOpen(true) }] : []),
     { icon: "search", label: PHONE_EDITOR_COPY.find, disabled: !find || lens !== "list", onSelect: () => find?.show() },
     { icon: "preview", label: PHONE_EDITOR_COPY.preview, disabled: !props.previewTo, onSelect: () => setPreviewOpen(true) },
     ...(extras ? [{ icon: "colour" as const, label: "Colours", onSelect: extras.onColours }] : []),
@@ -362,7 +368,8 @@ export function PhoneEditor(props: PhoneEditorProps) {
     { icon: "open", label: "Classification", onSelect: props.onCard },
     ...(actions ? [{ icon: "trash" as const, label: CLEAR_COPY.menu, tone: "danger" as const, disabled: empty, onSelect: actions.clear.ask }] : []),
   ];
-  useRegisterPageBar({ more, bare: true });
+  /* 29f: the bar reads Back, the beaver, More and "Skip to build" (a text button at the right, in place of the old outlined chip). */
+  useRegisterPageBar({ more, bare: true, skip: () => void focusBuild(), skipLabel: "Skip to build" });
 
   const ready = props.checklist && !props.published ? readyLine(props.checklist) : null;
   const meta = (
@@ -415,7 +422,7 @@ export function PhoneEditor(props: PhoneEditorProps) {
       ) : (
         <>
           <ReadyButton words={ready} onClick={() => setReadyOpen(true)} />
-          <BigButton main disabled={props.publishing} onClick={() => void pressPublish()} style={{ flexShrink: 0, gap: 8 }}>
+          <BigButton main disabled={props.publishing} onClick={() => void pressPublish()} style={{ flexShrink: 0, gap: 8, height: 44, borderRadius: 22, fontSize: 16, fontWeight: 650 }}>
             <MobileIcon name="publish" size={18} />
             {props.publishing ? "Publishing…" : "Publish"}
           </BigButton>
@@ -433,7 +440,6 @@ export function PhoneEditor(props: PhoneEditorProps) {
       {/* The build's head on a phone: the views. The page's tests read it as the sign the editor has loaded. */}
       <div data-testid="sandbox-build-head-row" style={{ display: "flex", alignItems: "center", minWidth: 0 }}>
         <div style={{ flex: "1 1 auto", minWidth: 0 }}>{pills}</div>
-        {props.viewMenu ? <div style={{ flexShrink: 0, paddingRight: PHONE_MARGIN }}>{props.viewMenu}</div> : null}
       </div>
       {props.banner ? <div style={{ padding: `0 ${PHONE_MARGIN}px 8px` }}>{props.banner}</div> : null}
       {props.strips ? <div style={{ padding: `0 ${PHONE_MARGIN}px 8px` }}>{props.strips}</div> : null}
@@ -455,6 +461,7 @@ export function PhoneEditor(props: PhoneEditorProps) {
       {props.addMenu}
       {footer}
 
+      {props.viewSheet ? props.viewSheet({ open: viewOpen, onOpenChange: setViewOpen }) : null}
       <PhoneSources open={sourcesOpen} onOpenChange={setSourcesOpen} model={extras?.sources ?? null} />
 
       <BottomSheet open={detailsOpen} onOpenChange={setDetailsOpen} title="Details">

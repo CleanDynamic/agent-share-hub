@@ -74,3 +74,27 @@ export const emptyDrop = (over: boolean): CSSProperties => ({
   textAlign: "center",
   ...type(textStep.meta, 400, t.label),
 });
+
+/* 29f: the phone's empty build (`12-editor.jpg`). The heading is 17/22 700; the box is a Panel, radius 12, no border and no rule
+   between its two rows; each row has its icon at 20 in Text 2, the label 15/20 and the detail 13/16 Text 3; the drop zone is 64
+   tall, radius 12, with a 1.5px dashed Raised border (the one dashed border on the phone) and its words at 14/20 Text 3. */
+const phoneType = (px: number, lead: string, weight: 400 | 500 | 700, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: lead, color });
+
+export const PHONE_EMPTY_HEADING: CSSProperties = { ...phoneType(17, "22px", 700, t.text), margin: 0 };
+export const PHONE_EMPTY_BOX: CSSProperties = { boxSizing: "border-box", background: t.surface, borderRadius: 12, padding: "4px 16px", display: "flex", flexDirection: "column" };
+export const PHONE_EMPTY_ROW: CSSProperties = { ...EMPTY_ROW, height: "auto", minHeight: 60, gap: 16, padding: "8px 0" };
+export const PHONE_EMPTY_NAME: CSSProperties = phoneType(15, "20px", 400, t.text);
+export const PHONE_EMPTY_DETAIL: CSSProperties = phoneType(13, "16px", 400, t.label);
+export const phoneEmptyDrop = (over: boolean): CSSProperties => ({
+  boxSizing: "border-box",
+  width: "100%",
+  height: EMPTY_DROP_HEIGHT,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: `1.5px dashed ${over ? t.skeletonTarget : t.control}`,
+  borderRadius: 12,
+  background: "none",
+  textAlign: "center",
+  ...phoneType(14, "20px", 400, t.label),
+});

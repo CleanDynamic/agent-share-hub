@@ -73,9 +73,11 @@ interface Tools {
   left: number;
   /** CA-07: the post the caret is in already holds four pictures. */
   postFull: boolean;
+  /** 29f: the editor has focus. On a phone the toolbar is drawn only then (or while one of its panels is open). */
+  focused: boolean;
 }
 
-const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false, left: POST_BODY_MAX, postFull: false };
+const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false, left: POST_BODY_MAX, postFull: false, focused: false };
 
 function readTools(editor: Editor | null): Tools {
   if (!editor || !editor.isEditable) return NONE;
@@ -91,6 +93,7 @@ function readTools(editor: Editor | null): Tools {
     canAdd: !postIsEmpty(editor),
     left: charactersLeft(editor),
     postFull: (picturesPerPost(editor.state.doc)[postAtCaret(editor)] ?? 0) >= MAX_POST_PICTURES,
+    focused: editor.isFocused,
   };
 }
 
@@ -521,6 +524,9 @@ export function PostToolbar({
   };
 
   if (!editor) return null;
+  /* 29f: on a phone the composer is one row (avatar, "What did you build?"); its tools appear only once it is focused, and stay
+     while a panel they opened (text size, link) is up. Their buttons keep the editor focused (mousedown is not taken). */
+  if (phone && !tools.focused && panel === null) return null;
 
   const size = phone ? TOOL_SIZE : DESKTOP_TOOL_SIZE;
   const run = (command: () => void) => () => {
@@ -580,11 +586,20 @@ export function PostToolbar({
             <Icon lucide={Eye} size={TOOL_GLYPH} />
           </ToolButton>
         ) : null}
-        <CharacterRing left={tools.left} />
-        <span aria-hidden="true" style={{ width: 1, height: phone ? 28 : 24, background: t.hairline, flex: "none" }} />
-        <ToolButton label="Add another post" size={phone ? TOOL_SIZE : ADD_SIZE} boxed disabled={!tools.canAdd} onClick={run(() => addPostAfter(editor, notice))}>
-          <Tool glyph="plus" />
-        </ToolButton>
+        {/* 29f: on a phone Add another post is a plain tool after Preview (no separate boxed plus after a divider), and "Characters
+            left" with its ring appears only once typing starts. */}
+        {phone ? (
+          <ToolButton label="Add another post" size={size} disabled={!tools.canAdd} onClick={run(() => addPostAfter(editor, notice))}>
+            <Tool glyph="plus" />
+          </ToolButton>
+        ) : null}
+        {phone && tools.left >= POST_BODY_MAX ? null : <CharacterRing left={tools.left} />}
+        {phone ? null : <span aria-hidden="true" style={{ width: 1, height: 24, background: t.hairline, flex: "none" }} />}
+        {phone ? null : (
+          <ToolButton label="Add another post" size={ADD_SIZE} boxed disabled={!tools.canAdd} onClick={run(() => addPostAfter(editor, notice))}>
+            <Tool glyph="plus" />
+          </ToolButton>
+        )}
       </div>
     </div>
   );

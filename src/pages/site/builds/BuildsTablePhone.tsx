@@ -1,27 +1,28 @@
-/* Prompt 21: the Builds Table on a phone: the lens tabs, the three controls (Filters, Sort, Columns), the active filters, then one
-   Panel card per build in place of the rows. The whole card is the link. The three numbers on a card are the first three number
-   columns the reader chose, in their order. Pure: the view-model comes from `BuildsTableView`, which knows the column names. */
+/* Prompt 21 and 29f: the Builds Table on a phone (`07-builds.jpg`): the lens pills in the 52 row under the bar (which carries the
+   structural line), the active filters when there are any, then one row per build: its name 17/22 600 over its facts 13/16 Text 2
+   ("3 sessions · 12 steps · @maker"), and its cover as a 48 square at the right. No lines between rows; the whole row is the link.
+   The views (Table, Maps, Classification) and the table's own controls (Filters, Sort) are rows of the bar's More sheet, so no row
+   of controls pushes the list down. Pure: the view-model comes from `BuildsTableView`, which knows the column names. */
 
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { PhoneTabs } from "@/components/phone/PhoneTabs";
+import { CoverFallback } from "@/components/brand/CoverFallback";
+import { PHONE_ROW_STYLE as PILL_ROW_STYLE, usePhoneRowLine } from "@/components/phone/phoneRow";
+import { PhonePills } from "@/components/phone/PhonePills";
+import { useRegisterPageBar, type MoreItem } from "@/components/shell/phoneBarRegistry";
 import type { TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { phoneUpdating } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { PHONE_MARGIN } from "@/components/shell/chromeSize";
 
-import { BuildsControl, FiltersButton, UpdatingStatus, ellipsis } from "./BuildsFrame";
+import { ellipsis } from "./BuildsFrame";
 import {
   CalculationSheet,
-  CheckSheet,
-  PHONE_CARD,
-  PHONE_ROW_STYLE,
   PhoneActiveFilters,
   PhoneShowMore,
   SortSheet,
@@ -50,6 +51,14 @@ export interface PhoneCardView {
   /** "Web app · Food and drink". */
   facts: string;
   numbers: readonly PhoneNumber[];
+  /** 29f: the row's facts, "3 sessions · 12 steps · @maker". */
+  line?: string;
+}
+
+export interface PhoneView {
+  value: string;
+  label: string;
+  href: string;
 }
 
 export interface PhoneTableProps {
@@ -62,6 +71,7 @@ export interface PhoneTableProps {
   setName?: string;
   /** The sheet of sortable columns; the name on the button is the chosen one's. */
   sort: { current: string; choices: readonly SortChoice[]; onChoose: (id: string) => void };
+  /** Kept for the page: with no numbers drawn on a row, the phone has no Columns sheet. */
   columns?: { label: string; groups: readonly CheckGroup[]; onToggle: (id: string) => void; onReset?: () => void };
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
@@ -74,27 +84,26 @@ export interface PhoneTableProps {
   onMore?: () => void;
   loadingMore?: boolean;
   empty?: ReactNode;
+  /** 29f: the other views, as rows of the bar's More sheet (the page hands every view; the current one is left out). */
+  views?: readonly PhoneView[];
+  /** The view this table is. */
+  view?: string;
 }
 
-/** Cards past the first screen are skipped until near. */
-const FIRST_SCREEN_CARDS = 8;
-const CARD_HEIGHT = 118;
+/** Rows past the first screen are skipped until near. */
+const FIRST_SCREEN_ROWS = 10;
+const ROW_HEIGHT = 64;
+/** The cover: a 48 square, radius 9. */
+const COVER = 48;
+const COVER_RADIUS = 9;
 
-function Numbers({ numbers }: { numbers: readonly PhoneNumber[] }) {
-  if (numbers.length === 0) return null;
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${numbers.length}, minmax(0, 1fr))`, columnGap: 8 }}>
-      {numbers.map((entry) => (
-        <div key={entry.name} style={{ minWidth: 0 }}>
-          <div style={{ ...phoneText(15, 500, entry.empty ? t.label : t.text, { ...(entry.mono ? { fontFamily: DM_MONO } : null), fontVariantNumeric: "tabular-nums" }), ...ellipsis }}>{entry.value}</div>
-          <div style={{ ...phoneText(12, 400, t.label), lineHeight: "16px", ...ellipsis }}>{entry.name}</div>
-        </div>
-      ))}
-    </div>
-  );
+/** "3 sessions · 12 steps · @maker": the counts the build has, then its maker. */
+export function rowFacts(sessions: number | null, steps: number | null, maker: string): string {
+  const plural = (n: number, one: string) => `${n.toLocaleString("en-GB")} ${one}${n === 1 ? "" : "s"}`;
+  return [sessions === null ? "" : plural(sessions, "session"), steps === null ? "" : plural(steps, "step"), `@${maker}`].filter(Boolean).join(" · ");
 }
 
-function BuildCard({ card, index }: { card: PhoneCardView; index: number }) {
+function BuildRow({ card, index }: { card: PhoneCardView; index: number }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const titleId = useCardTitleId();
   return (
@@ -103,16 +112,29 @@ function BuildCard({ card, index }: { card: PhoneCardView; index: number }) {
       aria-labelledby={titleId}
       data-testid="build-card"
       {...handlers}
-      style={{ ...PHONE_CARD, ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${CARD_HEIGHT}px` } : null), ...ring(state.focusVisible) }}
+      style={{
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        minHeight: ROW_HEIGHT,
+        padding: `10px ${PHONE_MARGIN}px`,
+        color: t.text,
+        textDecoration: "none",
+        minWidth: 0,
+        ...(index >= FIRST_SCREEN_ROWS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${ROW_HEIGHT}px` } : null),
+        ...ring(state.focusVisible),
+      }}
     >
-      <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, minWidth: 0 }}>
-        <span id={titleId} style={{ minWidth: 0, ...phoneText(15, 600, t.text), ...ellipsis }}>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span id={titleId} style={{ minWidth: 0, ...phoneText(17, 600, t.text), ...ellipsis }}>
           {card.title}
         </span>
-        <span style={{ flexShrink: 0, maxWidth: "45%", ...phoneText(13, 400, t.label), ...ellipsis }}>@{card.maker}</span>
+        <span style={{ minWidth: 0, ...phoneText(13, 400, t.text2), ...ellipsis }}>{card.line ?? `@${card.maker}`}</span>
       </span>
-      {card.facts ? <span style={{ ...phoneText(13, 400, t.text2), display: "block" }}>{card.facts}</span> : null}
-      <Numbers numbers={card.numbers} />
+      <span aria-hidden="true" data-testid="build-cover" style={{ position: "relative", flexShrink: 0, width: COVER, height: COVER, borderRadius: COVER_RADIUS, overflow: "hidden", background: t.module }}>
+        <CoverFallback seed={card.id} radius={COVER_RADIUS} />
+      </span>
     </Link>
   );
 }
@@ -137,36 +159,35 @@ function AddCalculation({ onOpen }: { onOpen: () => void }) {
 }
 
 export function PhoneTable(props: PhoneTableProps) {
-  const { lenses, lens, onLens, updating, activeCount, onOpenFilters, setName, sort, columns, chips, onRemoveChip, onClearAll, cards, summary, calculations, calculate, onMore, loadingMore, empty } = props;
+  const { lenses, lens, onLens, updating, activeCount, onOpenFilters, sort, chips, onRemoveChip, onClearAll, cards, summary, calculations, calculate, onMore, loadingMore, empty, views, view = "table" } = props;
   const [sortOpen, setSortOpen] = useState(false);
-  const [columnsOpen, setColumnsOpen] = useState(false);
   const [calculateOpen, setCalculateOpen] = useState(false);
   const showCards = !(cards.length === 0 && empty);
+  usePhoneRowLine(true);
+
+  /* More: the other views as links, then the table's own controls. Nothing here is a row of controls on the page. */
+  const more: MoreItem[] = [
+    ...(views ?? []).filter((entry) => entry.value !== view).map((entry): MoreItem => ({ label: entry.label, to: entry.href })),
+    { label: activeCount > 0 ? `Filters, ${activeCount} on` : "Filters", onSelect: onOpenFilters },
+    { label: sort.current ? `Sort: ${sort.current}` : "Sort", onSelect: () => setSortOpen(true) },
+  ];
+  useRegisterPageBar({ more });
+
   return (
     <div data-testid="builds-table">
-      <PhoneTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" />
-
-      <div style={PHONE_ROW_STYLE}>
-        <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
-        <BuildsControl aria-label={sort.current ? `Sort: ${sort.current}` : "Sort"} aria-haspopup="dialog" onClick={() => setSortOpen(true)}>
-          <span style={{ color: t.text2 }}>Sort</span>
-          {sort.current ? <span>{sort.current}</span> : null}
-        </BuildsControl>
-        {columns ? (
-          <BuildsControl aria-label={`Columns: ${columns.label}`} aria-haspopup="dialog" onClick={() => setColumnsOpen(true)}>
-            <span style={{ color: t.text2 }}>Columns</span>
-            <span>{columns.label}</span>
-          </BuildsControl>
-        ) : null}
-        <UpdatingStatus updating={updating} />
+      <div style={PILL_ROW_STYLE}>
+        <PhonePills docked label="Lens" pills={lenses.map((tab) => ({ value: tab.value, label: tab.label, count: tab.count as number | string | undefined }))} value={lens} onChange={onLens} tabs={{ idOf: (value) => `builds-lens-${value}`, controls: "builds-table-region" }} />
       </div>
+      <span role="status" className="sr-only">
+        {updating ? "Updating" : ""}
+      </span>
 
       <PhoneActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
       {showCards ? (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} style={{ paddingTop: 12, ...phoneUpdating(updating) }}>
+        <div id="builds-table-region" role="region" aria-label="Builds table" aria-busy={updating === true} style={{ paddingTop: 4, ...phoneUpdating(updating) }}>
           {cards.map((card, index) => (
-            <BuildCard key={card.id} card={card} index={index} />
+            <BuildRow key={card.id} card={card} index={index} />
           ))}
           {summary.length > 0 || calculations.length > 0 || calculate ? (
             <div style={{ padding: `4px ${PHONE_MARGIN}px 0` }}>
@@ -191,18 +212,6 @@ export function PhoneTable(props: PhoneTableProps) {
       {onMore ? <PhoneShowMore onMore={onMore} loading={loadingMore} /> : null}
 
       <SortSheet open={sortOpen} onOpenChange={setSortOpen} choices={sort.choices} onChoose={sort.onChoose} />
-      {columns ? (
-        <CheckSheet
-          open={columnsOpen}
-          onOpenChange={setColumnsOpen}
-          title="Columns"
-          titleNote={columns.label}
-          note="On a phone, the first three numbers you choose show on each card."
-          groups={columns.groups}
-          onToggle={columns.onToggle}
-          reset={columns.onReset ? { label: "Back to the default columns", onSelect: columns.onReset } : undefined}
-        />
-      ) : null}
       {calculate ? <CalculationSheet open={calculateOpen} onOpenChange={setCalculateOpen} options={calculate.options} onToggle={calculate.onToggle} /> : null}
     </div>
   );

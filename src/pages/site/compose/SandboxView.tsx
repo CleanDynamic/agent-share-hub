@@ -602,7 +602,7 @@ export function AddMenu({ phone, targets, fixedSession, variant = "row", openReq
   );
 
   const trigger = variant === "round" ? (
-      <RoundPostButton label={ADD_ROUND_LABEL} icon="new" buttonRef={addButton} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} bottom={`calc(${PHONE_EDITOR_FOOTER}px + env(safe-area-inset-bottom))`} />
+      <RoundPostButton quiet label={ADD_ROUND_LABEL} icon="new" buttonRef={addButton} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} bottom={`calc(${PHONE_EDITOR_FOOTER + 12}px + env(safe-area-inset-bottom))`} />
   ) : variant === "title" ? (
       <button
         ref={addButton}
@@ -908,12 +908,14 @@ const sessionListReason = (view: ViewMenuProps): string | undefined => (view.ses
  * "View", beside Add: the session list (kept for the maker on this device), then the rows of the parts, the colours and the
  * folds. On a computer a menu that stays open while the switch is changed; on a phone the same rows in a bottom sheet.
  */
-function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
-  const [open, setOpen] = useState(false);
+function ViewMenu({ phone, view, sheet }: { phone: boolean; view: ViewMenuProps; /** 29f: the phone editor opens the sheet from its More row, so there is no button: the sheet alone, held by the editor. */ sheet?: { open: boolean; onOpenChange: (open: boolean) => void } }) {
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = sheet ? sheet.open : ownOpen;
+  const setOpen = sheet ? sheet.onOpenChange : setOwnOpen;
   if (phone) {
     return (
       <>
-        <MenuButton label={VIEW_COPY.button} value="" data-testid="sandbox-view" aria-haspopup="dialog" aria-expanded={open} style={{ height: 44 }} onClick={() => setOpen(true)} />
+        {sheet ? null : <MenuButton label={VIEW_COPY.button} value="" data-testid="sandbox-view" aria-haspopup="dialog" aria-expanded={open} style={{ height: 44 }} onClick={() => setOpen(true)} />}
         <BrandBottomSheet open={open} onOpenChange={setOpen} title={VIEW_COPY.button} data-testid="view-sheet">
           <SessionListSheetRow view={view} />
           {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
@@ -1505,7 +1507,7 @@ function SandboxBody(props: SandboxViewProps) {
         emptyBuild={props.emptyBuild ? guard("Build", <EmptyBuild {...props.emptyBuild} />) : null}
         post={postSection}
         sessionList={props.sessionList}
-        viewMenu={props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
+        viewSheet={props.viewOptions ? (sheet) => <ViewMenu phone view={props.viewOptions as ViewMenuProps} sheet={sheet} /> : undefined}
         detailsBody={detailsBody}
         onEditSelected={props.onEditSelected}
         selectedKey={props.selectedKey ?? null}

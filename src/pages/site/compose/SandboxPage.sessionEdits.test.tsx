@@ -13,6 +13,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PG, REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Fault } from "@/lib/build/__audit__/fakeSupabase";
 import { Toaster, toast } from "sonner";
 import { sessionsMetaOf } from "@/lib/build/making";
+import { MoreProbe } from "@/test/MoreProbe";
 
 import { SandboxPage } from "./SandboxPage";
 
@@ -54,6 +55,7 @@ function mount(path: string, { faults = [], delays = [], keep = false }: { fault
           <AuthProvider>
             <ConnectorDialogProvider>
               <Toaster />
+              <MoreProbe />
               <Routes>
                 <Route path="/compose/new" element={<SandboxPage />} />
                 <Route path="/compose/:buildId" element={<SandboxPage />} />
@@ -291,7 +293,9 @@ describe("CA-14 P6 · View", () => {
       const key = this.closest("[data-session-key]")?.getAttribute("data-session-key");
       return { top: key === LONG ? 900 : 20, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => undefined } as DOMRect;
     });
-    fireEvent.click(screen.getByTestId("sandbox-view"));
+    /* 29f: on a phone View is a row of the bar's More sheet (the probe draws it), not a button beside the pills. */
+    expect(screen.queryByTestId("sandbox-view")).toBeNull();
+    fireEvent.click(await within(screen.getByTestId("more-probe")).findByRole("button", { name: "View" }));
     fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Session list" }));
     const menu = await screen.findByTestId("session-list");
     expect(menu.tagName).toBe("BUTTON");

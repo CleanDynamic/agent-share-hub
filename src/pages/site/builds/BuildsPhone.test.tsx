@@ -1,6 +1,7 @@
-// Prompt 21: Builds below 768px. The claims: the Table is one card per build (never a table) whose three numbers are the first
-// three number columns the reader chose; Sort, Columns, Filters and Facets shown are sheets; Done in the Filters sheet applies the
-// draft once; Maps and Classification draw their phone cards. Nothing here asserts the desktop, which the other files do.
+// Prompt 21 and 29f: Builds below 768px. The claims: the Table is one row per build (never a table): its name over "3 sessions · 12
+// steps · @maker" and a 48 cover, the lens as pills under the bar; the views, Filters and Sort are rows of the bar's More sheet
+// (drawn here by `MoreProbe`), and Sort and Filters are sheets; Done in the Filters sheet applies the draft once; Maps and
+// Classification draw their phone cards. Nothing here asserts the desktop, which the other files do.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -11,12 +12,12 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { visionBuildsClassificationProps } from "@/dev/fixtures/vision/builds-classification";
 import { visionBuildsMapsProps } from "@/dev/fixtures/vision/builds-maps";
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
+import { MoreProbe } from "@/test/MoreProbe";
 
 import BuildsClassificationView from "./BuildsClassificationView";
 import BuildsMapsView from "./BuildsMapsView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
-import { chosenColumns, columnsLabel, columnsMenu } from "./buildsModel";
-import type { ColumnId } from "./BuildsTableView";
+import { rowFacts } from "./BuildsTablePhone";
 
 /** A 390 wide phone: the max-width query matches, the min-width ones do not. */
 beforeEach(() => {
@@ -32,77 +33,61 @@ function draw(change: (props: BuildsViewProps) => BuildsViewProps = (p) => p) {
   return render(
     <MemoryRouter>
       <BuildsView {...change(visionBuildsTableProps())} />
+      <MoreProbe />
     </MemoryRouter>,
   );
 }
 
-const withMenu = (columns: readonly ColumnId[], onToggle = vi.fn()) => (p: BuildsViewProps): BuildsViewProps => ({
-  ...p,
-  table: p.table && { ...p.table, columns, columnsLabel: columnsLabel(chosenColumns(null, true), true), columnsMenu: { ...columnsMenu(chosenColumns(null, true), true, onToggle, () => undefined), groups: undefined } },
-});
-
 describe("the Table on a phone", () => {
-  it("is one card per build, each the link, and no table", () => {
+  it("is one row per build, each the link, and no table", () => {
     draw();
     expect(screen.queryByRole("table")).toBeNull();
-    const cards = screen.getAllByTestId("build-card");
-    expect(cards.length).toBeGreaterThan(0);
-    expect(cards[0].tagName).toBe("A");
-    expect(cards[0].getAttribute("href")).toBeTruthy();
+    const rows = screen.getAllByTestId("build-card");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].tagName).toBe("A");
+    expect(rows[0].getAttribute("href")).toBeTruthy();
   });
 
-  it("draws the lens as tabs and the three controls", () => {
-    draw(withMenu(chosenColumns(null, true)));
+  it("draws the lens as pills under the bar, and no row of controls: Filters and Sort are in More", () => {
+    draw();
     expect(screen.getByRole("tablist", { name: "Lens" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^Filters/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^Sort/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^Columns/ })).toBeTruthy();
+    const more = within(screen.getByTestId("more-probe"));
+    expect(more.getByRole("button", { name: /^Filters/ })).toBeTruthy();
+    expect(more.getByRole("button", { name: /^Sort/ })).toBeTruthy();
+    const page = screen.getByTestId("builds-table");
+    expect(within(page).queryByRole("button", { name: /^Filters/ })).toBeNull();
+    expect(within(page).queryByRole("button", { name: /^Sort/ })).toBeNull();
+    expect(within(page).queryByRole("button", { name: /^Columns/ })).toBeNull();
   });
 
-  it("shows the first three number columns the reader chose, in their order", () => {
-    draw((p) => ({ ...p, table: p.table && { ...p.table, columns: ["build", "built", "field", "steps", "sessions", "rebuilds", "open", "cost"] } }));
-    const names = (card: HTMLElement) => ["Steps", "Rebuilds", "Likes", "Cost to run"].filter((name) => within(card).queryByText(name));
-    expect(names(screen.getAllByTestId("build-card")[0])).toEqual(["Steps", "Rebuilds", "Cost to run"]);
+  it("a row is its name over its facts, and a 48 cover with radius 9 at the right", () => {
+    draw((p) => ({ ...p, table: p.table && { ...p.table, rows: p.table.rows.map((row) => ({ ...row, sessions: 3, steps: 12, maker: "suntzu" })) } }));
+    const row = screen.getAllByTestId("build-card")[0];
+    expect(row.textContent).toContain("3 sessions · 12 steps · @suntzu");
+    const cover = within(row).getByTestId("build-cover");
+    expect(cover.style.width).toBe("48px");
+    expect(cover.style.height).toBe("48px");
+    expect(cover.style.borderRadius).toBe("9px");
+    expect(row.style.padding).toBe("10px 16px");
+    expect(row.style.gap).toBe("12px");
   });
 
-  it("changes the three numbers when the columns change", () => {
-    draw((p) => ({ ...p, table: p.table && { ...p.table, columns: ["build", "likes", "rebuilds"] } }));
-    const card = screen.getAllByTestId("build-card")[0];
-    expect(within(card).getByText("Likes")).toBeTruthy();
-    expect(within(card).getByText("Rebuilds")).toBeTruthy();
-    expect(within(card).queryByText("Steps")).toBeNull();
-  });
-
-  it("writes an empty number as 0 and an unmeasured cost as Not measured", () => {
-    draw((p) => ({ ...p, table: p.table && { ...p.table, columns: ["build", "steps", "cost"], rows: p.table.rows.map((row) => ({ ...row, steps: null, cost: "" })) } }));
-    const card = screen.getAllByTestId("build-card")[0];
-    expect(within(card).getByText("0")).toBeTruthy();
-    expect(within(card).getByText("Not measured")).toBeTruthy();
+  it("says one session and one step in the singular, and leaves out a count it does not have", () => {
+    expect(rowFacts(1, 1, "kit")).toBe("1 session · 1 step · @kit");
+    expect(rowFacts(null, 4, "kit")).toBe("4 steps · @kit");
+    expect(rowFacts(null, null, "kit")).toBe("@kit");
   });
 
   it("Sort opens a sheet of the sortable columns, and choosing one sorts and closes it", () => {
     const onSortColumn = vi.fn();
     draw((p) => ({ ...p, table: p.table && { ...p.table, onSortColumn } }));
-    fireEvent.click(screen.getByRole("button", { name: /^Sort/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Sort/ }));
     const sheet = screen.getByRole("dialog", { name: "Sort" });
     const choices = within(sheet).getAllByRole("radio");
     expect(choices.length).toBeGreaterThan(0);
     fireEvent.click(choices[0]);
     expect(onSortColumn).toHaveBeenCalledWith(expect.any(String), false, true);
     expect(screen.queryByRole("dialog", { name: "Sort" })).toBeNull();
-  });
-
-  it("Columns opens a full sheet with the phone's one line, Build locked, and a reset", () => {
-    const onToggle = vi.fn();
-    draw(withMenu(chosenColumns(null, true), onToggle));
-    fireEvent.click(screen.getByRole("button", { name: /^Columns/ }));
-    const sheet = screen.getByRole("dialog", { name: "Columns" });
-    expect(within(sheet).getByText("On a phone, the first three numbers you choose show on each card.")).toBeTruthy();
-    expect((within(sheet).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
-    fireEvent.click(within(sheet).getByRole("checkbox", { name: "Likes" }));
-    expect(onToggle).toHaveBeenCalledWith("likes");
-    expect(within(sheet).getByRole("button", { name: "Back to the default columns" })).toBeTruthy();
-    expect(within(sheet).queryByRole("button", { name: /Move .* left/ })).toBeNull();
   });
 
   it("an active filter is a chip with a named remove, and Clear all", () => {
@@ -115,11 +100,11 @@ describe("the Table on a phone", () => {
     expect(onClearAll).toHaveBeenCalled();
   });
 
-  it("the view switch is three links, the current one marked", () => {
+  it("the other views are links in More, and the current one is left out", () => {
     draw();
-    const nav = screen.getByRole("navigation", { name: "View" });
-    expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["Table", "Maps", "Classification"]);
-    expect(within(nav).getByRole("link", { name: "Table" }).getAttribute("aria-current")).toBe("page");
+    const more = within(screen.getByTestId("more-probe"));
+    expect(more.getAllByRole("link").map((link) => link.textContent)).toEqual(["Maps", "Classification"]);
+    expect(screen.queryByRole("navigation", { name: "View" })).toBeNull();
   });
 });
 
@@ -127,7 +112,7 @@ describe("the Filters sheet", () => {
   it("opens as a sheet with the find field and Order values, and Done applies the draft", () => {
     const onApply = vi.fn();
     draw((p) => ({ ...p, filters: { ...p.filters, onApply } }));
-    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Filters/ }));
     const sheet = screen.getByRole("dialog", { name: "Filters" });
     expect(within(sheet).getByRole("searchbox", { name: "Find a filter" })).toBeTruthy();
     expect(within(sheet).getByRole("button", { name: /^Order values/ })).toBeTruthy();
@@ -138,7 +123,7 @@ describe("the Filters sheet", () => {
   it("a row opens in place into its choices, and a choice reports its toggle", () => {
     const onToggleOption = vi.fn();
     draw((p) => ({ ...p, filters: { ...p.filters, onToggleOption } }));
-    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Filters/ }));
     const sheet = screen.getByRole("dialog", { name: "Filters" });
     fireEvent.click(within(sheet).getByRole("button", { name: /^Field/ }));
     fireEvent.click(within(sheet).getByRole("checkbox", { name: /Education/ }));
@@ -147,7 +132,7 @@ describe("the Filters sheet", () => {
 
   it("finding a filter lists the ones whose name holds the words", () => {
     draw();
-    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Filters/ }));
     const sheet = screen.getByRole("dialog", { name: "Filters" });
     fireEvent.change(within(sheet).getByRole("searchbox", { name: "Find a filter" }), { target: { value: "zzzz" } });
     expect(within(sheet).getByText("No filter has that name.")).toBeTruthy();
@@ -156,7 +141,7 @@ describe("the Filters sheet", () => {
   it("Clear all clears the draft", () => {
     const onClear = vi.fn();
     draw((p) => ({ ...p, filters: { ...p.filters, onClear } }));
-    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Filters/ }));
     fireEvent.click(within(screen.getByRole("dialog", { name: "Filters" })).getByRole("button", { name: "Clear all" }));
     expect(onClear).toHaveBeenCalled();
   });
@@ -215,7 +200,7 @@ describe("Saved filter sets on a phone", () => {
     },
   });
   const openSets = () => {
-    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    fireEvent.click(within(screen.getByTestId("more-probe")).getByRole("button", { name: /^Filters/ }));
     fireEvent.click(within(screen.getByRole("dialog", { name: "Filters" })).getByRole("button", { name: "Save these filters" }));
     return screen.getByRole("dialog", { name: "Saved filter sets" });
   };

@@ -37,12 +37,12 @@ function focusAt(editor: Editor, index: number) {
 }
 
 describe("sizes", () => {
-  it("sets the composer's words at 20 / 1.25, 18 on a phone, and leaves the readers' body as it was", () => {
+  it("sets the composer's words at 20 / 1.25, 17 / 22 on a phone (29f), and leaves the readers' body as it was", () => {
     expect([postType(false).composer.fontSize, postType(false).composer.lineHeight]).toEqual([20, 1.25]);
-    expect([postType(true).composer.fontSize, postType(true).composer.lineHeight]).toEqual([18, 1.25]);
+    expect([postType(true).composer.fontSize, postType(true).composer.lineHeight]).toEqual([17, 22 / 17]);
     expect([postType(false).body.fontSize, postType(false).body.lineHeight]).toEqual([16, 1.55]);
     mount(doc(p("words")), { phone: true });
-    expect((document.querySelector('[data-size="body"]') as HTMLElement).style.fontSize).toBe("18px");
+    expect((document.querySelector('[data-size="body"]') as HTMLElement).style.fontSize).toBe("17px");
   });
 
   it("draws a list in the composer's size too", () => {
@@ -50,8 +50,8 @@ describe("sizes", () => {
     expect((document.querySelector("ul") as HTMLElement).style.fontSize).toBe("20px");
   });
 
-  it("is a 40 avatar (36 on a phone), 12 from the words on both, the first line 8 below the avatar's top", () => {
-    expect(RAIL_AVATAR).toEqual({ desktop: 40, phone: 36 });
+  it("is a 40 avatar (32 on a phone, 29f), 12 from the words on both, the first line 8 below the avatar's top", () => {
+    expect(RAIL_AVATAR).toEqual({ desktop: 40, phone: 32 });
     expect(RAIL_GAP).toEqual({ desktop: 12, phone: 12 });
     expect(FIRST_LINE_DROP).toBe(8);
     mount(doc(p("words")));
