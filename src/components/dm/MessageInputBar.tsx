@@ -1,3 +1,4 @@
+import { dmMediaRef } from "@/lib/dm/dmMedia";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,9 +231,8 @@ export function MessageInputBar({
       .from("dm-images")
       .upload(path, imageFile, { contentType: imageFile.type });
     if (uploadErr) { setSending(false); return; }
-    const { data: urlData } = supabase.storage.from("dm-images").getPublicUrl(path);
-    const { data: signedData } = await supabase.storage.from("dm-images").createSignedUrl(path, 60 * 60 * 24 * 365);
-    const imageUrl = signedData?.signedUrl || urlData?.publicUrl || "";
+    // The message keeps a reference to the file, never a long-lived link (src/lib/dm/dmMedia.ts).
+    const imageUrl = dmMediaRef("dm-images", path);
 
     await supabase.from("dm_messages").insert({
       thread_id: threadId,
@@ -295,9 +295,10 @@ export function MessageInputBar({
     if (!voiceBlob || !user || sending) return;
     setSending(true);
     const path = `${threadId}/${crypto.randomUUID()}.webm`;
-    await supabase.storage.from("dm-voice").upload(path, voiceBlob, { contentType: "audio/webm" });
-    const { data: signedData } = await supabase.storage.from("dm-voice").createSignedUrl(path, 60 * 60 * 24 * 365);
-    const voiceUrl = signedData?.signedUrl || "";
+    const { error: voiceErr } = await supabase.storage.from("dm-voice").upload(path, voiceBlob, { contentType: "audio/webm" });
+    if (voiceErr) { setSending(false); return; }
+    // The message keeps a reference to the file, never a long-lived link (src/lib/dm/dmMedia.ts).
+    const voiceUrl = dmMediaRef("dm-voice", path);
 
     await supabase.from("dm_messages").insert({
       thread_id: threadId,

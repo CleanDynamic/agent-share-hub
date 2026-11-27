@@ -28,6 +28,7 @@ import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
 import { TypingIndicator } from "@/components/dm/TypingIndicator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDmMediaUrl } from "@/lib/dm/dmMedia";
 import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
@@ -103,13 +104,31 @@ function linkifyText(text: string) {
   );
 }
 
+/* ═══════ DM image ═══════ */
+/** A message's picture, signed for a few minutes as the person looking (src/lib/dm/dmMedia.ts). */
+function DmImage({ stored, onOpen }: { stored: string | null; onOpen: (url: string) => void }) {
+  const url = useDmMediaUrl(stored);
+  if (!url) return <Skeleton className="rounded-xl" style={{ width: 240, height: 180 }} />;
+  return (
+    <img
+      src={url}
+      alt=""
+      className="rounded-xl max-w-[240px] max-h-[320px] object-cover cursor-pointer"
+      onClick={(e) => { e.stopPropagation(); onOpen(url); }}
+    />
+  );
+}
+
 /* ═══════ Voice Waveform ═══════ */
-function VoiceMessage({ url, duration }: { url: string; duration: number }) {
+function VoiceMessage({ url: stored, duration }: { url: string; duration: number }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Signed for a few minutes as the person looking (src/lib/dm/dmMedia.ts).
+  const url = useDmMediaUrl(stored);
 
   useEffect(() => {
+    if (!url) return;
     const audio = new Audio(url);
     audioRef.current = audio;
     audio.addEventListener("timeupdate", () => {
@@ -955,12 +974,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       switch (msg.message_type) {
         case "image":
           return (
-            <img
-              src={msg.image_url}
-              alt=""
-              className="rounded-xl max-w-[240px] max-h-[320px] object-cover cursor-pointer"
-              onClick={(e) => { e.stopPropagation(); setImagePreview(msg.image_url); }}
-            />
+            <DmImage stored={msg.image_url} onOpen={(url) => setImagePreview(url)} />
           );
         case "voice":
           return <VoiceMessage url={msg.voice_url} duration={msg.voice_duration_seconds || 0} />;
