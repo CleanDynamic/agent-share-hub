@@ -122,11 +122,21 @@ export interface MapEditorForInput extends MapBuild {
   onSaveError?: (cause: unknown, retry: () => void) => void;
 }
 
+const NO_RESULTS: ListResult[] = [];
+
+/** The same value as last render while it is equal in JSON: a layout worked out again is not a change. */
+function useSame<T>(value: T): T {
+  const held = useRef<{ value: T; json: string } | null>(null);
+  const json = JSON.stringify(value);
+  if (!held.current || held.current.json !== json) held.current = { value, json };
+  return held.current.value;
+}
+
 /** The editor's state for a build: the plain arrangement, the order facts, legacy keys kept out of what is written. */
-export function useMapEditorFor({ stored, steps, groups, files, making, results = [], save, onSaveError }: MapEditorForInput): MapEditorState {
+export function useMapEditorFor({ stored, steps, groups, files, making, results = NO_RESULTS, save, onSaveError }: MapEditorForInput): MapEditorState {
   const announce = useAnnounce();
-  const plain = useMemo(() => startFromBuild(steps, groups, making, results), [steps, groups, making, results]);
-  const read = useMemo(() => (stored ? fromStorage(stored, steps, groups) : null), [stored, steps, groups]);
+  const plain = useSame(useMemo(() => startFromBuild(steps, groups, making, results), [steps, groups, making, results]));
+  const read = useSame(useMemo(() => (stored ? fromStorage(stored, steps, groups) : null), [stored, steps, groups]));
   const facts = useMemo(() => orderFacts(steps, groups, files, results), [steps, groups, files, results]);
   const latest = useRef({ steps, groups, save });
   latest.current = { steps, groups, save };
@@ -146,7 +156,7 @@ interface Names {
   tileTitle: (tile: string) => string;
 }
 
-function useNames({ steps, groups, results = [] }: MapBuild): Names {
+function useNames({ steps, groups, results = NO_RESULTS }: MapBuild): Names {
   return useMemo(() => {
     const step = new Map(steps.map((each) => [each.id, each]));
     const result = new Map(results.map((each) => [each.id, each]));
@@ -193,7 +203,7 @@ export interface MapEditorProps extends MapBuild {
 }
 
 export function MapEditor({ editor, ...build }: MapEditorProps) {
-  const { steps, groups, files, making, results = [] } = build;
+  const { steps, groups, files, making, results = NO_RESULTS } = build;
   const names = useNames(build);
   const wide = useMinWidth(EDITOR.foldBelow);
   const [sheet, setSheet] = useState(false);
@@ -551,7 +561,7 @@ interface SourceRow {
 }
 
 function MapSources({ build, names, editor, onPlace, onTakeOff, onReveal }: { build: MapBuild; names: Names; editor: MapEditorState; onPlace: (tile: string) => void; onTakeOff: (tile: string) => void; onReveal: (boxId: string) => void }) {
-  const { steps, groups, files, making, results = [] } = build;
+  const { steps, groups, files, making, results = NO_RESULTS } = build;
   const { layout } = editor;
   const placed = useMemo(() => new Set(placedTiles(layout)), [layout]);
   const rows = useMemo<SourceRow[]>(() => {
