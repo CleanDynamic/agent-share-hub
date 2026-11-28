@@ -1,5 +1,8 @@
-/* MS-05 — the map canvas, drawn for the maker (the composer's Sessions view) and for readers (the build page). Read only:
-   MS-06 adds editing through `selected` and `onSelect`.
+/* MS-05 — the map canvas, drawn for the maker (the composer's Sessions view) and for readers (the build page). MS-06 edits it
+   through `selected` and `onSelect` (the editor's state is `useMapEditor`, its chrome `MapEditor`): a box's title area or its
+   empty space selects the box, Shift adds boxes, a tile selects the tile, the canvas's own background clears. Selected things
+   get a 2px `t.evidence` ring, and one selected box its eight handles (MS-07 makes them work). Boxes take the focus in reading
+   order; the tiles inside are reached with the arrow keys (`MapEditor`), so they leave the tab order.
 
    1. MEASURE. Every tile is the List's own card (`StepTile`, README Decision 14), so heights come from the card as drawn: a
       hidden layer renders each tile once at its slot's width, and each box's head at its width, and `geometryOf` reads
@@ -39,10 +42,13 @@ import {
   REMOVED_SLOT,
   backgroundOf,
   boxStyle,
+  SELECTION,
+  SELECTION_RING,
   canvasScope,
   dotGrid,
   inkFor,
 } from "./canvasRecipes";
+import { t } from "@/lib/theme/tokens";
 import { StepTile } from "./StepTile";
 
 /** Every string the canvas says. */
@@ -65,9 +71,12 @@ export interface MapCanvasProps {
   /** The build's Results: not steps, so given beside them (`ListResult`). */
   results?: ListResult[];
   mode: "maker" | "reader";
-  /** MS-06 uses these. */
-  selected?: string | null;
-  onSelect?: (id: string | null) => void;
+  /** MS-06: the editor's selection, node or tile ids. */
+  selected?: readonly string[];
+  /** MS-06: a box or tile chosen (`add`: with Shift), or null for the canvas's background. Given: the maker can edit. */
+  onSelect?: (id: string | null, add?: boolean) => void;
+  /** MS-06: the geometry drawn for `layout`, once measured, and the measure it used, for the editor's checks. */
+  onGeometry?: (layout: MapLayout, geometry: MapGeometry, measure: Measure) => void;
   /** A tile clicked in reader mode: the build page opens its Full prompt window. */
   onOpenTile?: (id: string) => void;
 }
@@ -78,6 +87,8 @@ const NOTE_WIDTH = 200;
 /** A drawn frame's name tab reaches this far below the frame's top edge, and as far above it. */
 const FRAME_HEAD = 8;
 const FRAME_TAB_ROOM = 10;
+/** MS-06: how far below the canvas wrap's top the canvas starts (the room left for a frame's tab). */
+export const CANVAS_TOP = FRAME_TAB_ROOM;
 
 const tileKey = (id: string, width: number, parts: readonly MapTilePart[]) => `${id}|${Math.round(width)}|${parts.join(",")}`;
 const headKey = (id: string, width: number) => `${id}|${Math.round(width)}`;
@@ -103,8 +114,11 @@ function withoutRemoved(layout: MapLayout, exists: (id: string) => boolean): Map
 /** A session region drawn as a frame: one that holds more than its one box (a lone box carries the session's tab itself). */
 const framed = (region: MapRegion) => "part" in region.of || region.child.kind !== "box";
 
-export function MapCanvas({ layout: stored, steps, groups, files, making, results = [], mode, selected = null, onSelect, onOpenTile }: MapCanvasProps) {
+const NONE: readonly string[] = [];
+
+export function MapCanvas({ layout: stored, steps, groups, files, making, results = [], mode, selected = NONE, onSelect, onOpenTile, onGeometry }: MapCanvasProps) {
   const reader = mode === "reader";
+  const editing = !reader && Boolean(onSelect);
   const markerId = useId().replace(/:/g, "");
   const wrap = useRef<HTMLDivElement | null>(null);
   const layer = useRef<HTMLDivElement | null>(null);
@@ -196,6 +210,20 @@ export function MapCanvas({ layout: stored, steps, groups, files, making, result
     return { geometry, tiles: unique(tiles), heads: unique(heads), missing };
   }, [layout, exists, tileSizes, headSizes]);
   const { geometry } = measured;
+  /** The sizes measured so far, estimates for the rest: what the editor checks a step's result with. */
+  const known = useMemo<Measure>(
+    () => ({
+      tile: (id, width, parts) => ({ height: exists(id) ? (tileSizes.get(tileKey(id, width, parts)) ?? ESTIMATE.tile) : REMOVED_HEIGHT, minWidth: MAP_GRID.minBoxPx }),
+      chrome: (node, width) =>
+        node.kind === "region"
+          ? { head: framed(node) ? FRAME_HEAD : 0, noteWidth: NOTE_WIDTH }
+          : { head: headSizes.get(headKey(node.id, width)) ?? ESTIMATE.title + (node.explanation ? ESTIMATE.explanation : 0) + BOX.headBelow, noteWidth: NOTE_WIDTH },
+    }),
+    [exists, tileSizes, headSizes],
+  );
+  useLayoutEffect(() => {
+    if (!measured.missing) onGeometry?.(stored, geometry, known);
+  }, [measured.missing, onGeometry, stored, geometry, known]);
 
   const readLayer = useCallback(() => {
     const el = layer.current;
@@ -268,14 +296,22 @@ export function MapCanvas({ layout: stored, steps, groups, files, making, result
   const ink = inkFor(layout.background);
   const scope = useMemo(() => canvasScope(layout.background), [layout.background]);
   const click = useCallback((id: string) => (reader ? onOpenTile?.(id) : onSelect?.(id)), [reader, onOpenTile, onSelect]);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  // MS-06: the tiles are the List's cards, each in the tab order; on the editing canvas the boxes are, and the arrow keys reach the tiles.
+  useLayoutEffect(() => {
+    if (!editing) return;
+    canvasRef.current?.querySelectorAll<HTMLElement>('[data-testid="map-tile"] [tabindex="0"]').forEach((el) => el.setAttribute("tabindex", "-1"));
+  });
   const hidden = hiddenCount(lines);
 
   return (
     // The top padding leaves room for a frame's name tab, which sits across the canvas's top edge when a frame starts there.
     <div ref={wrap} data-testid="map-canvas-wrap" style={{ position: "relative", minWidth: 0, paddingTop: FRAME_TAB_ROOM }}>
       <div
+        ref={canvasRef}
         data-testid="map-canvas"
         data-canvas-paint=""
+        onClick={editing ? (event) => (event.target === event.currentTarget || !(event.target as HTMLElement).closest("[data-box-id]") ? onSelect?.(null) : undefined) : undefined}
         data-mode={mode}
         data-measuring={measured.missing ? "" : undefined}
         style={{
@@ -307,6 +343,7 @@ export function MapCanvas({ layout: stored, steps, groups, files, making, result
               badgeOf={badgeOf}
               selected={selected}
               onClick={click}
+              onSelectBox={editing ? onSelect : undefined}
             />
           ))}
         </ul>
@@ -397,6 +434,7 @@ function BoxItem({
   badgeOf,
   selected,
   onClick,
+  onSelectBox,
 }: {
   box: MapBox;
   head: BoxHead;
@@ -410,25 +448,66 @@ function BoxItem({
   order: string[];
   describe: ReadonlyMap<string, string[]>;
   badgeOf: (id: string) => string | undefined;
-  selected: string | null;
+  selected: readonly string[];
   onClick: (id: string) => void;
+  /** Editing: the box can be selected and focused. */
+  onSelectBox?: (id: string, add?: boolean) => void;
 }) {
   const rect = geometry.nodes[box.id];
+  const chosen = selected.includes(box.id);
+  /** A focus from the pointer is a click's, which selects on its own (and Shift-click must not select twice). */
+  const pointer = useRef(false);
   const tiles = box.tiles.filter((id) => geometry.tiles[id] && (exists(id) || !reader)).sort((a, b) => order.indexOf(a) - order.indexOf(b));
   return (
     <li
       data-testid="map-box"
       data-box-id={box.id}
+      data-selected={chosen || undefined}
+      role="listitem"
+      tabIndex={onSelectBox ? 0 : undefined}
+      onKeyDown={
+        onSelectBox
+          ? (event) => {
+              // Space does what a click on the box does; with Shift it adds the box to the boxes selected.
+              if (event.target !== event.currentTarget || event.key !== " ") return;
+              event.preventDefault();
+              onSelectBox(box.id, event.shiftKey);
+            }
+          : undefined
+      }
+      aria-label={onSelectBox ? head.name : undefined}
+      onPointerDown={onSelectBox ? () => (pointer.current = true) : undefined}
+      onFocus={
+        onSelectBox
+          ? (event) => {
+              if (event.target === event.currentTarget && !pointer.current && !chosen) onSelectBox(box.id);
+              pointer.current = false;
+            }
+          : undefined
+      }
+      onClick={
+        onSelectBox
+          ? (event) => {
+              pointer.current = false;
+              if ((event.target as HTMLElement).closest('[data-testid="map-tile"]')) return;
+              event.stopPropagation();
+              onSelectBox(box.id, event.shiftKey);
+            }
+          : undefined
+      }
       style={{
         ...boxStyle(box.style, background),
+        ...(chosen ? { boxShadow: SELECTION_RING } : null),
+        ...(onSelectBox ? { cursor: "default" } : null),
         position: "absolute",
         left: rect.x,
         top: rect.y,
         width: rect.width,
         height: rect.height,
         padding: BOX.padding,
-        // MS-13 measures this: boxes far off screen skip their drawing, keeping their size.
-        contentVisibility: "auto",
+        // MS-13 measures this: boxes far off screen skip their drawing, keeping their size. A selected box draws its handles
+        // outside its edge, which the containment would clip.
+        contentVisibility: chosen ? undefined : "auto",
         containIntrinsicSize: `${rect.width}px ${rect.height}px`,
       }}
     >
@@ -448,12 +527,25 @@ function BoxItem({
                   data-testid="map-tile"
                   data-tile-id={id}
                   aria-describedby={words?.length ? descriptionId : undefined}
-                  style={{ position: "absolute", left: slot.x - rect.x, top: slot.y - rect.y, width: slot.width, height: slot.height }}
+                  data-selected={selected.includes(id) || undefined}
+                  role="listitem"
+                  tabIndex={onSelectBox ? -1 : undefined}
+                  onClick={onSelectBox && !step && !result ? () => onClick(id) : undefined}
+                  onKeyDown={
+                    onSelectBox && !step && !result
+                      ? (event) => {
+                          if (event.target !== event.currentTarget || event.key !== " ") return;
+                          event.preventDefault();
+                          onClick(id);
+                        }
+                      : undefined
+                  }
+                  style={{ position: "absolute", left: slot.x - rect.x, top: slot.y - rect.y, width: slot.width, height: slot.height, borderRadius: SELECTION.tileRadius, ...(selected.includes(id) ? { boxShadow: SELECTION_RING } : null) }}
                 >
                   {step ? (
-                    <StepTile tile={{ step }} steps={steps} show={partsOf(box, id)} badge={badgeOf(id)} selected={selected === id} onSelect={onClick} />
+                    <StepTile tile={{ step }} steps={steps} show={partsOf(box, id)} badge={badgeOf(id)} selected={selected.includes(id)} onSelect={onClick} />
                   ) : result ? (
-                    <StepTile tile={{ result }} steps={steps} selected={selected === id} onSelect={onClick} />
+                    <StepTile tile={{ result }} steps={steps} selected={selected.includes(id)} onSelect={onClick} />
                   ) : (
                     <div data-testid="map-removed-tile" style={{ ...REMOVED_SLOT, height: slot.height }}>
                       {MAP_CANVAS_COPY.removed}
@@ -479,7 +571,29 @@ function BoxItem({
           );
         })}
       </section>
+      {chosen && onSelectBox && selected.length === 1 ? <Handles width={rect.width} height={rect.height} /> : null}
     </li>
+  );
+}
+
+/** One selected box's eight handles, at its corners and the middles of its sides. MS-07 makes them resize. */
+function Handles({ width, height }: { width: number; height: number }) {
+  const at = [0, 0.5, 1];
+  const half = SELECTION.handle / 2;
+  return (
+    <span aria-hidden="true" data-testid="map-box-handles">
+      {at.flatMap((x) =>
+        at
+          .filter((y) => x !== 0.5 || y !== 0.5)
+          .map((y) => (
+            <span
+              key={`${x}-${y}`}
+              data-testid="map-box-handle"
+              style={{ position: "absolute", left: x * width - half - 1, top: y * height - half - 1, width: SELECTION.handle, height: SELECTION.handle, boxSizing: "border-box", background: t.evidence, borderRadius: 2, pointerEvents: "none" }}
+            />
+          )),
+      )}
+    </span>
   );
 }
 

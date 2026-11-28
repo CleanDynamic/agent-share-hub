@@ -129,3 +129,47 @@ export const LINES = { width: 1.3, arrow: 7, dash: "4 3", twoWay: 1.6, twoWayCol
 
 /** The dot grid, as the app draws it. */
 export const dotGrid = (dots: string): CSSProperties => ({ backgroundImage: `radial-gradient(${dots} 1px, transparent 1px)`, backgroundSize: "16px 16px" });
+
+/* ── MS-06: the editor ── */
+
+/** README Decision 10: selection in `t.evidence`, 2px. One selected box gets eight 8px handles. */
+export const SELECTION = { ring: 2, handle: 8, tileRadius: 12 } as const;
+export const SELECTION_RING = `0 0 0 ${SELECTION.ring}px ${t.evidence}`;
+
+/** The Map view's columns: "On the map" 252 wide, 16, then the canvas column. Under 1024 the first folds into a sheet. */
+export const EDITOR = { sources: 252, gap: 16, foldBelow: 1024, toolbarGap: 12 } as const;
+export const EDITOR_COLUMNS: CSSProperties = { display: "flex", alignItems: "flex-start", gap: EDITOR.gap, minWidth: 0 };
+export const EDITOR_SOURCES: CSSProperties = { flex: `0 0 ${EDITOR.sources}px`, width: EDITOR.sources, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 };
+export const EDITOR_CANVAS_COLUMN: CSSProperties = { flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: EDITOR.toolbarGap };
+/** The canvas's scrolling well: wide maps scroll across inside the column. */
+export const EDITOR_SCROLL: CSSProperties = { position: "relative", overflow: "auto", minWidth: 0, maxWidth: "100%" };
+
+/** The toolbar above the canvas: groups of buttons, a rule between groups. */
+export const TOOLBAR: CSSProperties = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 };
+export const TOOLBAR_GROUP: CSSProperties = { display: "flex", alignItems: "center", gap: 4 };
+
+/** Zoom: 50 to 150%, in steps of 10. */
+export const ZOOM = { min: 0.5, max: 1.5, step: 0.1 } as const;
+
+/** The floating bar: 36 tall, 8 clear of the selection, above its top-right corner (below when there's no room). */
+export const FLOATING_BAR = { height: 36, clear: 8, padding: "0 6px", gap: 4 } as const;
+export const FLOATING_BAR_STYLE: CSSProperties = {
+  position: "absolute",
+  zIndex: 2,
+  height: FLOATING_BAR.height,
+  boxSizing: "border-box",
+  display: "flex",
+  alignItems: "center",
+  gap: FLOATING_BAR.gap,
+  padding: FLOATING_BAR.padding,
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
+  borderRadius: 10,
+  whiteSpace: "nowrap",
+};
+/** The selection's name at the left of the floating bar. */
+export const FLOATING_NAME: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 500, color: t.text, padding: "0 6px" };
+/** A rule between the floating bar's groups. */
+export const FLOATING_RULE: CSSProperties = { width: 1, alignSelf: "stretch", margin: "8px 2px", background: t.hairline };
+/** A refusal: one line in `t.lit`. */
+export const REFUSAL: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: "18px", color: t.lit, margin: 0, whiteSpace: "nowrap" };

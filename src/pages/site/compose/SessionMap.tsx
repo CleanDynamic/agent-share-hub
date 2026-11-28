@@ -134,6 +134,11 @@ export interface SessionMapColumnProps {
    * scales it to the column. With a canvas the head has no direction switch.
    */
   canvas?: { width: number; node: ReactNode };
+  /**
+   * MS-06: the map editor, drawn under the head in place of everything below it. It has its own toolbar (zoom and Fit among
+   * it), so the head keeps only the shown line and Map options.
+   */
+  editor?: ReactNode;
 }
 
 function MapOptionsMenu({ controls }: { controls: MapControls }) {
@@ -326,7 +331,7 @@ function Legend({ model, selected }: { model: SessionMapModel; selected: string 
 }
 
 /** The map column: head, drawing, legend. */
-export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine, loading = false, canvas }: SessionMapColumnProps) {
+export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine, loading = false, canvas, editor }: SessionMapColumnProps) {
   const wide = useMinWidth(768);
   const direction: MapDirection = wide ? wanted : "vertical";
   const [fit, setFit] = useState(false);
@@ -347,9 +352,9 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
   const drawnWidth = canvas ? canvas.width : layout.width;
   const scale = fit && room > 0 && drawnWidth > room ? room / drawnWidth : 1;
 
-  // Escape clears the selection.
+  // Escape clears the selection (the editor answers its own).
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape" && selected) {
+    if (event.key === "Escape" && selected && !editor) {
       event.stopPropagation();
       onSelect(null);
     }
@@ -379,7 +384,7 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
           </p>
         </div>
         <div style={MAP_HEAD_CONTROLS}>
-          {controls?.onDirection && !canvas && wide ? (
+          {controls?.onDirection && !canvas && !editor && wide ? (
             <Segmented
               label={MAP_COPY.directionLabel}
               size={28}
@@ -393,10 +398,11 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
               ]}
             />
           ) : null}
-          <IconButton style={iconButtonSide()} icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />
+          {editor ? null : <IconButton style={iconButtonSide()} icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />}
           {controls ? <MapOptionsMenu controls={controls} /> : null}
         </div>
       </div>
+      {editor ?? (
       <div ref={scroller} data-testid="map-scroll" style={MAP_SCROLL}>
         {canvas ? (
           <div data-testid="map-canvas-fit" style={{ transform: scale === 1 ? undefined : `scale(${scale})`, transformOrigin: "0 0", width: scale === 1 ? undefined : drawnWidth }}>
@@ -406,7 +412,8 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
           <Drawing model={model} direction={direction} selected={selected} onSelect={onSelect} scale={scale} />
         )}
       </div>
-      {canvas ? null : <Legend model={model} selected={selected} />}
+      )}
+      {canvas || editor ? null : <Legend model={model} selected={selected} />}
     </div>
   );
 }
