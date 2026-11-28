@@ -967,6 +967,33 @@ export function placeTile(layout: MapLayout, tileId: string, to: string | null, 
   return finish({ ...layout, root: beside(layout.root, fresh, options.beside.id, options.beside.side, options) }, [fresh.id, options.beside.id], options);
 }
 
+/**
+ * MS-06: take a tile off the canvas: out of its box, which is removed when the tile was its last (the tile becomes unplaced,
+ * as `removeBox` leaves tiles). The last box on the canvas is kept, empty. Used for a tile the build no longer has (README
+ * Decision 6) and by the order fix.
+ */
+export function unplaceTile(layout: MapLayout, tileId: string, options: TreeOptions = {}): TreeResult {
+  const from = boxOfTile(layout, tileId);
+  if (!from) return no(MAP_LAYOUT_COPY.notPlaced);
+  if (from.tiles.length > 1) return finish({ ...layout, root: replaceNode(layout.root, from.id, (node) => withoutTiles(node as MapBox, [tileId])) }, [from.id], options);
+  const removed = removeBox(layout, from.id, options);
+  if (removed.ok) return removed;
+  return finish({ ...layout, root: replaceNode(layout.root, from.id, (node) => withoutTiles(node as MapBox, [tileId])) }, [from.id], options);
+}
+
+/** MS-06: every box's tiles in build order, for a build whose order changed. Unchanged boxes keep their identity. */
+export function sortTiles(layout: MapLayout, buildOrder: (tile: string) => number): TreeResult {
+  const changed: string[] = [];
+  let root = layout.root;
+  for (const box of boxes(layout)) {
+    const sorted = [...box.tiles].sort((a, b) => buildOrder(a) - buildOrder(b));
+    if (sorted.every((tile, at) => tile === box.tiles[at])) continue;
+    changed.push(box.id);
+    root = replaceNode(root, box.id, (node) => ({ ...(node as MapBox), tiles: sorted }));
+  }
+  return changed.length ? finish({ ...layout, root }, changed) : { ok: true, layout, changed };
+}
+
 /* ── regions ── */
 
 /** What a frame round `ids` would wrap: one node whose boxes are exactly them, or a run of one split's children. */

@@ -14,6 +14,7 @@
 // because a `typed-legacy-<n>` key is never written (`graph.ts` refuses it).
 
 import { groupKey, type SessionGroup, type Step } from "./graph";
+import { LEGACY_SESSION_PREFIX } from "./making";
 import { MAP_WIDTH } from "./mapGeometry";
 import type { MapBox, MapLayout, MapNode, MapRegion, MapSplit } from "./mapLayout";
 import { sessionMapFor } from "./sessionMap";
@@ -111,4 +112,48 @@ export function startFromBuild(steps: readonly Step[], groups: readonly SessionG
     hiddenLinks: [],
     linkGutters: {},
   };
+}
+
+/* ── MS-06: legacy keys ──
+   A `typed-legacy-<n>` key is only ever read (`graph.ts` refuses to store one), so a layout is written with each legacy
+   session's key replaced by its first tile's id, and read back the other way. Session keys sit in a region's `of`, in
+   `outlines` and in `twoWayDismissed` ("keyA|keyB", sorted). */
+
+/** Swap session keys throughout a layout. */
+function rekey(layout: MapLayout, swap: (key: string) => string): MapLayout {
+  const node = (each: MapNode): MapNode => {
+    if (each.kind === "box") return each;
+    if (each.kind === "split") return { ...each, children: each.children.map(node) };
+    const of = "session" in each.of ? { session: swap(each.of.session) } : each.of;
+    return { ...each, of, child: node(each.child) };
+  };
+  const pair = (keys: string) => keys.split("|").map(swap).sort().join("|");
+  return { ...layout, root: node(layout.root), outlines: layout.outlines.map(swap), twoWayDismissed: layout.twoWayDismissed.map(pair) };
+}
+
+/** Legacy session keys and their first tiles' ids, both ways. */
+function legacyKeys(steps: readonly Step[], groups: readonly SessionGroup[]): { stored: Map<string, string>; read: Map<string, string> } {
+  const stored = new Map<string, string>();
+  const read = new Map<string, string>();
+  for (const group of groups) {
+    const key = groupKey(group);
+    if (!key.startsWith(LEGACY_SESSION_PREFIX)) continue;
+    const first = steps.find((step) => group.stepNumbers.includes(step.number));
+    if (!first) continue;
+    stored.set(key, first.id);
+    read.set(first.id, key);
+  }
+  return { stored, read };
+}
+
+/** The layout as it is written: no legacy key in it. */
+export function forStorage(layout: MapLayout, steps: readonly Step[], groups: readonly SessionGroup[]): MapLayout {
+  const { stored } = legacyKeys(steps, groups);
+  return stored.size ? rekey(layout, (key) => stored.get(key) ?? key) : layout;
+}
+
+/** A stored layout as the canvas reads it: a legacy session's first tile's id back to its key. */
+export function fromStorage(layout: MapLayout, steps: readonly Step[], groups: readonly SessionGroup[]): MapLayout {
+  const { read } = legacyKeys(steps, groups);
+  return read.size ? rekey(layout, (key) => read.get(key) ?? key) : layout;
 }
