@@ -173,3 +173,18 @@ export const FLOATING_NAME: CSSProperties = { fontFamily: FIGTREE, fontSize: tex
 export const FLOATING_RULE: CSSProperties = { width: 1, alignSelf: "stretch", margin: "8px 2px", background: t.hairline };
 /** A refusal: one line in `t.lit`. */
 export const REFUSAL: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: "18px", color: t.lit, margin: 0, whiteSpace: "nowrap" };
+
+/* ── MS-07: the shaping tools ── */
+
+/** What a tool would do is drawn over the layout at this opacity, with no motion. */
+export const PREVIEW = { opacity: 0.6 } as const;
+/** A shared edge's hover and drag: a 2px `t.evidence` line along the middle of its gutter. */
+export const EDGE = { line: 2 } as const;
+export const EDGE_LINE = t.evidence;
+/** Split's cut: a dashed `t.evidence` line; the snapping guide is a 1px solid one. */
+export const CUT: CSSProperties = { position: "absolute", pointerEvents: "none", borderColor: t.evidence, borderStyle: "dashed", borderWidth: 0 };
+export const GUIDE: CSSProperties = { position: "absolute", pointerEvents: "none", background: t.evidence };
+/** The readout beside a dragged edge: both widths in px, mono. */
+export const READOUT: CSSProperties = { position: "absolute", zIndex: 2, pointerEvents: "none", fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "18px", color: t.evidence, background: t.window, border: `1px solid ${t.windowBorder}`, borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap" };
+/** A new empty half's line for the maker ("Drop tiles from Session 2 here"): dashed `t.evidence` round its words. */
+export const EMPTY_HINT: CSSProperties = { boxSizing: "border-box", border: `1px dashed ${t.evidence}`, borderRadius: 8, padding: "8px 10px", fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: "18px", color: t.evidence, margin: 0 };

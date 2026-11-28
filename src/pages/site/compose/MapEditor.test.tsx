@@ -100,9 +100,12 @@ describe("MapEditor", () => {
   it("the floating bar is a toolbar: the arrow keys move between its buttons", () => {
     draw();
     fireEvent.click(titleOf(boxNamed("Refund rules, Session 2")));
+    // MS-07: the shaping tools come first; Remove is last, and the arrows wrap.
     const remove = screen.getByTestId("map-remove-box");
     remove.focus();
     fireEvent.keyDown(remove, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(screen.getByTestId("map-split"));
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(remove);
   });
 

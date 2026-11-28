@@ -7,7 +7,9 @@
 
    STATE is `useMapEditor`, made by the page (`useMapEditorFor`) so the steps and the selection outlive a switch to the List.
    Every change goes through `editor.apply`; this prompt's one action of its own is removing a box. MS-07 to MS-12 add their
-   buttons to the floating bar (in groups, a rule between) and to the toolbar's groups.
+   buttons to the floating bar (in groups, a rule between) and to the toolbar's groups. MS-07's shaping tools are
+   `useShaping` (`MapShaping.tsx`): their buttons in the bar, their edges and cut over the canvas, their keys (S, and Ctrl or
+   Cmd with the arrows) before the editor's own.
 
    KEYS act only while the focus is in the canvas column, so the List's keep working: Tab moves through boxes in reading
    order, the arrows move between a box's tiles, Enter enters a box and Escape leaves it, then clears the selection; Delete
@@ -16,7 +18,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { flashOutline } from "@/components/post/RefLinks";
 import { Button } from "@/components/brand/Button";
@@ -59,6 +61,8 @@ import {
 import { MenuContent } from "./ComposeMenu";
 import { MemberLabel } from "./groupLabels";
 import { CANVAS_TOP, MapCanvas } from "./MapCanvas";
+import { useShaping } from "./MapShaping";
+import { MAP_SHAPING_COPY } from "./mapShaping";
 import { iconButtonSide, RecipeButton } from "./modalRecipes";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
@@ -212,6 +216,7 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
   const column = useRef<HTMLDivElement | null>(null);
   const facts = useMemo(() => orderFacts(steps, groups, files, results), [steps, groups, files, results]);
   const { layout, selected, geometry } = editor;
+  const announce = useAnnounce();
 
   /* ── actions ── */
   const boxEl = (id: string) => scroller.current?.querySelector<HTMLElement>(`[data-box-id="${id}"]`) ?? null;
@@ -233,6 +238,34 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
     else doRemove(id);
   };
   const oneBox = selected.length === 1 && nodeById(layout, selected[0])?.kind === "box" ? selected[0] : null;
+
+  /* ── MS-07: the shaping tools ── */
+  const [focusing, setFocusing] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focusing) return;
+    const el = scroller.current?.querySelector<HTMLElement>(`[data-box-id="${focusing}"]`);
+    if (!el) return;
+    el.focus();
+    setFocusing(null);
+  }, [focusing]);
+  const shaping = useShaping({
+    editor,
+    facts,
+    announce,
+    nameOf: (id) => selectionName(layout, [id], names),
+    sessionOf: (id) => {
+      const box = nodeById(layout, id);
+      const key = box?.kind === "box" ? box.tiles.map(names.sessionOf).find(Boolean) : null;
+      const number = key ? names.sessionNumber(key) : null;
+      return number === null ? null : MAP_EDITOR_UI_COPY.session(number);
+    },
+    toCanvas: (clientX, clientY) => {
+      const rect = scroller.current?.querySelector('[data-testid="map-canvas"]')?.getBoundingClientRect();
+      return { x: (clientX - (rect?.left ?? 0)) / zoom, y: (clientY - (rect?.top ?? 0)) / zoom };
+    },
+    pointerAt: (x, y) => ({ x: x * zoom, y: (y + CANVAS_TOP) * zoom }),
+    focusBox: setFocusing,
+  });
 
   /**
    * "Place on map": a new box beside the last box of its session (to the right, else below), or at the end of its part. The
@@ -271,10 +304,13 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
       event.preventDefault();
       event.stopPropagation();
     };
+    // A menu's keys are its own (they reach here through its portal).
+    if (target.closest('[role="menu"]')) return;
     if (which === "undo") return done(), editor.undo();
     if (which === "redo") return done(), editor.redo();
     const inBar = Boolean(target.closest('[role="toolbar"], [role="radiogroup"], [role="menu"]'));
     const tileEl = target.closest<HTMLElement>('[data-testid="map-tile"]');
+    if (shaping.onKey(event, inBar || tileEl ? null : oneBox)) return done();
     const box = target.closest<HTMLElement>("[data-box-id]");
     const tilesOf = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>('[data-testid="map-tile"]')];
     const focusTile = (el: HTMLElement | undefined) => {
@@ -394,8 +430,23 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
         ) : null}
         <div ref={scroller} data-testid="map-scroll" style={EDITOR_SCROLL}>
           <div style={{ position: "relative", width: drawnWidth * zoom, height: drawnHeight === undefined ? undefined : drawnHeight * zoom }}>
-            <div style={{ width: drawnWidth, transform: zoom === 1 ? undefined : `scale(${zoom})`, transformOrigin: "0 0" }}>
-              <MapCanvas layout={editor.shown} steps={steps} groups={groups} files={files} making={making} results={results} mode="maker" selected={selected} onSelect={editor.select} onGeometry={editor.setGeometry} />
+            <div style={{ position: "relative", width: drawnWidth, transform: zoom === 1 ? undefined : `scale(${zoom})`, transformOrigin: "0 0" }}>
+              <MapCanvas
+                layout={layout}
+                steps={steps}
+                groups={groups}
+                files={files}
+                making={making}
+                results={results}
+                mode="maker"
+                selected={selected}
+                onSelect={editor.select}
+                onGeometry={editor.setGeometry}
+                preview={editor.preview && shaping.previewGeometry ? { layout: editor.preview, geometry: shaping.previewGeometry } : null}
+                emptyHints={shaping.hints}
+                boxDescription={MAP_SHAPING_COPY.resizeKeys}
+              />
+              <div style={{ position: "absolute", left: 0, top: CANVAS_TOP }}>{shaping.layer}</div>
             </div>
             {selectedRect ? (
               <FloatingBar
@@ -404,6 +455,7 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
                 width={drawnWidth * zoom}
                 name={selectionName(layout, selected, names)}
                 refusal={editor.refusal && editor.refusal.at === "selection" ? editor.refusal.reason : null}
+                tools={shaping.bar}
                 onRemove={oneBox ? () => askRemove(oneBox) : undefined}
               />
             ) : null}
@@ -486,7 +538,24 @@ function ToolbarButton({ children, onClick, pressed, expanded, disabled, label, 
 
 /* ── the floating bar ── */
 
-function FloatingBar({ rect, zoom, width, name, refusal, onRemove }: { rect: { x: number; y: number; right: number; bottom: number }; zoom: number; width: number; name: string; refusal: string | null; onRemove?: () => void }) {
+function FloatingBar({
+  rect,
+  zoom,
+  width,
+  name,
+  refusal,
+  tools,
+  onRemove,
+}: {
+  rect: { x: number; y: number; right: number; bottom: number };
+  zoom: number;
+  width: number;
+  name: string;
+  refusal: string | null;
+  /** MS-07 on: the tools for the selection, in groups, before Remove. */
+  tools?: ReactNode;
+  onRemove?: () => void;
+}) {
   const bar = useRef<HTMLDivElement | null>(null);
   const top = (rect.y + CANVAS_TOP) * zoom;
   const above = top - FLOATING_BAR.height - FLOATING_BAR.clear;
@@ -496,6 +565,8 @@ function FloatingBar({ rect, zoom, width, name, refusal, onRemove }: { rect: { x
   const right = Math.max(0, width - rect.right * zoom);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "Home" && event.key !== "End") return;
+    // A menu opened from the bar sits in a portal: its keys are its own.
+    if (!bar.current?.contains(event.target as Node)) return;
     const buttons = [...(bar.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? [])];
     if (!buttons.length) return;
     const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
@@ -511,6 +582,7 @@ function FloatingBar({ rect, zoom, width, name, refusal, onRemove }: { rect: { x
         <span data-testid="map-floating-name" style={FLOATING_NAME}>
           {name}
         </span>
+        {tools}
         {onRemove ? (
           <Button variant="ghost" size={28} fontSize={13} data-testid="map-remove-box" onClick={onRemove} style={{ padding: "0 8px", color: t.text }}>
             {MAP_EDITOR_UI_COPY.removeBox}

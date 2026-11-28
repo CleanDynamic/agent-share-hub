@@ -72,8 +72,6 @@ interface Step {
 }
 
 export interface MapEditor {
-  /** What is on the canvas: the preview while a tool shows what it will do, else the layout. */
-  shown: MapLayout;
   layout: MapLayout;
   /** Node or tile ids. A tile and a box are never selected together, and tiles one at a time. */
   selected: string[];
@@ -81,6 +79,7 @@ export interface MapEditor {
   select: (id: string | null, add?: boolean) => void;
   hover: string | null;
   setHover: (id: string | null) => void;
+  /** What a tool would do, drawn over the layout at 60% until it applies or is left (MS-07). */
   preview: MapLayout | null;
   setPreview: (layout: MapLayout | null) => void;
   /** The one way a tool changes the map. */
@@ -99,6 +98,8 @@ export interface MapEditor {
   setGeometry: (layout: MapLayout, geometry: MapGeometry, measure?: Measure) => void;
   /** The geometry of the layout on screen, once the canvas has drawn it. */
   geometry: MapGeometry | null;
+  /** The measure the canvas drew with, to lay out a preview the same way (MS-07). */
+  measure: Measure | null;
   problems: MapProblem[];
   fix: () => void;
   /** Whether a layout has been written (or the stored one exists). */
@@ -117,6 +118,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
   const [refusal, setRefusal] = useState<MapRefusal | null>(null);
   const [drawn, setDrawn] = useState<{ layout: MapLayout; geometry: MapGeometry } | null>(null);
   const measure = useRef<Measure | null>(null);
+  const [sizes, setSizes] = useState<Measure | null>(null);
 
   const latest = useRef({ save, announce, onSaveError, layout });
   latest.current = { save, announce, onSaveError, layout };
@@ -190,11 +192,11 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
    */
   const check = useCallback(
     (result: TreeResult): TreeResult => {
-      const sizes = measure.current;
-      if (!("layout" in result) || !facts || !sizes) return result;
+      const drawnWith = measure.current;
+      if (!("layout" in result) || !facts || !drawnWith) return result;
       const now = latest.current.layout;
-      const known = new Set(orderProblems(now, geometryOf(now, sizes), facts).map((fact) => fact.sentence));
-      const fresh = orderProblems(result.layout, geometryOf(result.layout, sizes), facts).find((fact) => !known.has(fact.sentence));
+      const known = new Set(orderProblems(now, geometryOf(now, drawnWith), facts).map((fact) => fact.sentence));
+      const fresh = orderProblems(result.layout, geometryOf(result.layout, drawnWith), facts).find((fact) => !known.has(fact.sentence));
       return fresh ? { ok: false, reason: fresh.sentence } : result;
     },
     [facts],
@@ -236,8 +238,11 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
   }, [future, move]);
 
   /* ── the build changing ── */
-  const setGeometry = useCallback((of: MapLayout, geometry: MapGeometry, sizes?: Measure) => {
-    if (sizes) measure.current = sizes;
+  const setGeometry = useCallback((of: MapLayout, geometry: MapGeometry, given?: Measure) => {
+    if (given) {
+      measure.current = given;
+      setSizes(given);
+    }
     setDrawn((was) => (was?.layout === of && was.geometry === geometry ? was : { layout: of, geometry }));
   }, []);
   const geometry = drawn?.layout === layout ? drawn.geometry : null;
@@ -268,7 +273,6 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
   }, [facts, geometry, layout, apply]);
 
   return {
-    shown: preview ?? layout,
     layout,
     selected,
     select,
@@ -287,6 +291,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
     canRedo: future.length > 0,
     setGeometry,
     geometry,
+    measure: sizes,
     problems,
     fix,
     stored: stored !== null || local !== null,

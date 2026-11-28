@@ -621,14 +621,23 @@ describe("spanBox", () => {
     expect(okLayout(spanNode(value, "f", { newId: counter() })).root).toEqual(split("n1", "down", [region("f", { session: "s1" }, box("A")), box("B")], [0, 0]));
   });
 
-  it("refuses a box that already spans, a box inside a frame inside the row, a missing box and a split", () => {
+  it("MS-07: inside a frame the row ends at the frame; a box alone in its frame spans with it", () => {
+    const framed = deepFreeze(layout(split("col", "down", [split("r1", "across", [region("f", { session: "s1" }, split("in", "across", [box("A"), box("A2")])), box("B")]), box("C")])));
+    const inFrame = okLayout(spanBox(framed, "A", { newId: counter() }));
+    expect(inFrame.root).toEqual(split("col", "down", [split("r1", "across", [region("f", { session: "s1" }, split("n1", "down", [box("A"), box("A2")])), box("B")]), box("C")]));
+    // The session's own region holds only the box: the box spans with it, across the part's frame.
+    const part = deepFreeze(layout(region("p", { part: "a" }, split("row", "across", [region("s", { session: "s1" }, box("A")), box("B")]))));
+    expect(okLayout(spanBox(part, "A", { newId: counter() })).root).toEqual(region("p", { part: "a" }, split("n1", "down", [region("s", { session: "s1" }, box("A")), box("B")])));
+  });
+
+  it("refuses a box that already spans, a missing box and a split", () => {
     expect(refused(spanBox(GRID(), "C"))).toBe(MAP_LAYOUT_COPY.alreadySpans);
     expect(refused(spanBox(deepFreeze(layout(box("only"))), "only"))).toBe(MAP_LAYOUT_COPY.alreadySpans);
-    const framed = deepFreeze(layout(split("col", "down", [split("r1", "across", [region("f", { session: "s1" }, split("in", "across", [box("A"), box("A2")])), box("B")]), box("C")])));
-    expect(refused(spanBox(framed, "A"))).toBe(MAP_LAYOUT_COPY.spanInFrame);
     // Inside a frame that holds a column of its own, the box's row is that column's.
     const column = deepFreeze(layout(split("row", "across", [region("f", { session: "s1" }, split("in", "down", [box("A"), box("A2")])), box("B")])));
     expect(refused(spanBox(column, "A"))).toBe(MAP_LAYOUT_COPY.alreadySpans);
+    // A box alone in a frame that fills its column already spans.
+    expect(refused(spanBox(deepFreeze(layout(split("col", "down", [region("f", { session: "s1" }, box("A")), box("B")]))), "A"))).toBe(MAP_LAYOUT_COPY.alreadySpans);
     expect(refused(spanBox(ROW(), "nope"))).toBe(MAP_LAYOUT_COPY.noNode);
     expect(refused(spanBox(GRID(), "r1"))).toBe(MAP_LAYOUT_COPY.notABox);
   });
