@@ -77,11 +77,11 @@ describe("MapCanvas", () => {
 
   it("MS-07: a preview, an empty half's line and the box description are the maker's alone", () => {
     const fixture = mapSandboxFixture("supportInbox");
-    const layout = startFromBuild(fixture.steps, fixture.groups, fixture.making, fixture.results);
+    const layout = startFromBuild([...fixture.steps], [...fixture.groups], fixture.making, fixture.results);
     const split = splitBox(layout, "m-box-typed-s2", "across", 0.5, [], { newId: () => "m-new" });
     const next = (split as { layout: MapLayout }).layout;
     const extra = { preview: { layout: next, geometry: geometryOf(next, INBOX) }, emptyHints: { "m-new": "Drop tiles from Session 2 here" }, boxDescription: "Ctrl and arrows resize." };
-    const props = { steps: fixture.steps, groups: fixture.groups, files: fixture.files, making: fixture.making, results: fixture.results };
+    const props = { steps: [...fixture.steps], groups: [...fixture.groups], files: [...fixture.files], making: fixture.making, results: fixture.results };
     const { unmount } = render(<MapCanvas layout={next} {...props} mode="maker" onSelect={() => undefined} {...extra} />);
     expect(screen.getByTestId("map-preview").style.opacity).toBe("0.6");
     expect(screen.getByTestId("map-empty-hint")).toHaveTextContent("Drop tiles from Session 2 here");

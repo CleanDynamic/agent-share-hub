@@ -91,8 +91,10 @@ const press = (key: string, init: Partial<KeyboardEventInit> = {}) => fireEvent.
 const refusal = () => screen.queryByTestId("map-refusal")?.textContent ?? null;
 const edgeEl = (split: string, index: number, axis: SharedEdge["axis"] = "width") =>
   screen.getAllByTestId("map-edge").find((el) => el.dataset.split === split && el.dataset.index === String(index) && el.dataset.axis === axis) as HTMLElement;
+/** Either kind of edge, with every place a test reads. */
+type AnyEdge = SharedEdge & { x: number; top: number; bottom: number; y: number; left: number; right: number };
 const edgeOf = (state: MapEditorState, split: string, index: number, axis: SharedEdge["axis"] = "width") =>
-  state.geometry?.edges.find((edge) => edge.splitId === split && edge.index === index && edge.axis === axis) as SharedEdge;
+  state.geometry?.edges.find((edge) => edge.splitId === split && edge.index === index && edge.axis === axis) as AnyEdge;
 const sizesOf = (layout: MapLayout, id: string) => (nodeById(layout, id) as MapSplit).sizes;
 const S1 = "m-box-typed-s1";
 const S2 = "m-box-typed-s2";
@@ -351,7 +353,7 @@ describe("Shared edge", () => {
     fireEvent.pointerUp(area, { pointerId: 1 });
     fireEvent.pointerDown(area, { clientX: 100, clientY: 50, pointerId: 1 });
     fireEvent.pointerUp(area, { pointerId: 1 });
-    const under = (map.editor.geometry?.edges ?? []).find((edge) => edge.axis === "width" && edge.splitId !== ROW_A && Math.abs(edge.x - x) < 1) as SharedEdge;
+    const under = (map.editor.geometry?.edges ?? []).find((edge) => edge.axis === "width" && edge.splitId !== ROW_A && Math.abs((edge as AnyEdge).x - x) < 1) as AnyEdge;
     expect(under).toBeTruthy();
     // Part B's row lines up below it too, with nothing across the line: hovering one shows all three, dragging moves them.
     fireEvent.pointerEnter(edgeEl(ROW_A, 0));
@@ -549,5 +551,73 @@ describe("previews", () => {
     expect(screen.getByTestId("map-preview")).toBeTruthy();
     select(S1);
     expect(screen.queryByTestId("map-preview")).toBeNull();
+  });
+});
+
+/* ── Part 6: every tool leaves a sound map ── */
+
+describe("after every tool", () => {
+  it.each([
+    ["supportInbox", { first: S1, second: S2, row: ROW }],
+    ["fiftyTiles", { first: F(1), second: F(2), row: "m-ws-a-row-0" }],
+  ] as const)("%s: the layout passes mapLayoutRefusal and orderRefusal", async (name, { first, second, row }) => {
+    const map = draw(name);
+    map.sound();
+    let steps = 0;
+    const changed = (before: MapLayout) => {
+      expect(map.layout).not.toBe(before);
+      map.sound();
+      steps += 1;
+    };
+    let before = map.layout;
+    // Split side by side, then top and bottom.
+    select(second);
+    await openSplit("across");
+    press("Enter");
+    changed(before);
+    before = map.layout;
+    select(second);
+    await openSplit("down");
+    press("Enter");
+    changed(before);
+    // Merge the side-by-side half back.
+    before = map.layout;
+    const lower = map.editor.selected[0];
+    select(second);
+    select(lower, true);
+    fireEvent.click(screen.getByTestId("map-merge"));
+    changed(before);
+    // A shared edge, a height, and the keys.
+    before = map.layout;
+    drag(edgeEl(row, 0), edgeOf(map.editor, row, 0), 60);
+    changed(before);
+    before = map.layout;
+    drag(edgeEl("m-root", 0, "height"), edgeOf(map.editor, "m-root", 0, "height"), 32);
+    changed(before);
+    before = map.layout;
+    select(first);
+    act(() => boxEl(first).focus());
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    changed(before);
+    // Even out the row, match two boxes, span one.
+    before = map.layout;
+    select(first);
+    fireEvent.click(screen.getByTestId("map-even-out"));
+    changed(before);
+    // The first box takes the width of the second, now half of its old width.
+    before = map.layout;
+    select(second);
+    select(first, true);
+    fireEvent.click(screen.getByTestId("map-match-width"));
+    changed(before);
+    before = map.layout;
+    select(second);
+    fireEvent.click(screen.getByTestId("map-span"));
+    changed(before);
+    expect(steps).toBe(9);
+    // Each was one step: nine undos bring back the plain arrangement.
+    for (let at = 0; at < steps; at += 1) act(() => map.editor.undo());
+    expect(map.layout).toEqual(map.start);
+    expect(map.editor.canUndo).toBe(false);
   });
 });
