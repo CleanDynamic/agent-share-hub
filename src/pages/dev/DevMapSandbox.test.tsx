@@ -21,7 +21,16 @@ describe("/dev/map-sandbox", () => {
     const { unmount } = open(`/dev/map-sandbox?fixture=${name}`);
     expect((screen.getByTestId("map-sandbox-fixture") as HTMLSelectElement).value).toBe(name);
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
+    expect(screen.getByTestId("map-canvas").getAttribute("data-mode")).toBe("maker");
     unmount();
+  });
+
+  it("draws the canvas for a reader, at the width asked for", () => {
+    open("/dev/map-sandbox?fixture=supportInbox&mode=reader&width=720");
+    expect((screen.getByTestId("map-sandbox-mode") as HTMLSelectElement).value).toBe("reader");
+    expect(screen.getByTestId("map-canvas").getAttribute("data-mode")).toBe("reader");
+    expect(screen.getByTestId("map-canvas").style.width).toBe("720px");
+    expect(screen.getAllByTestId("map-tile")).toHaveLength(9);
   });
 
   it("opens on the support inbox, with its links as sentences and no stored layout", () => {

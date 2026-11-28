@@ -118,6 +118,7 @@ import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { KIND_ICON } from "./phone/phoneEditorModel";
+import type { MapTilePart } from "@/lib/build/mapLayout";
 import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
@@ -125,6 +126,34 @@ import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, Mark
    they start at the tile's own edge. */
 const TileIndentContext = createContext<number>(TILE_INDENT);
 const useTileIndent = (): number => useContext(TileIndentContext);
+
+/**
+ * MS-05 (README Decision 14): the List's tile is the map's tile. On the map (`variant: "map"`) a card leaves out what only
+ * the List has: the drag handle, the List's menu (the map passes its own, or none), the colour button, the footer link,
+ * Uses chips and nest buttons. Its badge shows the map's numbering, and its parts are only those in `show` (the text part
+ * when absent). The List never sets this, so it draws exactly as before.
+ */
+export interface TileVariant {
+  variant: "list" | "map";
+  show?: readonly MapTilePart[];
+  /** The number badge's text, from the map's numbering. Absent: the step's own number. */
+  badge?: string;
+  /** The map's ··· menu. Absent on the map: none. */
+  menu?: ReactNode;
+}
+export const TileVariantContext = createContext<TileVariant>({ variant: "list" });
+const useTileVariant = (): TileVariant => useContext(TileVariantContext);
+const useOnMap = (): boolean => useTileVariant().variant === "map";
+/**
+ * Whether a part of the tile is drawn: always on the List. On the map, `text` is the tile's body as the List draws it (a
+ * prompt's text, a code tile's lines, a check's criteria and status, any other tile's body) and `files` its attachments.
+ */
+function useShows(...parts: MapTilePart[]): boolean {
+  const variant = useTileVariant();
+  if (variant.variant === "list") return true;
+  const shown = variant.show ?? ["text"];
+  return parts.some((part) => shown.includes(part));
+}
 import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
 import { FramePieces } from "./framePieces";
@@ -1140,7 +1169,11 @@ function BoxRows({ step, phone }: { step: Step; phone: boolean }) {
  * A tile's header: the number in its square, a type line (11.5, `--label`) with the title under it (14 / 500, one line, an
  * ellipsis), the colour (only when one is set) and the ⋯ menu. The drag handle is drawn while the tile is hovered or has focus.
  */
-function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, selected = false }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode; selected?: boolean }) {
+function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu: listMenu, selected = false }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode; selected?: boolean }) {
+  const variant = useTileVariant();
+  const onMap = variant.variant === "map";
+  const menu = onMap ? (variant.menu ?? null) : listMenu;
+  const badge = variant.badge ?? step.number;
   if (phone) {
     /* Prompt 23: on a phone, a header row (the grip, the number box, the kind's icon at 16 and the kind 13 Text 2, the first
        titled box's title at the right), then the title 15/600 under it. The boxes themselves open from the step's sheet. */
@@ -1148,8 +1181,8 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
     return (
       <div data-testid="tile-head-phone" style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
-          <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
-          <NumberBadge selected={selected}>{step.number}</NumberBadge>
+          {onMap ? null : <DragHandle label={`Move ${gripName(step)}`} nest={nest} />}
+          <NumberBadge selected={selected}>{badge}</NumberBadge>
           <span aria-hidden="true" style={{ display: "inline-flex", color: t.text2, flexShrink: 0 }}>
             <MobileIcon name={KIND_ICON[step.kind] ?? "prompt"} size={16} />
           </span>
@@ -1161,7 +1194,7 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
               {boxTitle}
             </span>
           ) : null}
-          <CardColour step={step} phone={phone} inMenu />
+          {onMap ? null : <CardColour step={step} phone={phone} inMenu />}
           {menu}
         </div>
         {title}
@@ -1173,8 +1206,8 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
   }
   return (
     <div style={TILE_HEAD}>
-      <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
-      <NumberBadge selected={selected}>{step.number}</NumberBadge>
+      {onMap ? null : <DragHandle label={`Move ${gripName(step)}`} nest={nest} />}
+      <NumberBadge selected={selected}>{badge}</NumberBadge>
       <div style={TILE_TEXT}>
         <span data-testid={typeTestId} style={TILE_EYEBROW}>
           {typeLine}
@@ -1185,7 +1218,7 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
         {step.gate ? <GateLine gate={step.gate} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
       </div>
-      <CardColour step={step} phone={phone} inMenu />
+      {onMap ? null : <CardColour step={step} phone={phone} inMenu />}
       {menu}
     </div>
   );
@@ -1224,6 +1257,8 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
 /** What stands above a tile's footer: its "Uses" chips. Not drawn when it has none. */
 function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildListProps; withGoes?: boolean }) {
   const INDENT = useTileIndent();
+  // MS-05: the map's lines carry what a tile uses, so it has no Uses chips.
+  if (useOnMap()) return null;
   if (!usesParts(step, props, withGoes).any) return null;
   return (
     <div style={footRow(INDENT)}>
@@ -1249,11 +1284,12 @@ function numberIn(steps: readonly Step[], id: string): Step["number"] | undefine
 function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; props: BuildListProps; link?: ReactNode; facts?: readonly string[]; withGoes?: boolean }) {
   const INDENT = useTileIndent();
   const nest = useNestAvailable(step);
+  const onMap = useOnMap();
   return (
     <>
       <ExtraRow step={step} props={props} withGoes={withGoes} />
-      {/* UX-02 P10: a prompt step tile in the composer does not show its word count. */}
-      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id), { words: false })} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
+      {/* UX-02 P10: a prompt step tile in the composer does not show its word count. MS-05: on the map, no link and no nest buttons. */}
+      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id), { words: false })} link={onMap ? null : link} extra={nest && !onMap ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
     </>
   );
 }
@@ -1303,6 +1339,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const takesDrops = Boolean(props.fine && props.onDropOnStep);
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
   const still = useStillOpenTile(step, props.onStillOpen);
+  const showText = useShows("text");
+  const showFiles = useShows("files");
 
   return (
     <>
@@ -1445,7 +1483,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         </p>
       ) : null}
       {/* The message's attachments, where they sat: above the text, or under it for "after". */}
-      {step.attachments?.length && step.attachmentsAt !== "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
+      {showFiles && step.attachments?.length && step.attachmentsAt !== "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
+      {showText ? (
       <p
         ref={textRef}
         style={
@@ -1458,7 +1497,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
         <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
       </p>
-      {step.attachments?.length && step.attachmentsAt === "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
+      ) : null}
+      {showFiles && step.attachments?.length && step.attachmentsAt === "after" ? <TileAttachmentStrip attachments={step.attachments} phone={phone} indent={phone ? 0 : INDENT} /> : null}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
@@ -1525,6 +1565,8 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
 /** A dashed, text-only row that adds something inside an agent or a team. */
 function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  // MS-05: adding to an agent or a team is the List's; the map edits no step.
+  if (useOnMap()) return null;
   return (
     <button
       type="button"
@@ -1816,6 +1858,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
   const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
+  const showText = useShows("text");
   return (
     <div
       ref={cardRef}
@@ -1847,7 +1890,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
         title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
-      {body(INDENT)}
+      {showText ? body(INDENT) : null}
       {after}
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
@@ -1964,6 +2007,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
   const lines = lineCount(step.text);
+  const showCode = useShows("text", "code");
   return (
     <div
       ref={cardRef}
@@ -1994,12 +2038,14 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         title={<TileTitle step={step} rename={rename} noun="Code" phone={phone} />}
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
-      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
-        <CodePartLine step={step} />
-        <div data-no-drag="" style={{ display: "contents" }}>
-          <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+      {showCode ? (
+        <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+          <CodePartLine step={step} />
+          <div data-no-drag="" style={{ display: "contents" }}>
+            <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+          </div>
         </div>
-      </div>
+      ) : null}
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
@@ -2038,6 +2084,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   const status = step.check ? checkStatus(step.check) : null;
   const criteria = step.check?.passing.trim() ?? "";
   const history = step.check ? checkHistoryLine(step.check.runs) : null;
+  const showText = useShows("text");
   return (
     <div
       ref={cardRef}
@@ -2068,13 +2115,13 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         title={<TileTitle step={step} rename={rename} noun="Check" phone={phone} />}
         menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
       />
-      {criteria ? (
+      {showText && criteria ? (
         <p data-testid="check-criteria" style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
           <span style={{ ...text(textStep.meta, 400, t.text2) }}>Pass criteria: </span>
           {criteria}
         </p>
       ) : null}
-      {status ? (
+      {showText && status ? (
         <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT, ...text(textStep.body, 400, t.text), lineHeight: "22px" }}>
           <span style={tnum}>{status.line}</span>
         </DotLine>
@@ -2411,6 +2458,42 @@ function withFindOpen(props: BuildListProps): BuildListProps {
   return { ...props, collapsed, parts, onToggleCollapsed: keep(props.onToggleCollapsed) };
 }
 
+/**
+ * MS-05: one top-level tile, the card its kind draws. The List draws every tile through it, and the map draws the same card
+ * (`StepTile.tsx`) inside a `TileVariantContext` of `variant: "map"`. `index` and `last` place it among its kind's peers
+ * for the menu's Move up and Move down.
+ */
+export function ListTile({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const Card =
+    step.kind === "prompt"
+      ? StepCard
+      : step.kind === "manual"
+        ? ManualCard
+        : step.kind === "tool"
+          ? ToolCard
+          : step.kind === "decision"
+            ? DecisionCard
+            : step.kind === "retrieval"
+              ? RetrievalCard
+              : step.kind === "system_prompt"
+                ? SystemPromptCard
+                : step.kind === "dataset"
+                  ? DatasetCard
+                  : step.kind === "repo"
+                    ? RepoCard
+                    : step.kind === "file"
+                      ? FileCard
+                      : step.kind === "code"
+                        ? CodeCard
+                        : step.kind === "check"
+                          ? CheckCard
+                          : ContainerCard;
+  return <Card step={step} index={index} last={last} props={props} />;
+}
+
+/** MS-05: a Result's card, as the List draws it, for the map. */
+export const ListResultTile = ResultCard;
+
 export function BuildList(raw: BuildListProps) {
   const incoming = withFindOpen(raw);
   /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
@@ -2578,32 +2661,10 @@ export function BuildList(raw: BuildListProps) {
         },
       }
     : null;
-  const card = (step: Step) =>
-    step.kind === "prompt" ? (
-      <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
-    ) : step.kind === "manual" ? (
-      <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "tool" ? (
-      <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "decision" ? (
-      <DecisionCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "retrieval" ? (
-      <RetrievalCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "system_prompt" ? (
-      <SystemPromptCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "dataset" ? (
-      <DatasetCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "repo" ? (
-      <RepoCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "file" ? (
-      <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "code" ? (
-      <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : step.kind === "check" ? (
-      <CheckCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    ) : (
-      <ContainerCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-    );
+  const card = (step: Step) => {
+    const among = step.kind === "prompt" ? prompts : steps;
+    return <ListTile key={step.id} step={step} index={among.indexOf(step)} last={among.indexOf(step) === among.length - 1} props={props} />;
+  };
   /* CA-27 P3: a build of WINDOW_FROM tiles or more draws only the tiles near the view; the ones the page needs stay drawn. */
   const windowed = nestOn && steps.length >= WINDOW_FROM;
   const forcedTop = new Set<string>();

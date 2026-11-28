@@ -310,20 +310,24 @@ describe("CA-17 P4 · the map in the composer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create a map" }));
     await waitFor(() => expect((draftRow()?.making as { map?: unknown }).map).toEqual({ on: true, direction: "horizontal", onBuildPage: false }), { timeout: 15_000 });
     expect(await screen.findByTestId("session-map")).toBeTruthy();
+    // MS-05: the canvas, one box per session, nothing written for it.
+    expect(screen.getByTestId("map-canvas").getAttribute("data-mode")).toBe("maker");
     expect(screen.getAllByTestId("map-box")).toHaveLength(2);
+    expect((draftRow()?.making as { map_layout?: unknown }).map_layout).toBeUndefined();
     expect(screen.getByTestId("map-sub").textContent).toContain("Not on build page");
-    // Details is not shown in the Map view: the map's panel is.
+    // Details is not shown in the Map view, and the canvas takes the panel's width.
     expect(screen.queryByRole("region", { name: "Details" })).toBeNull();
-    expect(screen.getByTestId("map-panel")).toBeTruthy();
+    expect(screen.queryByTestId("map-panel")).toBeNull();
   });
 
-  it("Show on build page, the direction and Remove map are kept; removing keeps the direction", async () => {
+  it("Show on build page and Remove map are kept, with no direction switch; removing keeps the direction", async () => {
     await twoSessions();
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     fireEvent.click(await screen.findByRole("button", { name: "Create a map" }));
     await screen.findByTestId("session-map", undefined, { timeout: 15_000 });
-    fireEvent.click(screen.getByRole("button", { name: "Vertical" }));
-    await waitFor(() => expect((draftRow()?.making as { map?: { direction?: string } }).map?.direction).toBe("vertical"), { timeout: 15_000 });
+    // MS-05: the canvas has no direction.
+    expect(screen.queryByRole("button", { name: "Vertical" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Fit to screen" })).toBeTruthy();
     const trigger = screen.getByRole("button", { name: "Map options" });
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     fireEvent.keyDown(trigger, { key: "Enter" });
@@ -332,19 +336,19 @@ describe("CA-17 P4 · the map in the composer", () => {
     fireEvent.pointerDown(screen.getByRole("button", { name: "Map options" }), { button: 0, ctrlKey: false });
     fireEvent.keyDown(screen.getByRole("button", { name: "Map options" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Remove map" }));
-    await waitFor(() => expect((draftRow()?.making as { map?: unknown }).map).toEqual({ on: false, direction: "vertical", onBuildPage: true }), { timeout: 15_000 });
+    await waitFor(() => expect((draftRow()?.making as { map?: unknown }).map).toEqual({ on: false, direction: "horizontal", onBuildPage: true }), { timeout: 15_000 });
     expect(await screen.findByText("No map for this build.")).toBeTruthy();
   });
 
-  it("Open in the build goes to the List with the session's head selected", async () => {
+  it("a tile on the canvas is the List's tile, and clicking it selects it", async () => {
     await twoSessions();
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     fireEvent.click(await screen.findByRole("button", { name: "Create a map" }));
     await screen.findByTestId("session-map", undefined, { timeout: 15_000 });
-    fireEvent.click(screen.getAllByTestId("map-box")[1]);
-    fireEvent.click(await screen.findByRole("button", { name: "Open in the build" }));
-    expect(await screen.findByTestId("build-list", undefined, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.queryByTestId("session-map")).toBeNull();
+    const tile = screen.getAllByTestId("map-tile")[0];
+    const card = within(tile).getByTestId("step-card");
+    fireEvent.click(card);
+    await waitFor(() => expect(within(screen.getAllByTestId("map-tile")[0]).getByTestId("step-card").getAttribute("data-selected")).toBe("true"));
   });
 });
 

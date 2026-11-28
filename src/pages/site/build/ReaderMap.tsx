@@ -1,6 +1,7 @@
-/* CA-17 P4 — the build page's map of sessions: the same column and panel the composer draws (`SessionMap`,
-   `SessionMapPanel`), read-only. A reader's head has Fit to screen and nothing else (no direction switch, no Map options);
-   the maker's direction is the one drawn (vertical below 768 wide); the panel has no "Open in the build".
+/* CA-17 P4 — the build page's map. MS-05: on a wide screen, the same column head the composer draws (`SessionMap`) over the
+   map canvas in reader mode (`MapCanvas`): the maker's stored layout, or the plain arrangement (`startFromBuild`), at the
+   reader's width. A reader's head has Fit to screen and nothing else; a tile opens the Full prompt window. On a phone the
+   sessions' map stays in its pinch well until MS-13 brings the canvas there.
 
    It is loaded on demand when a reader chooses Map, as `StepsList` always did. Whether the reader is offered the Map at all
    is the maker's choice (`readerSeesMap`, CA-17 P6). */
@@ -10,11 +11,16 @@ import { useMemo, useRef, useState, type PointerEvent } from "react";
 import { PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { t } from "@/lib/theme/tokens";
 
+import { resultHoldsWord, type SessionGroup, type Step } from "@/lib/build/graph";
 import { readerMapDirection } from "@/lib/build/making";
+import { mapLayoutOf } from "@/lib/build/mapLayout";
+import { startFromBuild } from "@/lib/build/mapStart";
 import { joinedSessions, sessionMapFor, type SessionMapModel } from "@/lib/build/sessionMap";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
-import { MAP_AND_PANEL, MAP_COLUMN, MAP_STACKED } from "@/pages/site/compose/mapRecipes";
+import type { ListResult } from "@/pages/site/compose/buildListModel";
+import { MapCanvas } from "@/pages/site/compose/MapCanvas";
+import { MAP_COLUMN, MAP_STACKED } from "@/pages/site/compose/mapRecipes";
 import { SessionMapColumn } from "@/pages/site/compose/SessionMap";
 import { SessionMapPanel } from "@/pages/site/compose/SessionMapPanel";
 
@@ -151,13 +157,16 @@ function PhoneMap({ model, selected, onSelect, zoom }: { model: SessionMapModel;
   );
 }
 
-export default function ReaderMap({ view, start, phone = false }: ReaderMapProps) {
+export default function ReaderMap({ view, start, onRead, phone = false }: ReaderMapProps) {
   const pinch = usePinch();
   const [selected, setSelected] = useState<string | null>(start?.selected ?? null);
   const steps = useMemo(() => view.steps.map((entry) => entry.step), [view.steps]);
   const model = useMemo(() => sessionMapFor({ groups: view.map.groups, steps, files: view.map.files, making: view.making ?? {} }), [view.map, steps, view.making]);
   const stacked = !useMinWidth(BETWEEN.stack);
   const shown = selected && model.sessions.some((session) => session.key === selected) ? selected : null;
+  // A reader's Result is drawn by the List's own card, which takes the List's shape.
+  const results = useMemo<ListResult[]>(() => view.results.map((result) => ({ id: result.id, title: result.title, holds: resultHoldsWord(result.facts), facts: result.facts, from: result.from })), [view.results]);
+  const layout = useMemo(() => mapLayoutOf(view.making) ?? startFromBuild(steps, view.map.groups, view.making ?? {}, results), [view.making, view.map.groups, steps, results]);
   if (phone) {
     return (
       <div data-testid="reader-map" data-phone="" style={MAP_STACKED}>
@@ -182,11 +191,19 @@ export default function ReaderMap({ view, start, phone = false }: ReaderMapProps
     );
   }
   return (
-    <div data-testid="reader-map" style={stacked ? MAP_STACKED : MAP_AND_PANEL}>
+    <div data-testid="reader-map" style={stacked ? MAP_STACKED : { display: "flex", minWidth: 0 }}>
       <div style={MAP_COLUMN}>
-        <SessionMapColumn model={model} direction={readerMapDirection(view.making)} selected={shown} onSelect={setSelected} />
+        <SessionMapColumn
+          model={model}
+          direction={readerMapDirection(view.making)}
+          selected={shown}
+          onSelect={setSelected}
+          canvas={{
+            width: layout.width,
+            node: <MapCanvas layout={layout} steps={steps as Step[]} groups={view.map.groups as SessionGroup[]} files={[...view.map.files]} making={view.making ?? {}} results={results} mode="reader" onOpenTile={onRead} />,
+          }}
+        />
       </div>
-      <SessionMapPanel model={model} selected={shown} stacked={stacked} />
     </div>
   );
 }

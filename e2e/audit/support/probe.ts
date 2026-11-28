@@ -646,6 +646,10 @@ export const collectColours = () => {
   for (const el of els) {
     const s = getComputedStyle(el);
     if (s.display === "none" || s.visibility !== "visible") continue;
+    /* MS-05: the map canvas is the maker's paint, the same in both rooms (RULES: values identical in both themes that sit on
+       artwork). It re-declares the tokens of the theme whose ink reads on its background, so on Noon a grey canvas wears
+       Dusk's ink on purpose. The contrast sweep still measures every pair on it; only this leak check looks past it. */
+    if (el.closest("[data-canvas-paint]")) continue;
     for (const prop of props) {
       // `fill` and `stroke` paint nothing on an HTML element; its computed `fill` is the initial black (UI-P99).
       if ((prop === "fill" || prop === "stroke") && !(el instanceof SVGElement)) continue;

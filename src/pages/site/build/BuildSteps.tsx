@@ -1498,7 +1498,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
   const { steps, results } = view;
   const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
-  const hint = map ? (phone ? "Tap a session to see what joins it" : "Click a session to see what joins it · Esc clears") : headNote(steps).replace(/^./, (c) => c.toUpperCase());
+  const hint = map ? (phone ? "Tap a session to see what joins it" : "Click a tile to read it") : headNote(steps).replace(/^./, (c) => c.toUpperCase());
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));

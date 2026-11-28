@@ -149,6 +149,13 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "them. They are data the maker picks, not the page's paint: a chosen colour is stored as its hex and must read " +
       "the same in both themes, so it cannot be a token. None is ever applied for the maker.",
   },
+  "src/pages/site/compose/canvasRecipes.ts": {
+    max: 4,
+    why:
+      "MS-05 (MS series README Decision 10): THE MAP CANVAS'S FOUR BACKGROUND PRESETS, grey, dusk, slate and paper. They " +
+      "are paint the maker picks, stored by key, and must be the same colour in both themes, so they cannot be tokens. " +
+      "Every other colour on the canvas is a token, re-declared from the theme whose ink reads on the chosen paint.",
+  },
   "src/dev/fixtures/postLinks.ts": {
     max: 16,
     why:

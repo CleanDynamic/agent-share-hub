@@ -324,3 +324,20 @@ describe("no map yet", () => {
     expect(onCreate).toHaveBeenCalled();
   });
 });
+
+describe("MS-05: the head over the canvas", () => {
+  it("keeps the title, the shown line, Fit to screen and Map options; draws the canvas with no direction switch and no legend", () => {
+    const model = twoParts();
+    const options = controls();
+    render(<SessionMapColumn model={model} direction="horizontal" selected={null} onSelect={vi.fn()} controls={options} shownLine="Shown on build page" canvas={{ width: 960, node: <div data-testid="a-canvas" /> }} />);
+    expect(screen.getByTestId("map-title").textContent).toBe(mapTitle(model));
+    expect(screen.getByTestId("map-sub").textContent).toContain("Shown on build page");
+    expect(screen.getByTestId("a-canvas")).toBeTruthy();
+    expect(screen.queryByTestId("session-map-drawing")).toBeNull();
+    expect(screen.queryByTestId("map-legend")).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: MAP_COPY.directionLabel })).toBeNull();
+    expect(screen.queryByRole("button", { name: MAP_COPY.vertical })).toBeNull();
+    expect(screen.getByRole("button", { name: MAP_COPY.fit })).toBeTruthy();
+    expect(screen.getByRole("button", { name: MAP_COPY.options })).toBeTruthy();
+  });
+});
