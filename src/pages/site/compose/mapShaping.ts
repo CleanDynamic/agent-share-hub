@@ -149,29 +149,28 @@ export function mergeOf(layout: MapLayout, facts: OrderFacts, a: string, b: stri
 const sameEdge = (a: SharedEdge, b: SharedEdge) => a.axis === b.axis && a.splitId === b.splitId && a.index === b.index;
 
 /**
- * The shared edge a gutter belongs to: the edge and every width edge in line with it, touching end to end across the
- * gutters between rows. Columns come from edges lining up, so dragging one moves the column's whole edge. A height edge is
- * its own.
+ * The shared edge a gutter belongs to: the edge and every width edge in line with it with no box across the line between
+ * them (frames don't stop it). Columns come from edges lining up, so dragging one moves the column's whole edge. A height
+ * edge is its own.
  */
 export function edgeChain(geometry: MapGeometry, edge: SharedEdge): SharedEdge[] {
   if (edge.axis === "height") return [edge];
-  const inLine = geometry.edges.filter((other): other is Extract<SharedEdge, { axis: "width" }> => other.axis === "width" && Math.abs(other.x - edge.x) < EPSILON);
-  const chain = [edge];
-  let top = edge.top;
-  let bottom = edge.bottom;
-  for (let grew = true; grew; ) {
-    grew = false;
-    for (const other of inLine) {
-      if (chain.some((each) => sameEdge(each, other))) continue;
-      if (other.top <= bottom + GUTTER + EPSILON && other.bottom >= top - GUTTER - EPSILON) {
-        chain.push(other);
-        top = Math.min(top, other.top);
-        bottom = Math.max(bottom, other.bottom);
-        grew = true;
-      }
-    }
-  }
-  return chain;
+  const line = edge.x + GUTTER / 2;
+  const inLine = geometry.edges
+    .filter((other): other is Extract<SharedEdge, { axis: "width" }> => other.axis === "width" && Math.abs(other.x - edge.x) < EPSILON)
+    .sort((a, b) => a.top - b.top);
+  /** A box crossing the line somewhere between `from` and `to`. */
+  const crossed = (from: number, to: number) =>
+    geometry.leaves.some((id) => {
+      const rect = geometry.nodes[id];
+      return rect.x < line - EPSILON && rect.x + rect.width > line + EPSILON && rect.y < to - EPSILON && rect.y + rect.height > from + EPSILON;
+    });
+  const at = inLine.findIndex((other) => sameEdge(other, edge));
+  let first = at;
+  while (first > 0 && !crossed(inLine[first - 1].bottom, inLine[first].top)) first -= 1;
+  let last = at;
+  while (last < inLine.length - 1 && !crossed(inLine[last].bottom, inLine[last + 1].top)) last += 1;
+  return inLine.slice(first, last + 1);
 }
 
 /** The children an edge lies between (a height edge: the child above it). */

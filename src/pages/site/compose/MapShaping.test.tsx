@@ -259,3 +259,147 @@ describe("Merge", () => {
     expect(map.layout).toBe(after);
   });
 });
+
+/* ── Part 3: Shared edge ── */
+
+/** Drag an edge's hit area by `by` px along its axis (Alt with `alt`), checking along the way, then let go. */
+function drag(el: HTMLElement, edge: SharedEdge, by: number, { alt = false, during }: { alt?: boolean; during?: () => void } = {}) {
+  const from = edge.axis === "width" ? { clientX: edge.x + MAP_GRID.gutter / 2, clientY: (edge.top + edge.bottom) / 2 } : { clientX: (edge.left + edge.right) / 2, clientY: edge.y + MAP_GRID.gutter / 2 };
+  const to = edge.axis === "width" ? { ...from, clientX: from.clientX + by } : { ...from, clientY: from.clientY + by };
+  fireEvent.pointerDown(el, { ...from, altKey: alt, pointerId: 1 });
+  fireEvent.pointerMove(el, { ...to, altKey: alt, pointerId: 1 });
+  during?.();
+  fireEvent.pointerUp(el, { ...to, pointerId: 1 });
+}
+
+describe("Shared edge", () => {
+  it("hovering a gutter shows the edge; edges are for the pointer only, and the keyboard way is in each box's description", () => {
+    draw();
+    const el = edgeEl(ROW, 0);
+    expect(el.style.cursor).toBe("col-resize");
+    expect(screen.getByTestId("map-shaping-layer").getAttribute("aria-hidden")).toBe("true");
+    expect(screen.queryByTestId("map-edge-line")).toBeNull();
+    fireEvent.pointerEnter(el);
+    expect(screen.getByTestId("map-edge-line").style.width).toBe("2px");
+    fireEvent.pointerLeave(el);
+    expect(screen.queryByTestId("map-edge-line")).toBeNull();
+    expect(boxEl(S1)).toHaveAccessibleDescription(MAP_SHAPING_COPY.resizeKeys);
+  });
+
+  it("dragging moves the edge with moveEdge, previews it with both widths, snaps to the grid, and is one undo step", () => {
+    const map = draw();
+    const before = map.layout;
+    const edge = edgeOf(map.editor, ROW, 0);
+    const line = (map.editor.geometry?.columnLines ?? []).filter((_, at) => at % 2 === 1).find((x) => x > edge.x + 60) as number;
+    drag(edgeEl(ROW, 0), edge, line - edge.x + 4, {
+      during: () => {
+        expect(screen.getByTestId("map-preview")).toBeTruthy();
+        expect(screen.getByTestId("map-edge-readout").textContent).toMatch(/^\d+ px · \d+ px/);
+        expect(screen.getByTestId("map-snap-guide")).toBeTruthy();
+      },
+    });
+    expect(screen.queryByTestId("map-preview")).toBeNull();
+    expect(edgeOf(map.editor, ROW, 0).x).toBe(line);
+    expect(sizesOf(map.layout, ROW)[0]).toBeGreaterThan(sizesOf(before, ROW)[0]);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("a height edge drags the box's extra height, never shorter than its contents", () => {
+    const map = draw();
+    const before = map.layout;
+    const edge = edgeOf(map.editor, "m-root", 0, "height");
+    drag(edgeEl("m-root", 0, "height"), edge, 40);
+    expect(sizesOf(map.layout, "m-root")[0]).toBe(40);
+    map.sound();
+    map.oneStep(before);
+    // Up past its contents: it stops at them, and with nothing changed there is no step.
+    act(() => map.editor.undo());
+    const plain = map.layout;
+    drag(edgeEl("m-root", 0, "height"), edgeOf(map.editor, "m-root", 0, "height"), -80);
+    expect(map.layout).toBe(plain);
+  });
+
+  it("Alt drags one box's edge where a single box faces it; otherwise it says so once and moves the shared edge", async () => {
+    const map = draw();
+    const said = screen.getByTestId("build-announcer");
+    drag(edgeEl(ROW, 0), edgeOf(map.editor, ROW, 0), 60, { alt: true, during: () => expect(screen.getByTestId("map-edge-readout").textContent).not.toContain(MAP_SHAPING_COPY.altFallback) });
+    expect(sizesOf(map.layout, ROW)[0]).toBeGreaterThan(0.5);
+    // S2 split top and bottom: two boxes face S1 across the edge now.
+    select(S2);
+    await openSplit("down");
+    press("Enter");
+    const before = map.layout;
+    drag(edgeEl(ROW, 0), edgeOf(map.editor, ROW, 0), -60, { alt: true, during: () => expect(screen.getByTestId("map-edge-readout").textContent).toContain(MAP_SHAPING_COPY.altFallback) });
+    await waitFor(() => expect(said).toHaveTextContent(/Edge moved/));
+    expect(sizesOf(map.layout, ROW)[0]).toBeLessThan(sizesOf(before, ROW)[0]);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("edges in line move together, through frames; Alt moves only the row's own", async () => {
+    const map = draw("fiftyTiles");
+    const ROW_A = "m-ws-a-row-0";
+    const F3 = "m-box-typed-f3";
+    // Part A: S1 and S2 side by side, S3 across below. Split S3 with its cut under S1 and S2's edge: they line up.
+    const x = edgeOf(map.editor, ROW_A, 0).x;
+    select(F3);
+    await openSplit("across");
+    const area = screen.getByTestId("map-split-area");
+    fireEvent.pointerDown(area, { clientX: 100, clientY: 50, pointerId: 1 });
+    fireEvent.pointerMove(area, { clientX: x + MAP_GRID.gutter / 2, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(area, { pointerId: 1 });
+    fireEvent.pointerDown(area, { clientX: 100, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(area, { pointerId: 1 });
+    const under = (map.editor.geometry?.edges ?? []).find((edge) => edge.axis === "width" && edge.splitId !== ROW_A && Math.abs(edge.x - x) < 1) as SharedEdge;
+    expect(under).toBeTruthy();
+    // Part B's row lines up below it too, with nothing across the line: hovering one shows all three, dragging moves them.
+    fireEvent.pointerEnter(edgeEl(ROW_A, 0));
+    expect(screen.getAllByTestId("map-edge-line")).toHaveLength(3);
+    fireEvent.pointerLeave(edgeEl(ROW_A, 0));
+    const lined = map.layout;
+    drag(edgeEl(ROW_A, 0), edgeOf(map.editor, ROW_A, 0), 82);
+    const moved = edgeOf(map.editor, ROW_A, 0).x;
+    expect(moved).toBeGreaterThan(x + 40);
+    expect(edgeOf(map.editor, under.splitId, under.index).x).toBeCloseTo(moved, 0);
+    expect(edgeOf(map.editor, "m-ws-b-row-0", 0).x).toBeCloseTo(moved, 0);
+    map.sound();
+    map.oneStep(lined);
+    // With Alt, S1 and S2 face each other along the whole edge: only their row moves.
+    act(() => map.editor.undo());
+    drag(edgeEl(ROW_A, 0), edgeOf(map.editor, ROW_A, 0), 82, { alt: true });
+    expect(edgeOf(map.editor, ROW_A, 0).x).toBeGreaterThan(x + 40);
+    expect(edgeOf(map.editor, under.splitId, under.index).x).toBeCloseTo(x, 0);
+    map.sound();
+  });
+
+  it("edges in line with a box across the line between them are not one edge", () => {
+    const map = draw("fiftyTiles");
+    // Part A's and Part B's rows line up, but Part A's S3 spans between them.
+    expect(Math.abs(edgeOf(map.editor, "m-ws-a-row-0", 0).x - edgeOf(map.editor, "m-ws-b-row-0", 0).x)).toBeLessThan(1);
+    fireEvent.pointerEnter(edgeEl("m-ws-a-row-0", 0));
+    expect(screen.getAllByTestId("map-edge-line")).toHaveLength(1);
+  });
+
+  it("Ctrl or Cmd and the arrows move a box's edges a grid step; where it has no such edge, it says so", () => {
+    const map = draw();
+    select(S1);
+    act(() => boxEl(S1).focus());
+    const before = map.layout;
+    const x = edgeOf(map.editor, ROW, 0).x;
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    const moved = edgeOf(map.editor, ROW, 0).x;
+    expect(moved).toBeGreaterThan(x);
+    expect((map.editor.geometry?.columnLines ?? []).includes(moved)).toBe(true);
+    map.sound();
+    map.oneStep(before);
+    // S1 has no left edge: nothing changes.
+    const now = map.layout;
+    press("ArrowLeft", { ctrlKey: true, metaKey: true });
+    expect(refusal()).toBe(MAP_SHAPING_COPY.cantMove);
+    expect(map.layout).toBe(now);
+    // Down grows S1's row by the 8px rhythm; Up on S2 (whose row is the first) has no top edge.
+    press("ArrowDown", { ctrlKey: true, metaKey: true });
+    expect(sizesOf(map.layout, "m-root")[0]).toBe(MAP_GRID.rhythm);
+  });
+});
