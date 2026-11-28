@@ -327,7 +327,9 @@ describe("CA-17 P4 · the map in the composer", () => {
     await screen.findByTestId("session-map", undefined, { timeout: 15_000 });
     // MS-05: the canvas has no direction.
     expect(screen.queryByRole("button", { name: "Vertical" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Fit to screen" })).toBeTruthy();
+    // MS-06: Fit is the editor's toolbar's, beside zoom; the head keeps Map options.
+    expect(screen.queryByRole("button", { name: "Fit to screen" })).toBeNull();
+    expect(within(screen.getByTestId("map-toolbar")).getByRole("button", { name: "Fit" })).toBeTruthy();
     const trigger = screen.getByRole("button", { name: "Map options" });
     fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
     fireEvent.keyDown(trigger, { key: "Enter" });

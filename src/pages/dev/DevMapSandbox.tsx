@@ -1,25 +1,28 @@
 /* MS-00 — /dev/map-sandbox: the map sandbox's fixtures, where every MS prompt shows its work.
 
-   A fixture picker; the canvas (MS-05) for the chosen fixture, for the maker or a reader, at a width; its links as sentences
-   (`tileLinksOf`); and what `mapLayoutOf` reads from its `making`. Nothing is written.
+   A fixture picker; the canvas (MS-05) for the chosen fixture, at a width: for the maker in the editor (MS-06), whose steps
+   are kept on this page only, or for a reader; its links as sentences (`tileLinksOf`); and what `mapLayoutOf` reads from its
+   `making`. Nothing is written.
 
    DEV ONLY: registered behind `import.meta.env.DEV` in App.tsx. `?fixture=<name>` opens on a fixture, `?mode=reader` as a
    reader, `?width=<px>` at a width. */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { MAP_SANDBOX_NAMES, mapSandboxFixture, type MapSandboxName } from "@/dev/fixtures/mapSandbox";
 import { MAP_WIDTH } from "@/lib/build/mapGeometry";
-import { mapLayoutOf } from "@/lib/build/mapLayout";
+import { mapLayoutOf, type MapLayout } from "@/lib/build/mapLayout";
 import { startFromBuild } from "@/lib/build/mapStart";
 import { tileLinksOf } from "@/lib/build/sessionMap";
 import { r } from "@/lib/theme/radius";
 import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
+import { BuildAnnouncer } from "@/pages/site/compose/BuildAnnouncer";
 import { MapCanvas } from "@/pages/site/compose/MapCanvas";
+import { MapEditor, useMapEditorFor } from "@/pages/site/compose/MapEditor";
 
 export const DEV_MAP_SANDBOX_COPY = {
   fixture: "Fixture",
@@ -55,7 +58,6 @@ export default function DevMapSandbox() {
   const asWidth = Number(params.get("width"));
   const width = Number.isFinite(asWidth) && asWidth >= MAP_WIDTH.min ? Math.min(MAP_WIDTH.max, asWidth) : MAP_WIDTH.standard;
   const drawn = useMemo(() => ({ ...(layout ?? startFromBuild(fixture.steps, fixture.groups, fixture.making, fixture.results)), width }), [layout, fixture, width]);
-  const [selected, setSelected] = useState<string | null>(null);
   const set = (key: string, value: string) => {
     const next = new URLSearchParams(params);
     next.set(key, value);
@@ -109,7 +111,13 @@ export default function DevMapSandbox() {
           {DEV_MAP_SANDBOX_COPY.canvas}
         </h2>
         <div style={{ overflowX: "auto", maxWidth: mode === "reader" ? width : undefined }}>
-          <MapCanvas key={`${name}-${mode}`} layout={drawn} steps={fixture.steps} groups={fixture.groups} files={fixture.files} making={fixture.making} results={fixture.results} mode={mode} selected={selected} onSelect={setSelected} />
+          {mode === "reader" ? (
+            <MapCanvas key={name} layout={drawn} steps={[...fixture.steps]} groups={[...fixture.groups]} files={[...fixture.files]} making={fixture.making} results={fixture.results} mode="reader" />
+          ) : (
+            <BuildAnnouncer>
+              <DevEditor key={`${name}-${width}`} fixture={fixture} layout={drawn} />
+            </BuildAnnouncer>
+          )}
         </div>
       </section>
 
@@ -142,4 +150,13 @@ export default function DevMapSandbox() {
       </section>
     </main>
   );
+}
+
+const keep = () => Promise.resolve();
+
+/** The editor on a fixture: its steps are kept here, and nothing is written. */
+function DevEditor({ fixture, layout }: { fixture: ReturnType<typeof mapSandboxFixture>; layout: MapLayout }) {
+  const build = useMemo(() => ({ steps: [...fixture.steps], groups: [...fixture.groups], files: [...fixture.files], making: fixture.making, results: fixture.results }), [fixture]);
+  const editor = useMapEditorFor({ ...build, stored: layout, save: keep });
+  return <MapEditor editor={editor} {...build} />;
 }

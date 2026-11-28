@@ -99,7 +99,7 @@ import type { AddRetrievalDialog as AddRetrievalDialogImpl } from "./AddRetrieva
 import type { AddDecisionDialog as AddDecisionDialogImpl } from "./AddDecisionDialog";
 import type { AddRepoDialog as AddRepoDialogImpl } from "./AddRepoDialog";
 import type { AddSystemPromptDialog as AddSystemPromptDialogImpl } from "./AddSystemPromptDialog";
-import type { DecisionInput } from "@/lib/build/graph";
+import type { DecisionInput, SessionGroup } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
 import { useComposerScrollPadding } from "./composeChrome";
@@ -119,10 +119,10 @@ import { centre, partElement } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { SessionMapColumn, NoMap } from "./SessionMap";
 import type { SessionMapPanel as SessionMapPanelImpl } from "./SessionMapPanel";
-import { makerMapOf, mapViewOf, type MapSettings } from "@/lib/build/making";
+import { makerMapOf, mapViewOf, setMapLayout, type MapSettings } from "@/lib/build/making";
 import { mapLayoutOf } from "@/lib/build/mapLayout";
-import { startFromBuild } from "@/lib/build/mapStart";
-import { MapCanvas } from "./MapCanvas";
+import { MapEditor, useMapEditorFor } from "./MapEditor";
+import { MAP_EDITOR_COPY } from "./useMapEditor";
 import { suggestUses } from "@/lib/build/suggest";
 import type { SourcesPanel as SourcesPanelImpl } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, repeatsOf, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
@@ -2564,12 +2564,23 @@ function SandboxPageBody() {
     },
     [registry, select],
   );
-  /* MS-05: the Sessions view draws the canvas: the stored layout, or the plain arrangement worked out on every render and
-     written only once the maker changes something (MS-06). Read only for now. */
-  const mapLayout = useMemo(
-    () => mapLayoutOf(madeShown) ?? startFromBuild(steps, groups, madeShown, listFacts.results),
-    [madeShown, steps, groups, listFacts.results],
-  );
+  /* MS-05, MS-06: the Sessions view is the map editor, on the stored layout or the plain arrangement worked out on every
+     render and written only once the maker changes something. Its state lives here, so its steps outlive a switch to the
+     List. Each step is written through `setMapLayout` in the build's write queue. */
+  const storedLayout = useMemo(() => mapLayoutOf(madeShown), [madeShown]);
+  const mapEditor = useMapEditorFor({
+    stored: storedLayout,
+    steps: steps as Step[],
+    groups: groups as SessionGroup[],
+    files: mapFiles,
+    making: madeShown,
+    results: listFacts.results as ListResult[],
+    save: (layout) => {
+      if (!buildId) return Promise.resolve();
+      return nodes.run(() => setMapLayout(buildId, layout).then(() => undefined)).then(() => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }));
+    },
+    onSaveError: (cause, retry) => sayFailed(cause, MAP_EDITOR_COPY.saveFailed, retry),
+  });
   const mapColumn =
     mapSettings && mapActive ? (
       <SessionMapColumn
@@ -2578,10 +2589,7 @@ function SandboxPageBody() {
         selected={mapSelected}
         onSelect={select}
         shownLine={mapSettings.onBuildPage ? "Shown on build page" : "Not on build page"}
-        canvas={{
-          width: mapLayout.width,
-          node: <MapCanvas layout={mapLayout} steps={steps as Step[]} groups={groups as SessionGroup[]} files={mapFiles} making={madeShown} results={listFacts.results as ListResult[]} mode="maker" selected={selectedId} onSelect={(id) => (id ? select(id) : undefined)} />,
-        }}
+        editor={<MapEditor editor={mapEditor} steps={steps as Step[]} groups={groups as SessionGroup[]} files={mapFiles} making={madeShown} results={listFacts.results as ListResult[]} />}
         controls={{
           onBuildPage: mapSettings.onBuildPage,
           onToggleBuildPage: (onBuildPage) => changeMap({ ...mapSettings, onBuildPage }),

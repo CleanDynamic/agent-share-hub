@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { MapGeometry } from "@/lib/build/mapGeometry";
+import { geometryOf, type MapGeometry, type Measure } from "@/lib/build/mapGeometry";
 import { boxOfTile, nodeById, sortTiles, unplaceTile, type MapLayout, type TreeResult } from "@/lib/build/mapLayout";
 import { orderProblems, tileOptionsOf, twoWayProblems, type OrderFacts } from "@/lib/build/mapOrder";
 
@@ -85,6 +85,8 @@ export interface MapEditor {
   setPreview: (layout: MapLayout | null) => void;
   /** The one way a tool changes the map. */
   apply: (result: TreeResult, sentence: string, at?: RefusalAt) => boolean;
+  /** A result checked against the build's order, as `apply` checks it: for a tool that tries several places. */
+  check: (result: TreeResult) => TreeResult;
   /** Show and announce a refusal that didn't come from an operation (a drag over a place that isn't allowed). */
   refuse: (reason: string, at?: RefusalAt) => void;
   refusal: MapRefusal | null;
@@ -93,8 +95,10 @@ export interface MapEditor {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  /** The canvas's geometry for the layout it drew. */
-  setGeometry: (layout: MapLayout, geometry: MapGeometry) => void;
+  /** The canvas's geometry for the layout it drew, and the measure it used. */
+  setGeometry: (layout: MapLayout, geometry: MapGeometry, measure?: Measure) => void;
+  /** The geometry of the layout on screen, once the canvas has drawn it. */
+  geometry: MapGeometry | null;
   problems: MapProblem[];
   fix: () => void;
   /** Whether a layout has been written (or the stored one exists). */
@@ -112,6 +116,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
   const [preview, setPreview] = useState<MapLayout | null>(null);
   const [refusal, setRefusal] = useState<MapRefusal | null>(null);
   const [drawn, setDrawn] = useState<{ layout: MapLayout; geometry: MapGeometry } | null>(null);
+  const measure = useRef<Measure | null>(null);
 
   const latest = useRef({ save, announce, onSaveError, layout });
   latest.current = { save, announce, onSaveError, layout };
@@ -179,9 +184,25 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
     setRefusal((was) => ({ reason, at, n: (was?.n ?? 0) + 1 }));
     latest.current.announce(reason);
   }, []);
+  /**
+   * A step may never put a later tile before an earlier one: with the build's facts and the canvas's measure, a result that
+   * breaks an order fact the layout didn't already break is refused with that fact's sentence.
+   */
+  const check = useCallback(
+    (result: TreeResult): TreeResult => {
+      const sizes = measure.current;
+      if (!("layout" in result) || !facts || !sizes) return result;
+      const now = latest.current.layout;
+      const known = new Set(orderProblems(now, geometryOf(now, sizes), facts).map((fact) => fact.sentence));
+      const fresh = orderProblems(result.layout, geometryOf(result.layout, sizes), facts).find((fact) => !known.has(fact.sentence));
+      return fresh ? { ok: false, reason: fresh.sentence } : result;
+    },
+    [facts],
+  );
   const apply = useCallback(
-    (result: TreeResult, sentence: string, at?: RefusalAt) => {
-      if (!result.ok) {
+    (proposed: TreeResult, sentence: string, at?: RefusalAt) => {
+      const result = check(proposed);
+      if ("reason" in result) {
         refuse(result.reason, at);
         return false;
       }
@@ -193,7 +214,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
       latest.current.announce(sentence);
       return true;
     },
-    [move, refuse],
+    [move, refuse, check],
   );
   const undo = useCallback(() => {
     setRefusal(null);
@@ -215,7 +236,10 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
   }, [future, move]);
 
   /* ── the build changing ── */
-  const setGeometry = useCallback((of: MapLayout, geometry: MapGeometry) => setDrawn((was) => (was?.layout === of && was.geometry === geometry ? was : { layout: of, geometry })), []);
+  const setGeometry = useCallback((of: MapLayout, geometry: MapGeometry, sizes?: Measure) => {
+    if (sizes) measure.current = sizes;
+    setDrawn((was) => (was?.layout === of && was.geometry === geometry ? was : { layout: of, geometry }));
+  }, []);
   const geometry = drawn?.layout === layout ? drawn.geometry : null;
   const problems = useMemo<MapProblem[]>(() => {
     if (!facts || !geometry) return [];
@@ -229,13 +253,14 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
     const { buildOrder } = tileOptionsOf(facts);
     // Tiles inside a box go back into build order; a tile that still reads before an earlier one in another box comes off
     // the canvas (it is unplaced, and can be placed again); a two-way arrow no longer allowed or level is removed.
-    let next = sortTiles(layout, buildOrder).layout;
+    const sorted = sortTiles(layout, buildOrder);
+    let next = "layout" in sorted ? sorted.layout : layout;
     for (const fact of orderProblems(layout, geometry, facts)) {
       const a = boxOfTile(next, fact.before);
       const b = boxOfTile(next, fact.after);
       if (!a || !b || a.id === b.id) continue;
       const out = unplaceTile(next, fact.after);
-      if (out.ok) next = out.layout;
+      if ("layout" in out) next = out.layout;
     }
     const gone = new Set(twoWayProblems(layout, geometry, facts).map((problem) => problem.index));
     if (gone.size) next = { ...next, twoWay: next.twoWay.filter((_, at) => !gone.has(at)) };
@@ -252,6 +277,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
     preview,
     setPreview,
     apply,
+    check,
     refuse,
     refusal,
     clearRefusal: useCallback(() => setRefusal(null), []),
@@ -260,6 +286,7 @@ export function useMapEditor({ stored, plain, save, announce, onSaveError, facts
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     setGeometry,
+    geometry,
     problems,
     fix,
     stored: stored !== null || local !== null,
