@@ -35,9 +35,11 @@ import {
   BOX_TAB,
   BOX_TITLE,
   BOX_TITLE_SIDE,
+  EMPTY_HINT,
   FRAME,
   FRAME_TAB,
   LINES,
+  PREVIEW,
   REMOVED_HEIGHT,
   REMOVED_SLOT,
   backgroundOf,
@@ -79,6 +81,12 @@ export interface MapCanvasProps {
   onGeometry?: (layout: MapLayout, geometry: MapGeometry, measure: Measure) => void;
   /** A tile clicked in reader mode: the build page opens its Full prompt window. */
   onOpenTile?: (id: string) => void;
+  /** MS-07: what a tool would do, drawn over the layout at 60%: its boxes and their titles. Maker only. */
+  preview?: { layout: MapLayout; geometry: MapGeometry } | null;
+  /** MS-07: a line in an empty box, by box id ("Drop tiles from Session 2 here"). Maker only, never saved. */
+  emptyHints?: Readonly<Record<string, string>>;
+  /** MS-07: said once in every box's description while editing ("Ctrl and arrows resize."). */
+  boxDescription?: string;
 }
 
 /** Sizes before anything is measured (and in a test DOM, which measures nothing). */
@@ -116,7 +124,7 @@ const framed = (region: MapRegion) => "part" in region.of || region.child.kind !
 
 const NONE: readonly string[] = [];
 
-export function MapCanvas({ layout: stored, steps, groups, files, making, results = [], mode, selected = NONE, onSelect, onOpenTile, onGeometry }: MapCanvasProps) {
+export function MapCanvas({ layout: stored, steps, groups, files, making, results = [], mode, selected = NONE, onSelect, onOpenTile, onGeometry, preview, emptyHints, boxDescription }: MapCanvasProps) {
   const reader = mode === "reader";
   const editing = !reader && Boolean(onSelect);
   const markerId = useId().replace(/:/g, "");
@@ -344,10 +352,13 @@ export function MapCanvas({ layout: stored, steps, groups, files, making, result
               selected={selected}
               onClick={click}
               onSelectBox={editing ? onSelect : undefined}
+              hint={editing && box.tiles.length === 0 ? emptyHints?.[box.id] : undefined}
+              description={editing ? boxDescription : undefined}
             />
           ))}
         </ul>
         <Lines geometry={geometry} layout={layout} routes={routes} ink={ink} markerId={markerId} />
+        {editing && preview ? <Preview layout={preview.layout} geometry={preview.geometry} background={layout.background} headOf={headOf} /> : null}
         {reader && hidden > 0 ? <p style={VISUALLY_HIDDEN}>{MAP_CANVAS_COPY.hidden(hidden)}</p> : null}
       </div>
       <MeasuringLayer layerRef={layer} tiles={measured.tiles} heads={measured.heads} headOf={headOf} stepById={stepById} resultById={resultById} steps={steps} badgeOf={badgeOf} scope={scope} />
@@ -435,6 +446,8 @@ function BoxItem({
   selected,
   onClick,
   onSelectBox,
+  hint,
+  description,
 }: {
   box: MapBox;
   head: BoxHead;
@@ -452,6 +465,10 @@ function BoxItem({
   onClick: (id: string) => void;
   /** Editing: the box can be selected and focused. */
   onSelectBox?: (id: string, add?: boolean) => void;
+  /** MS-07: the line an empty box shows the maker. */
+  hint?: string;
+  /** MS-07: the box's description, said after its name. */
+  description?: string;
 }) {
   const rect = geometry.nodes[box.id];
   const chosen = selected.includes(box.id);
@@ -476,6 +493,7 @@ function BoxItem({
           : undefined
       }
       aria-label={onSelectBox ? head.name : undefined}
+      aria-describedby={description ? `map-box-about-${box.id}` : undefined}
       onPointerDown={onSelectBox ? () => (pointer.current = true) : undefined}
       onFocus={
         onSelectBox
@@ -561,6 +579,11 @@ function BoxItem({
             })}
           </ul>
         ) : null}
+        {hint ? (
+          <p data-testid="map-empty-hint" style={{ ...EMPTY_HINT, marginTop: 8 }}>
+            {hint}
+          </p>
+        ) : null}
         {Object.entries(box.notes).map(([tile, note]) => {
           const at = geometry.notes[tile];
           if (!at) return null;
@@ -571,6 +594,11 @@ function BoxItem({
           );
         })}
       </section>
+      {description ? (
+        <span id={`map-box-about-${box.id}`} style={VISUALLY_HIDDEN}>
+          {description}
+        </span>
+      ) : null}
       {chosen && onSelectBox && selected.length === 1 ? <Handles width={rect.width} height={rect.height} /> : null}
     </li>
   );
@@ -594,6 +622,31 @@ function Handles({ width, height }: { width: number; height: number }) {
           )),
       )}
     </span>
+  );
+}
+
+/* ── MS-07: what a tool would do ── */
+
+/** The preview's boxes and their titles at 60% over the layout: the shape a tool leaves, drawn at once. Hidden from screen readers (the tool says what it did). */
+function Preview({ layout, geometry, background, headOf }: { layout: MapLayout; geometry: MapGeometry; background: string; headOf: (box: MapBox) => BoxHead }) {
+  const all = new Map(boxes(layout).map((box) => [box.id, box]));
+  return (
+    <div aria-hidden="true" data-testid="map-preview" style={{ position: "absolute", left: 0, top: 0, width: geometry.width, height: geometry.height, opacity: PREVIEW.opacity, pointerEvents: "none" }}>
+      {geometry.leaves.map((id) => {
+        const rect = geometry.nodes[id];
+        const box = all.get(id);
+        return (
+          <div
+            key={id}
+            data-testid="map-preview-box"
+            data-preview-of={id}
+            style={{ ...boxStyle(box?.style, background), position: "absolute", left: rect.x, top: rect.y, width: rect.width, height: rect.height, padding: BOX.padding, overflow: "hidden" }}
+          >
+            {box ? <HeadText head={headOf(box)} /> : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

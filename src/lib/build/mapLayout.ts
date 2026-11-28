@@ -105,7 +105,6 @@ export const MAP_LAYOUT_COPY = {
   differentSessions: "These boxes hold different sessions.",
   noEdge: "There is no edge there.",
   alreadySpans: "This box already spans its row.",
-  spanInFrame: "This box is inside a frame. Span the frame instead.",
   chooseTwo: "Choose two or more boxes.",
   cantMatch: (name: string, axis: "width" | "height") => `${name} can't change its ${axis} here.`,
   noRoom: (name: string) => `${name} would need more room than its row has.`,
@@ -478,7 +477,7 @@ export const boxOfTile = (layout: Pick<MapLayout, "root">, tile: string): MapBox
  * A node with the frames that hold only it: the highest of the regions directly above it (each region holds one child), and
  * the split that holds that, when there is one. A box in a frame fills the frame, so this is the rectangle it fills.
  */
-function unitOf(root: MapNode, id: string): { unit: MapNode; parent: MapSplit | null; index: number } | null {
+export function unitOf(root: MapNode, id: string): { unit: MapNode; parent: MapSplit | null; index: number } | null {
   const path = pathTo({ root }, id);
   if (path.length === 0) return null;
   let at = path.length - 1;
@@ -768,31 +767,36 @@ export function moveEdge(layout: MapLayout, splitId: string, index: number, delt
 }
 
 /**
- * Stretch a box (or a frame) across the full width of the row it sits in: the child of the nearest `down` split above it, or
- * the whole canvas. Its old row-mates stay in a row of their own directly below it. Whether the order allows it is MS-03's.
+ * Stretch a box (or a frame) across the full width of the row it sits in: the child of the nearest `down` split or frame
+ * above it (with the frames that hold only it), or the whole canvas. Inside a frame the row ends at the frame (MS-07). Its
+ * old row-mates stay in a row of their own directly below it. Whether the order allows it is MS-03's.
  */
 export function spanNode(layout: MapLayout, id: string, options: TreeOptions = {}): TreeResult {
   const path = pathTo(layout, id);
   if (path.length === 0) return no(MAP_LAYOUT_COPY.noNode);
-  let down = path.length - 2;
-  while (down >= 0 && !(path[down].kind === "split" && (path[down] as MapSplit).dir === "down")) down -= 1;
-  const between = path.slice(down + 1, -1);
-  if (!between.some((node) => node.kind === "split")) return no(MAP_LAYOUT_COPY.alreadySpans);
-  if (between.some((node) => node.kind === "region")) return no(MAP_LAYOUT_COPY.spanInFrame);
-  const node = path[path.length - 1];
+  let top = path.length - 1;
+  while (top > 0 && path[top - 1].kind === "region") top -= 1;
+  let above = top - 1;
+  while (above >= 0 && path[above].kind === "split" && (path[above] as MapSplit).dir === "across") above -= 1;
+  const between = path.slice(above + 1, top);
+  if (between.length === 0) return no(MAP_LAYOUT_COPY.alreadySpans);
+  const node = path[top];
   const row = between[0];
-  const rest = cutFrom(row, id).root as MapNode;
+  const rest = cutFrom(row, node.id).root as MapNode;
+  const column = (): MapSplit => ({ kind: "split", id: freshId(options), dir: "down", sizes: [0, 0], children: [node, rest] });
   let root: MapNode;
-  if (down >= 0) {
-    const split = path[down] as MapSplit;
-    const at = split.children.indexOf(row);
-    const children = [...split.children];
-    const sizes = [...split.sizes];
+  const holder = above >= 0 ? path[above] : null;
+  if (holder?.kind === "split") {
+    const at = holder.children.indexOf(row);
+    const children = [...holder.children];
+    const sizes = [...holder.sizes];
     children.splice(at, 1, node, rest);
     sizes.splice(at, 0, 0);
-    root = replaceNode(layout.root, split.id, () => ({ ...split, children, sizes }));
+    root = replaceNode(layout.root, holder.id, () => ({ ...holder, children, sizes }));
+  } else if (holder?.kind === "region") {
+    root = replaceNode(layout.root, holder.id, () => ({ ...holder, child: column() }));
   } else {
-    root = { kind: "split", id: freshId(options), dir: "down", sizes: [0, 0], children: [node, rest] };
+    root = column();
   }
   return finish({ ...layout, root }, [id, row.id], options);
 }
