@@ -203,3 +203,59 @@ describe("Split", () => {
     expect(map.layout).toBe(before);
   });
 });
+
+/* ── Part 2: Merge ── */
+
+/** A tool's button: unavailable (with its reason as title and accessible description) or not. */
+function why(testId: string): string | null {
+  const button = screen.getByTestId(testId);
+  if (button.getAttribute("aria-disabled") !== "true") return null;
+  expect(button.getAttribute("title")).toBeTruthy();
+  expect(button).toHaveAccessibleDescription(button.getAttribute("title") as string);
+  return button.getAttribute("title");
+}
+
+describe("Merge", () => {
+  it("joins two halves of one session back into one box, tiles in build order, as one undo step", async () => {
+    const map = draw();
+    select(S2);
+    await openSplit("across");
+    press("Enter");
+    const half = map.editor.selected[0];
+    const before = map.layout;
+    select(S2);
+    select(half, true);
+    expect(why("map-merge")).toBeNull();
+    fireEvent.click(screen.getByTestId("map-merge"));
+    expect(nodeById(map.layout, half)).toBeNull();
+    const merged = nodeById(map.layout, S2);
+    expect(merged?.kind === "box" && merged.tiles).toEqual(["p4", "c5", "k6"]);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("is unavailable for two sessions, and for boxes that don't share an edge, saying why; pressing it changes nothing", async () => {
+    const map = draw();
+    const before = map.layout;
+    select(S1);
+    select(S2, true);
+    expect(why("map-merge")).toBe(MAP_LAYOUT_COPY.differentSessions);
+    fireEvent.click(screen.getByTestId("map-merge"));
+    expect(refusal()).toBe(MAP_LAYOUT_COPY.differentSessions);
+    expect(map.layout).toBe(before);
+    // S2 split top and bottom twice: its first box and the last new one are a box apart.
+    select(S2);
+    await openSplit("down");
+    press("Enter");
+    const last = map.editor.selected[0];
+    select(S2);
+    await openSplit("down");
+    press("Enter");
+    const after = map.layout;
+    select(S2);
+    select(last, true);
+    expect(why("map-merge")).toBe(MAP_LAYOUT_COPY.notNeighbours);
+    fireEvent.click(screen.getByTestId("map-merge"));
+    expect(map.layout).toBe(after);
+  });
+});
