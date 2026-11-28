@@ -2,7 +2,9 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { mapSandboxFixture, type MapSandboxName } from "@/dev/fixtures/mapSandbox";
-import { mapLayoutOf, type MapLayout } from "@/lib/build/mapLayout";
+import { geometryOf } from "@/lib/build/mapGeometry";
+import { mapLayoutOf, splitBox, type MapLayout } from "@/lib/build/mapLayout";
+import { INBOX } from "@/lib/build/mapSandboxTestSupport";
 import { startFromBuild } from "@/lib/build/mapStart";
 
 import { MAP_CANVAS_COPY, MapCanvas } from "./MapCanvas";
@@ -71,5 +73,23 @@ describe("MapCanvas", () => {
     unmount();
     draw("supportInbox", "maker", { background: "paper" });
     expect(screen.getByTestId("map-canvas").style.getPropertyValue("--text")).toBe("#0B120D");
+  });
+
+  it("MS-07: a preview, an empty half's line and the box description are the maker's alone", () => {
+    const fixture = mapSandboxFixture("supportInbox");
+    const layout = startFromBuild(fixture.steps, fixture.groups, fixture.making, fixture.results);
+    const split = splitBox(layout, "m-box-typed-s2", "across", 0.5, [], { newId: () => "m-new" });
+    const next = (split as { layout: MapLayout }).layout;
+    const extra = { preview: { layout: next, geometry: geometryOf(next, INBOX) }, emptyHints: { "m-new": "Drop tiles from Session 2 here" }, boxDescription: "Ctrl and arrows resize." };
+    const props = { steps: fixture.steps, groups: fixture.groups, files: fixture.files, making: fixture.making, results: fixture.results };
+    const { unmount } = render(<MapCanvas layout={next} {...props} mode="maker" onSelect={() => undefined} {...extra} />);
+    expect(screen.getByTestId("map-preview").style.opacity).toBe("0.6");
+    expect(screen.getByTestId("map-empty-hint")).toHaveTextContent("Drop tiles from Session 2 here");
+    expect(screen.getAllByTestId("map-box")[0]).toHaveAccessibleDescription("Ctrl and arrows resize.");
+    unmount();
+    render(<MapCanvas layout={next} {...props} mode="reader" {...extra} />);
+    expect(screen.queryByTestId("map-preview")).toBeNull();
+    expect(screen.queryByTestId("map-empty-hint")).toBeNull();
+    expect(screen.queryByText("Ctrl and arrows resize.")).toBeNull();
   });
 });

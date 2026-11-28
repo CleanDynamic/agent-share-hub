@@ -505,3 +505,49 @@ describe("Match", () => {
     expect(map.layout).toBe(before);
   });
 });
+
+/* ── Part 5: previews ── */
+
+describe("previews", () => {
+  it("Span, Even out and Match show their result at 60% on hover or focus, and leaving clears it; nothing changes", () => {
+    const map = draw("fiftyTiles");
+    const before = map.layout;
+    select(F(1));
+    act(() => boxEl(F(1)).focus());
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    const uneven = map.layout;
+    for (const testId of ["map-span", "map-even-out"]) {
+      const button = screen.getByTestId(testId);
+      fireEvent.mouseEnter(button);
+      const preview = screen.getByTestId("map-preview");
+      expect(preview.style.opacity).toBe("0.6");
+      expect(preview.getAttribute("aria-hidden")).toBe("true");
+      fireEvent.mouseLeave(button);
+      expect(screen.queryByTestId("map-preview")).toBeNull();
+      act(() => button.focus());
+      expect(screen.getByTestId("map-preview")).toBeTruthy();
+      act(() => button.blur());
+      expect(screen.queryByTestId("map-preview")).toBeNull();
+    }
+    select(F(1));
+    select(F(4), true);
+    fireEvent.mouseEnter(screen.getByTestId("map-match-width"));
+    expect(screen.getByTestId("map-preview")).toBeTruthy();
+    fireEvent.mouseLeave(screen.getByTestId("map-match-width"));
+    expect(screen.queryByTestId("map-preview")).toBeNull();
+    expect(map.layout).toBe(uneven);
+    expect(uneven).not.toBe(before);
+  });
+
+  it("an unavailable tool shows no preview; a new selection clears one", () => {
+    draw();
+    select(S1);
+    fireEvent.mouseEnter(screen.getByTestId("map-span"));
+    expect(screen.queryByTestId("map-preview")).toBeNull();
+    select(S2);
+    fireEvent.mouseEnter(screen.getByTestId("map-span"));
+    expect(screen.getByTestId("map-preview")).toBeTruthy();
+    select(S1);
+    expect(screen.queryByTestId("map-preview")).toBeNull();
+  });
+});
