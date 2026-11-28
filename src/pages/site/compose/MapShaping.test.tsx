@@ -403,3 +403,105 @@ describe("Shared edge", () => {
     expect(sizesOf(map.layout, "m-root")[0]).toBe(MAP_GRID.rhythm);
   });
 });
+
+/* ── Part 4: Span, Even out, Match ── */
+
+const F = (n: number) => `m-box-typed-f${n}`;
+
+describe("Span", () => {
+  it("stretches a box across its row inside its frame, its row-mates below, as one undo step", () => {
+    const map = draw();
+    const before = map.layout;
+    select(S2);
+    expect(why("map-span")).toBeNull();
+    fireEvent.click(screen.getByTestId("map-span"));
+    const s1 = map.editor.geometry?.nodes[S1] as { y: number };
+    const s2 = map.editor.geometry?.nodes[S2] as { y: number; width: number };
+    expect(s2.y).toBeLessThan(s1.y);
+    expect(s2.width).toBeGreaterThan((map.editor.geometry?.width ?? 0) / 2 + 100);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("is unavailable where the row-mates moving down would break the order, naming the tiles, and where the box already spans", () => {
+    const map = draw();
+    const before = map.layout;
+    select(S1);
+    // S2 below S1 would put Prompt 4 after Prompt 3, which uses it.
+    const fact = map.facts.facts.find((each) => each.before === "p4" && each.after === "p3");
+    expect(why("map-span")).toBe(fact?.sentence);
+    fireEvent.click(screen.getByTestId("map-span"));
+    expect(refusal()).toBe(fact?.sentence);
+    expect(map.layout).toBe(before);
+    select("m-result-r9");
+    expect(why("map-span")).toBe(MAP_LAYOUT_COPY.alreadySpans);
+  });
+});
+
+describe("Even out", () => {
+  it("one box evens its whole row; already even, it says so", () => {
+    const map = draw("fiftyTiles");
+    select(F(1));
+    expect(why("map-even-out")).toBe(MAP_SHAPING_COPY.alreadyEven);
+    act(() => boxEl(F(1)).focus());
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    const before = map.layout;
+    expect(why("map-even-out")).toBeNull();
+    fireEvent.click(screen.getByTestId("map-even-out"));
+    expect(sizesOf(map.layout, "m-ws-a-row-0")).toEqual([0.5, 0.5]);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("is offered for boxes of one split, not for boxes of two", () => {
+    draw("fiftyTiles");
+    select(F(1));
+    select(F(2), true);
+    expect(screen.getByTestId("map-even-out")).toBeTruthy();
+    select(F(1));
+    select(F(4), true);
+    expect(screen.queryByTestId("map-even-out")).toBeNull();
+  });
+});
+
+describe("Match", () => {
+  it("gives the boxes the first one's width, as one undo step; already matching, it says so", () => {
+    const map = draw("fiftyTiles");
+    select(F(1));
+    select(F(4), true);
+    expect(why("map-match-width")).toBe(MAP_SHAPING_COPY.alreadyMatch);
+    select(F(1));
+    act(() => boxEl(F(1)).focus());
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    const before = map.layout;
+    select(F(1));
+    select(F(4), true);
+    expect(why("map-match-width")).toBeNull();
+    fireEvent.click(screen.getByTestId("map-match-width"));
+    const width = (id: string) => map.editor.geometry?.nodes[id].width as number;
+    expect(width(F(4))).toBeCloseTo(width(F(1)), 0);
+    map.sound();
+    map.oneStep(before);
+  });
+
+  it("refuses with the box in the way, and a box whose split runs the other way; nothing changes", async () => {
+    const map = draw("fiftyTiles");
+    select(F(1));
+    select(F(4), true);
+    expect(why("map-match-height")).toBe(MAP_LAYOUT_COPY.cantMatch("Box · S1", "height"));
+    // S5 in two halves needs more room than S1's width leaves beside S4.
+    select(F(5));
+    await openSplit("across");
+    press("Enter");
+    select(F(1));
+    act(() => boxEl(F(1)).focus());
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    press("ArrowRight", { ctrlKey: true, metaKey: true });
+    const before = map.layout;
+    select(F(1));
+    select(F(4), true);
+    expect(why("map-match-width")).toBe(MAP_SHAPING_COPY.inTheWay("Box · S5", Math.ceil(minBoxWidth(map.layout.width))));
+    fireEvent.click(screen.getByTestId("map-match-width"));
+    expect(map.layout).toBe(before);
+  });
+});
