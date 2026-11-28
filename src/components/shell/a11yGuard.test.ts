@@ -19,6 +19,12 @@ const KEYS = ["onKeyDown", "onKeyUp", "onKeyPress"];
 
 /** A pointer convenience round a real control, which is what the keyboard and screen readers use: allowed, with its reason. */
 const ALLOWED: { file: string; tag: string; rule: string; reason: string }[] = [
+  {
+    file: "src/pages/site/compose/MapCanvas.tsx",
+    tag: "div",
+    rule: "click",
+    reason: "MS-06: a click on the canvas's own background clears the selection; Escape in the canvas column does it from the keyboard (MapEditor).",
+  },
 ];
 
 /** A file whose first line says it is a test's own host (ca26.menuHost.tsx) is not the site. */

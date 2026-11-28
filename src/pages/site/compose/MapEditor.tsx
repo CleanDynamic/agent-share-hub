@@ -98,7 +98,6 @@ export const MAP_EDITOR_UI_COPY = {
   numbered: (scheme: string) => `Numbers by ${scheme.toLowerCase()}.`,
   zoomOut: "Zoom out",
   zoomIn: "Zoom in",
-  zoom: (percent: number) => `Zoom ${percent}%`,
   fit: "Fit",
   problems: (first: string, more: number) => (more === 0 ? `The build changed: ${first}` : `The build changed: ${first} And ${more} more.`),
   fix: "Fix",
@@ -374,7 +373,7 @@ export function MapEditor({ editor, ...build }: MapEditorProps) {
             <ToolbarButton testId="map-zoom-out" label={MAP_EDITOR_UI_COPY.zoomOut} disabled={zoom <= ZOOM.min + 0.001} onClick={() => setZoom((was) => clampZoom(was - ZOOM.step))}>
               −
             </ToolbarButton>
-            <span data-testid="map-zoom" aria-live="off" aria-label={MAP_EDITOR_UI_COPY.zoom(Math.round(zoom * 100))} style={{ ...text(textStep.meta, 400, t.text2), fontFamily: DM_MONO, ...tnum, minWidth: 40, textAlign: "center" }}>
+            <span data-testid="map-zoom" style={{ ...text(textStep.meta, 400, t.text2), fontFamily: DM_MONO, ...tnum, minWidth: 40, textAlign: "center" }}>
               {Math.round(zoom * 100)}%
             </span>
             <ToolbarButton testId="map-zoom-in" label={MAP_EDITOR_UI_COPY.zoomIn} disabled={zoom >= ZOOM.max - 0.001} onClick={() => setZoom((was) => clampZoom(was + ZOOM.step))}>

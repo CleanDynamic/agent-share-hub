@@ -463,7 +463,18 @@ function BoxItem({
       data-testid="map-box"
       data-box-id={box.id}
       data-selected={chosen || undefined}
+      role="listitem"
       tabIndex={onSelectBox ? 0 : undefined}
+      onKeyDown={
+        onSelectBox
+          ? (event) => {
+              // Space does what a click on the box does; with Shift it adds the box to the boxes selected.
+              if (event.target !== event.currentTarget || event.key !== " ") return;
+              event.preventDefault();
+              onSelectBox(box.id, event.shiftKey);
+            }
+          : undefined
+      }
       aria-label={onSelectBox ? head.name : undefined}
       onPointerDown={onSelectBox ? () => (pointer.current = true) : undefined}
       onFocus={
@@ -517,8 +528,18 @@ function BoxItem({
                   data-tile-id={id}
                   aria-describedby={words?.length ? descriptionId : undefined}
                   data-selected={selected.includes(id) || undefined}
+                  role="listitem"
                   tabIndex={onSelectBox ? -1 : undefined}
                   onClick={onSelectBox && !step && !result ? () => onClick(id) : undefined}
+                  onKeyDown={
+                    onSelectBox && !step && !result
+                      ? (event) => {
+                          if (event.target !== event.currentTarget || event.key !== " ") return;
+                          event.preventDefault();
+                          onClick(id);
+                        }
+                      : undefined
+                  }
                   style={{ position: "absolute", left: slot.x - rect.x, top: slot.y - rect.y, width: slot.width, height: slot.height, borderRadius: SELECTION.tileRadius, ...(selected.includes(id) ? { boxShadow: SELECTION_RING } : null) }}
                 >
                   {step ? (
